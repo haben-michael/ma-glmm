@@ -1,0 +1,8 @@
+(Binomial[m[j], k]*(1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]])^
+   (-k + m[j])*LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^k*
+  (k*(2 + k*beta[2] - k*Log[-(k/(k - m[j]))]) + 
+   (-2 - (1 + 2*k)*beta[2] + (1 + 2*k)*Log[-(k/(k - m[j]))])*
+    LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]*m[j] + 
+   (beta[2] - Log[-(k/(k - m[j]))])*
+    LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^2*m[j]*(1 + m[j])))/
+ beta[1]^2

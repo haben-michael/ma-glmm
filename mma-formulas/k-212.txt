@@ -1,0 +1,2 @@
+(Binomial[m[j], k]*(1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]])^
+   (-k + m[j])*LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^k)/beta[1]^2
