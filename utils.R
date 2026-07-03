@@ -96,8 +96,25 @@ mma.to.R <- function(x,
 
 
 
-make.fun <- function(str, args, envir = parent.frame()) {
+## make.fun <- function(str, args, envir = parent.frame()) {
+##   expr <- parse(text = str)[[1L]]
+
+##   f <- eval(
+##     call(
+##       "function",
+##       as.pairlist(setNames(rep(list(quote(expr = )), length(args)), args)),
+##       expr
+##     ),
+##     envir = envir
+##   )
+
+##   f
+## }
+
+str.to.fun <- function(str, args, bindings = list(), parent = baseenv()) {
   expr <- parse(text = str)[[1L]]
+
+  env <- list2env(bindings, parent = parent)
 
   f <- eval(
     call(
@@ -105,8 +122,9 @@ make.fun <- function(str, args, envir = parent.frame()) {
       as.pairlist(setNames(rep(list(quote(expr = )), length(args)), args)),
       expr
     ),
-    envir = envir
+    envir = env
   )
 
+  environment(f) <- env
   f
 }

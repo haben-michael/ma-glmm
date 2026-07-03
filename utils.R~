@@ -93,3 +93,20 @@ mma.to.R <- function(x,
 
   parse_until(1)$text
 }
+
+
+
+make.fun <- function(str, args, envir = parent.frame()) {
+  expr <- parse(text = str)[[1L]]
+
+  f <- eval(
+    call(
+      "function",
+      as.pairlist(setNames(rep(list(quote(expr = )), length(args)), args)),
+      expr
+    ),
+    envir = envir
+  )
+
+  f
+}

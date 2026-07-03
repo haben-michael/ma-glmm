@@ -435,56 +435,60 @@ print(c(rma0$se,se.laplace(e,m,mle)[2]))
 ## get all the full model k terms
 
 source('utils.R')
-
+lawley <- function(p,m,beta,mma.strings) {
+    k.vals <- sapply(mma.strings, function(mma.str) {
+        l.deriv <- str.to.fun(
+            gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
+            args = c('theta','m','k'),
+            binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt,m=m,beta=beta)
+        )
+        ## browser()
+        sapply(1:length(m), function(j) 
+            sapply(1:(m[j]-1), function(k) {
+                ## browser()
+                integrate(function(theta)l.deriv(theta,m[j],k)*dnorm(theta),-Inf,Inf)$val
+            }) |> sum()
+            ) |> sum()
+    })
+    idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+    idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
+    k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
+    k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(inner,collapse='') & k.df$outer==paste(outer,collapse='')]
+    inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
+    inv.inf <- solve(inf)
+    lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
+        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
+        inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
+    })
+    lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
+        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
+        inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,u,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
+    })
+    ## sum(l4)
+    ## sum(l6)
+    return( sum(lawley.4) - sum(lawley.6) )
+}
+read.mma <- function(mma.str.path) {
+    filelist <- dir(mma.str.path)
+    filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+    mma.strings <- sapply(filelist,function(file)paste(readLines(file,warn=FALSE),collapse=''))
+    mma.strings <- sapply(mma.strings,
+                          function(mma.str) mma.to.R(mma.str,
+                                                     funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                                                     rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
+                                                     )
+                          )
+}
 set.seed(1)
 n <- 20
 mu.null <- 1
 tau2.null <- 2
 m <- rpois(n,lambda=20)
-theta <- rnorm(n)
-e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
-rm(theta)
+## theta <- rnorm(n)
+## e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
+## rm(theta)
 beta <- runif(2)#c(mle[c('tau2','mu')]) ## should be passed to make.fun
-mma.str.path <- './mma-formulas/'
-filelist <- dir(mma.str.path)
-filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
-k <- sapply(filelist, function(file) {
-    mma.str <- paste(readLines(file,warn=FALSE),collapse='')
-    ## mma.str
-    mma.str <- mma.to.R(mma.str,
-                        funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
-                        rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
-                        )
-    E <- exp(1)
-    l.deriv <- make.fun(
-        gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
-        args = c('theta','m','k')
-    )
-    sapply(1:n, function(j) 
-        sapply(1:(m[j]-1), function(k) {
-            ## browser()
-            integrate(function(theta)l.deriv(theta,m[j],k)*dnorm(theta),-Inf,Inf)$val
-        }) |> sum()
-        ) |> sum()
-})
-idx.strings <- gsub('.txt','',names(k),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
-idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
-k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k)
-k.df$outer[is.na(k.df$outer)] <- 0
-## inner <- '22'
-## outer <- '1'
-k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(inner,collapse='') & k.df$outer==paste(outer,collapse='')]
-inf <- -matrix(c(k(c(1,1)),k(c(1,2)),k(c(2,1)),k(c(2,2))),nrow=2)
-inv.inf <- solve(inf)
-l4 <- apply(do.call(expand.grid,rep(list(1:2),4)), 1, function(idx.str) {
-    ## idx.str <- c(1,2,1,1)
-    r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
-    inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
-})
-l6 <- apply(do.call(expand.grid,rep(list(1:2),6)), 1, function(idx.str) {
-    ## idx.str <- c(1,2,1,1)
-    r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
-    inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,u,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
-})
-sum(l4)
-sum(l6)
+eps.full <- lawley(p=2,m=m,beta=beta,mma.strings=read.mma('./mma-formulas/full/'))
+eps.redu <- lawley(p=1,m=m,beta=beta,mma.strings=read.mma('./mma-formulas/redu/'))
+correction <- 1 + eps.full - eps.redu
+correction

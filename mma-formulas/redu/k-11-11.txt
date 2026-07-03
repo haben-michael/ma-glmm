@@ -1,0 +1,16 @@
+(Binomial[m[j], k]*(1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]])^
+   (-k + m[j])*LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^k*
+  (24*beta[1] - 9*k*theta*beta[1]^(3/2) + k^2*theta^2*beta[1]^2 - 
+   96*beta[2]^2 + 26*k*theta*Sqrt[beta[1]]*beta[2]^2 - 
+   2*k^2*theta^2*beta[1]*beta[2]^2 + 4*(48 - 13*k*theta*Sqrt[beta[1]] + 
+     k^2*theta^2*beta[1])*beta[2]*Log[-(k/(k - m[j]))] - 
+   2*(48 - 13*k*theta*Sqrt[beta[1]] + k^2*theta^2*beta[1])*
+    Log[-(k/(k - m[j]))]^2 + theta*Sqrt[beta[1]]*
+    (9*beta[1] - (theta + 2*k*theta)*beta[1]^(3/2) - 26*beta[2]^2 + 
+     2*(1 + 2*k)*theta*Sqrt[beta[1]]*beta[2]^2 - 
+     4*(-13 + (1 + 2*k)*theta*Sqrt[beta[1]])*beta[2]*Log[-(k/(k - m[j]))] + 
+     2*(-13 + (1 + 2*k)*theta*Sqrt[beta[1]])*Log[-(k/(k - m[j]))]^2)*
+    LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]*m[j] + 
+   theta^2*beta[1]*(beta[1] - 2*beta[2]^2 + 4*beta[2]*Log[-(k/(k - m[j]))] - 
+     2*Log[-(k/(k - m[j]))]^2)*LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^
+     2*m[j]*(1 + m[j])))/(8*beta[1]^5)
