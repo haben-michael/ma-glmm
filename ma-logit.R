@@ -435,18 +435,19 @@ print(c(rma0$se,se.laplace(e,m,mle)[2]))
 ## get all the full model k terms
 
 source('utils.R')
-lawley <- function(p,m,beta,mma.strings) {
-    k.vals <- sapply(mma.strings, function(mma.str) {
-        l.deriv <- str.to.fun(
-            gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
-            args = c('theta','m','k'),
-            binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt,m=m,beta=beta)
-        )
+lawley <- function(p,m,beta,l.derivs) {
+    ## k.vals <- sapply(mma.strings, function(mma.str) {
+    ##     l.deriv <- str.to.fun(
+    ##         gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
+    ##         args = c('theta','m','k'),
+    ##         binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt,m=m,beta=beta)
+    ##     )
+    k.vals <- sapply(l.derivs, function(l.deriv) {
         ## browser()
         sapply(1:length(m), function(j) 
             sapply(1:(m[j]-1), function(k) {
                 ## browser()
-                integrate(function(theta)l.deriv(theta,m[j],k)*dnorm(theta),-Inf,Inf)$val
+                integrate(function(theta)l.deriv(theta,m[j],k,beta)*dnorm(theta),-Inf,Inf)$val
             }) |> sum()
             ) |> sum()
     })
@@ -478,17 +479,240 @@ read.mma <- function(mma.str.path) {
                                                      rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
                                                      )
                           )
+    l.derivs <- sapply(mma.strings,function(mma.str) 
+        str.to.fun(
+            gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
+            args = c('theta','m','k','beta'),
+            binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt)
+        ))
 }
 set.seed(1)
 n <- 20
 mu.null <- 1
 tau2.null <- 2
+## beta <- runif(2)#c(mle[c('tau2','mu')]) ## should be passed to make.fun
+l.derivs.full <- read.mma('./mma-formulas/full/')
+l.derivs.redu <- read.mma('./mma-formulas/redu/')
+start <- Sys.time()
 m <- rpois(n,lambda=20)
-## theta <- rnorm(n)
-## e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
-## rm(theta)
-beta <- runif(2)#c(mle[c('tau2','mu')]) ## should be passed to make.fun
-eps.full <- lawley(p=2,m=m,beta=beta,mma.strings=read.mma('./mma-formulas/full/'))
-eps.redu <- lawley(p=1,m=m,beta=beta,mma.strings=read.mma('./mma-formulas/redu/'))
+theta <- rnorm(n)
+e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
+rm(theta)
+rma0 <- metafor::rma.glmm(measure='PLO',xi=e,ni=m,data=data.frame(study = 1:n, e=e, m=m))
+mle <- structure(unname(c(rma0$beta,rma0$tau2)),names=c('mu','tau2'))
+beta <- rev(mle)
+## beta <- c(tau2.null,mu.null)##!!!!!!!!!!!!!!!!!
+eps.full <- lawley(p=2,m=m,beta=beta,l.derivs=l.derivs.full)
+eps.redu <- lawley(p=1,m=m,beta=beta,l.derivs=l.derivs.redu)
 correction <- 1 + eps.full - eps.redu
 correction
+print(Sys.time() - start)
+
+
+## compute LR statistic using glmer. check LR statistic is asy chi
+## squared.
+library(lme4)
+set.seed(1)
+n <- 20
+mu.null <- 1
+tau2.null <- 2
+start <- Sys.time()
+m <- rpois(n,lambda=20)
+LR.stats <- replicate(1e2, {
+    theta <- rnorm(n)
+    e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
+    rm(theta)
+    dat <- data.frame(e = e, non = m - e, study = factor(seq_along(e)),off = mu.null)
+    fit.alt <- glmer(cbind(e, non) ~ 1 + (1 | study), data = dat,family = binomial(link = "logit"),nAGQ = 7)
+    fit.null <- glmer(cbind(e, non) ~ 0 + offset(off) + (1 | study),data = dat, family = binomial(link = "logit"), nAGQ = 7)
+    LR <- 2 * (as.numeric(logLik(fit.alt)) - as.numeric(logLik(fit.null)))
+    ## pval <- pchisq(LR, df = 1, lower.tail = FALSE)
+    ## c(LR = LR, p.value = pval)
+})
+print(Sys.time() - start)
+plot(ecdf(LR.stats))
+curve(pchisq(x,df=1),add=TRUE,col=2)
+
+
+
+
+
+
+curve(x*(5*x+6)/2/(x+1)/(x+3),0,10)
+curve(log(x+1),add=TRUE,lty=2)
+curve(x-x^2+x^3/3,add=T,col=2)
+
+curve(3*x/2*(x+6)/(x+3)^2,0,5)
+curve(log(x+1),add=TRUE,lty=2)
+curve(x-x^2/2,add=TRUE,col=2)
+
+curve(27*(x+1),0,1)
+curve((x+3)^3,add=T,col=2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+source('utils.R')
+require(lme4)
+ns <- 5:10
+mu.null <- 0
+tau2.null <- 2
+## beta <- runif(2)#c(mle[c('tau2','mu')]) ## should be passed to make.fun
+l.derivs.full <- read.mma('./mma-formulas/full/')
+l.derivs.redu <- read.mma('./mma-formulas/redu/')
+start <- Sys.time()
+## m <- rpois(n,lambda=60)
+by.n <- parallel::mclapply(ns, mc.cores=1,FUN=function(n) {
+    m <- rep(30,n)
+    stats <- replicate(2, {
+        cat('.')
+        theta <- rnorm(n)
+        e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
+        ## if(any(e==0)||any(e==m))return(c(NA,NA))
+        ## rm(theta)
+        dat <- data.frame(e = e, non = m - e, study = factor(seq_along(e)),off = mu.null)
+        fit.alt <- glmer(cbind(e, non) ~ 1 + (1 | study), data = dat,family = binomial(link = "logit"),nAGQ = 7)
+        fit.null <- glmer(cbind(e, non) ~ 0 + offset(off) + (1 | study),data = dat, family = binomial(link = "logit"), nAGQ = 7)
+        LR <- 2 * (as.numeric(logLik(fit.alt)) - as.numeric(logLik(fit.null)))
+        tau2.mle.redu <- VarCorr(fit.null)$study |> as.numeric() |> unname()
+        beta <- c(tau2.mle.redu,mu.null)
+        eps.full <- lawley(p=2,m=m,beta=beta,l.derivs=l.derivs.full)
+        eps.redu <- lawley(p=1,m=m,beta=beta,l.derivs=l.derivs.redu)
+        correction <- 1 + eps.full - eps.redu
+        ## if(correction<0)break#browser()
+        ## correction <- 1#!!!
+        if(correction>10)browser()
+        c(LR=LR,LR.bartlett=LR/correction,correction=correction)
+    })
+})
+
+
+
+
+
+## template of sim. assumes read.mma and lawley loaded.
+source('utils.R')
+require(lme4)
+n <- 5
+mu.null <- 0
+tau2.null <- 1
+## beta <- runif(2)#c(mle[c('tau2','mu')]) ## should be passed to make.fun
+l.derivs.full <- read.mma('./mma-formulas/full/')
+l.derivs.redu <- read.mma('./mma-formulas/redu/')
+start <- Sys.time()
+## m <- rpois(n,lambda=60)
+m <- rep(25,n)
+stats <- replicate(n^3, {
+    cat('.')
+    theta <- rnorm(n)
+    e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
+    if(any(e==0)||any(e==m))return(c(NA,NA))
+    ## rm(theta)
+    dat <- data.frame(e = e, non = m - e, study = factor(seq_along(e)),off = mu.null)
+    fit.alt <- glmer(cbind(e, non) ~ 1 + (1 | study), data = dat,family = binomial(link = "logit"),nAGQ = 7)
+    fit.null <- glmer(cbind(e, non) ~ 0 + offset(off) + (1 | study),data = dat, family = binomial(link = "logit"), nAGQ = 7)
+    ## LR <- 2 * (as.numeric(logLik(fit.alt)) - as.numeric(logLik(fit.null)))
+    loglik.full <- as.numeric(logLik(fit.alt))
+    loglik.redu <- as.numeric(logLik(fit.null))
+    LR <- 2 * (loglik.full - loglik.redu)
+    tau2.mle.redu <- VarCorr(fit.null)$study |> as.numeric() |> unname()
+    beta <- c(tau2.mle.redu,mu.null)
+    eps.full <- lawley(p=2,m=m,beta=beta,l.derivs=l.derivs.full)
+    eps.redu <- lawley(p=1,m=m,beta=beta,l.derivs=l.derivs.redu)
+    correction <- 1 + eps.full - eps.redu
+    if(correction<0)browser()
+    ## correction <- 1#!!!
+    if(abs(eps.full)>7 || abs(eps.redu)>7)browser()    
+    c(LR=LR,LR.bartlett=LR/correction,correction=correction,eps.full=eps.full,eps.redu=eps.redu,loglik.full=loglik.full,loglik.redu=loglik.redu)
+})
+## correction
+print(Sys.time() - start)
+plot(ecdf(stats['LR',]))
+plot(ecdf(stats['LR.bartlett',]),add=TRUE,col=2)
+curve(pchisq(x,df=1),add=TRUE,col=3)
+apply(stats,1,mean)
+apply(stats,1,summary)
+
+
+
+
+## process sim results
+save.path <- './sim/260706/'
+## png.file <- './figs/gaussian.png'
+filelist <- dir(save.path)
+filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+print(length(filelist))
+by.sim <- lapply(filelist, function(file) {
+    ## print(file)
+    if('m'%in%ls())rm(m)
+    if('m.mean'%in%ls())rm(m.mean)
+    load(paste0(save.path,file))
+    list(stats=stats,n=n,m=    if('m'%in%ls())unique(m)else m.mean)
+    ## by.n
+})
+## sim <- by.sim[[1]]
+long <- sapply(by.sim,function(sim) {
+    ## cat('.')
+    stats <- sim$stats
+    if(is.list(stats))    stats <- stats[!sapply(stats,function(v)any(is.na(v)))] |> simplify2array()
+    ## LR <- stats['LR',]; LR.bartlett <- stats['LR.bartlett',]
+    stats <- stats[c('LR','LR.bartlett'),]
+    ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
+    ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
+    c(ks,n=sim$n,m=sim$m)
+}) |> t()
+long <- aggregate(cbind(LR,LR.bartlett) ~ ., FUN=median, data=long)
+long <- subset(long,m==55)
+plot(LR ~ n, type='l',data=long,ylim=range(c(long$LR,long$LR.bartlett)))
+lines(LR.bartlett ~ n, data=long,col=2)
+coef(lm(log(LR)~log(n),data=long))[2]
+coef(lm(log(LR.bartlett)~log(n),data=long))[2]
+
+
+
+
+
+## python check
+source('utils.R')
+# require(lme4)
+n <- 10
+m <- rep(20,n)
+p <- 1
+mu.null <- 0
+tau2.null <- 1/2
+beta <- c(tau2.null,mu.null)
+## beta <- runif(2)#c(mle[c('tau2','mu')]) ## should be passed to make.fun
+l.derivs.full <- read.mma('./mma-formulas/full/')
+l.derivs.redu <- read.mma('./mma-formulas/redu/')
+k.vals <- sapply(l.derivs.redu, function(l.deriv) {
+    ## browser()
+    sapply(1:length(m), function(j) 
+        sapply(1:(m[j]-1), function(k) {
+            ## browser()
+            integrate(function(theta)l.deriv(theta,m[j],k,beta)*dnorm(theta),-Inf,Inf)$val
+        }) |> sum()
+        ) |> sum()
+})
+idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
+k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
+k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(inner,collapse='') & k.df$outer==paste(outer,collapse='')]
+inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
+inv.inf <- solve(inf)

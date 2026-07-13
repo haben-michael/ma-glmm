@@ -1,0 +1,471 @@
+# # 4. Take the second derivative
+# d2_lUnit = lUnit.diff(beta[1], 2)
+
+# result = d2_lUnit.replace(
+#     sy.Integral, 
+#     lambda expr, var: sy.Integral(sy.factor(expr), var)
+# )
+
+# print(result)
+# k = make_   numeric_integral_evaluator(
+#     loglik_derivs[beta[1],beta[1]],
+#     [beta[1], beta[2], m, x],
+# )
+# inner_order = [1,2]
+# outer_order = [1]
+
+# inner_deriv = lUnit.diff(*[beta[i] for i in inner_order])
+# inner_deriv = inner_deriv.replace(sy.Integral, lambda expr, var: sy.Integral(sy.factor(expr), var))
+# expected = sy.Integral(
+#     sy.summation(inner_deriv * ((pr**x * (1-pr)**(m_obs-x)* pdf_normal).subs(theta,theta2)), (x,0,m_obs)),
+#                        (theta2,-sy.oo,sy.oo)
+#                        )
+# # eval_with_numeric_integrals(outer_deriv,values={beta[1]:tau2_null,beta[2]:mu_null,m:m_obs,theta2:2})
+# outer_deriv = expected.diff(*[beta[i] for i in outer_order])
+# eval_with_numeric_integrals(outer_deriv,values={beta[1]:tau2_null,beta[2]:mu_null,m:m_obs,theta2:2})
+# values = {
+#     beta[1]: 1.5,
+#     beta[2]: -0.5,
+#     m: 10,
+#     x: 4,
+# }
+
+# numeric_result = eval_with_numeric_integrals(result, values, verbose=True)
+
+# print(numeric_result)
+
+# k_terms = {}
+# for k in loglik_derivs:
+#     loglik_deriv_fun = make_numeric_integral_evaluator(loglik_derivs[k],[beta[1],beta[2],m,x])
+#     k_mean_cond = [ loglik_deriv_fun(tau2_null,mu_null,m_obs,x_obs) * pr**x_obs * (1-pr)**(m_obs-x_obs) for x_obs in range(m_obs)]
+#     k_mean = sy.Integral(sum(k_mean_cond) * pdf_normal, (theta,-sy.oo,sy.oo))
+#     k_terms[k] = _numeric_integral(k_mean,{beta[1]:tau2_null,beta[2]:mu_null,m:m_obs},modules,quad_opts)
+# # k_mean_cond = k_mean_cond.subs({beta[1]:tau2_null,beta[2]:mu_null,m:m_obs})
+# # k_mean_cond = sy.lambdify(theta,k_mean_cond,modules=modules)
+
+# import sympy as sy
+
+# expected =   sy.summation(inner_deriv, (x,0,m_obs))
+# expected = sy.Integral(theta**2*sy.exp(-theta**2),(theta,-sy.oo,sy.oo))
+# eval_with_numeric_integrals(expected,values={beta[1]:tau2_null,beta[2]:mu_null,m:m_obs,theta2:2})
+# expected = sy.Integral(expected*sy.exp(-theta2**2),(theta2,-sy.oo,sy.oo))
+# eval_with_numeric_integrals(expected,values={beta[1]:tau2_null,beta[2]:mu_null,m:m_obs,theta2:2})
+
+# loglik_deriv_fun = make_numeric_integral_evaluator(loglik_derivs[k],[beta[1],beta[2],m,x])
+# k_mean_cond = [ loglik_deriv_fun(tau2_null,mu_null,m_obs,x_obs) * pr**x_obs * (1-pr)**(m_obs-x_obs) for x_obs in range(m_obs+1)]
+# k_mean = sy.Integral(sum(k_mean_cond) * pdf_normal, (theta,-sy.oo,sy.oo))
+# k_terms[k] = _numeric_integral(k_mean,{beta[1]:tau2_null,beta[2]:mu_null,m:m_obs},modules,quad_opts)
+
+# j, theta, theta2 = sy.symbols("j theta theta2")
+# expr = sy.Integral(j*sy.exp(-theta**2/2), (theta,-sy.oo,sy.oo))/sy.sqrt(2*sy.pi)
+# expr = sy.summation(expr,(j,0,2))
+# expr = sy.Integral(expr*sy.exp(-theta2**2),(theta2,-sy.oo,sy.oo))
+# eval_with_numeric_integrals(expr,values={},modules=modules,quad_opts=quad_opts)
+
+
+
+# m, x, theta = sy.symbols('m x theta')
+# beta = sy.IndexedBase('beta')
+
+# class LogisticSigmoid(sy.Function):
+#     def fdiff(self, argindex=1):
+#         return self * (1 - self)
+    
+#     def _eval_evalf(self, prec):
+#         # 1. Get the argument as a SymPy float
+#         arg = self.args[0]._eval_evalf(prec)
+    
+# pdf_normal = 1 / sy.sqrt(2 * sy.pi) * sy.exp(-theta**2 / 2)
+# z = beta[2] + sy.sqrt(beta[1]) * theta
+# pr = LogisticSigmoid(z)
+
+# # 3. Build the integral and take the log
+# integrand = sy.binomial(m, x) * (pr**x) * ((1 - pr)**(m - x)) * pdf_normal
+# likUnit = sy.Integral(integrand, (theta,-sy.oo,sy.oo))
+# lUnit = sy.log(likUnit)
+
+# # 4. Take the second derivative
+# d2_lUnit = lUnit.diff(beta[1], 2)
+
+# result = d2_lUnit.replace(
+#     sy.Integral, 
+#     lambda expr, var: sy.Integral(sy.factor(expr), var)
+# )
+
+# print(result)
+
+# values = {
+#     beta[1]: 1.5,
+#     beta[2]: -0.5,
+#     m: 10,
+#     x: 4
+# }
+
+# result = result.subs(values)
+
+# result = result.replace(
+#     LogisticSigmoid,
+#     lambda arg: 1 / (1 + sy.exp(-arg))
+# )
+
+# # 3. Evaluate numerically
+# numeric_result = result.evalf()
+
+# print(numeric_result)
+
+
+
+
+
+
+# #--------------------------
+
+# import sympy as sy
+# import numpy as np
+
+# from scipy.integrate import quad
+# from scipy.special import expit
+
+
+
+
+# # ----------------------------
+# # 1. Symbolic setup
+# # ----------------------------
+
+# m, x, theta = sy.symbols("m x theta")
+# b1, b2 = sy.symbols("b1 b2", positive=True, real=True)
+
+
+# class LogisticSigmoid(sy.Function):
+#     def fdiff(self, argindex=1):
+#         if argindex == 1:
+#             return self * (1 - self)
+#         raise ValueError("Invalid argument index")
+
+
+# pdf_normal = sy.exp(-theta**2 / 2) / sy.sqrt(2 * sy.pi)
+
+# z = b2 + sy.sqrt(b1) * theta
+# pr = LogisticSigmoid(z)
+
+# integrand = (
+#     sy.binomial(m, x)
+#     * pr**x
+#     * (1 - pr)**(m - x)
+#     * pdf_normal
+# )
+
+
+# # ----------------------------
+# # 2. Differentiate the integrand
+# # ----------------------------
+
+# d0_integrand = integrand
+# d1_integrand = sy.diff(integrand, b1)
+# d2_integrand = sy.diff(integrand, b1, 2)
+
+
+# # ----------------------------
+# # 3. Lambdify the integrands
+# # ----------------------------
+
+# modules = [
+#     {"LogisticSigmoid": expit},
+#     "numpy",
+# ]
+
+# f0 = sy.lambdify((theta, b1, b2, m, x), d0_integrand, modules=modules)
+# f1 = sy.lambdify((theta, b1, b2, m, x), d1_integrand, modules=modules)
+# f2 = sy.lambdify((theta, b1, b2, m, x), d2_integrand, modules=modules)
+
+
+# # ----------------------------
+# # 4. Numerical integration
+# # ----------------------------
+
+# def integrate_over_theta(fun, b1_val, b2_val, m_val, x_val):
+#     val, err = quad(
+#         lambda t: fun(t, b1_val, b2_val, m_val, x_val),
+#         -np.inf,
+#         np.inf,
+#         epsabs=1e-10,
+#         epsrel=1e-10,
+#         limit=200,
+#     )
+#     return val
+
+
+# def d2_loglik_beta1(b1_val, b2_val, m_val, x_val):
+#     I0 = integrate_over_theta(f0, b1_val, b2_val, m_val, x_val)
+#     I1 = integrate_over_theta(f1, b1_val, b2_val, m_val, x_val)
+#     I2 = integrate_over_theta(f2, b1_val, b2_val, m_val, x_val)
+
+#     return I2 / I0 - (I1 / I0) ** 2
+
+
+# # ----------------------------
+# # 5. Example
+# # ----------------------------
+
+# ans = d2_loglik_beta1(
+#     b1_val=1.5,
+#     b2_val=-0.5,
+#     m_val=10,
+#     x_val=4,
+# )
+
+# print(ans)
+
+
+
+#-------------------------------
+
+import itertools
+import sympy as sy
+import numpy as np
+
+from scipy.integrate import quad
+from scipy.special import expit
+
+
+def _bound_to_float(bound, values):
+    """
+    Convert a SymPy integration bound to a Python float, handling +/- oo.
+    """
+    bound = bound.subs(values)
+
+    if bound == sy.oo:
+        return np.inf
+    if bound == -sy.oo:
+        return -np.inf
+
+    return float(bound.evalf())
+
+
+def _numeric_integral(integral_obj, values, modules, quad_opts):
+    """
+    Numerically evaluate a single SymPy Integral after substituting parameter values.
+    Currently assumes a definite one-dimensional integral.
+    """
+    if len(integral_obj.limits) != 1:
+        raise NotImplementedError(
+            "This helper currently supports only one-dimensional integrals."
+        )
+
+    limit = integral_obj.limits[0]
+
+    if len(limit) != 3:
+        raise NotImplementedError(
+            "This helper currently supports only definite integrals."
+        )
+
+    var, lower, upper = limit
+
+    lower_num = _bound_to_float(lower, values)
+    upper_num = _bound_to_float(upper, values)
+
+    integrand = integral_obj.function.subs(values)
+
+    # After substituting parameter values, only the integration variable should remain.
+    remaining = integrand.free_symbols - {var}
+
+    if remaining:
+        raise ValueError(
+            f"Integral still contains unsubstituted symbols: {remaining}"
+        )
+
+    f = sy.lambdify(var, integrand, modules=modules)
+
+    val, err = quad(
+        lambda t: f(t),
+        lower_num,
+        upper_num,
+        **quad_opts,
+    )
+
+    return val
+
+
+def eval_with_numeric_integrals(
+    expr,
+    values,
+    modules=None,
+    quad_opts=None,
+    verbose=False,
+):
+    if modules is None:
+        modules = [
+            {"LogisticSigmoid": expit},
+            "numpy",
+        ]
+
+    if quad_opts is None:
+        quad_opts = {
+            "epsabs": 1e-10,
+            "epsrel": 1e-10,
+            "limit": 200,
+        }
+
+    expr_num = expr.subs(values)
+
+    integral_cache = {}
+
+    while True:
+        integrals = sorted(
+            expr_num.atoms(sy.Integral),
+            key=lambda I: sy.count_ops(I),
+        )
+
+        if not integrals:
+            break
+
+        # Take the smallest remaining integral, usually the innermost one.
+        I = integrals[0]
+
+        if I not in integral_cache:
+            val = _numeric_integral(
+                I,
+                values={},
+                modules=modules,
+                quad_opts=quad_opts,
+            )
+            integral_cache[I] = val
+
+            if verbose:
+                print("Integral:")
+                print(I)
+                print("Value:", val)
+                print()
+
+        expr_num = expr_num.xreplace({I: sy.Float(integral_cache[I])})
+
+    outer_f = sy.lambdify((), expr_num, modules=modules)
+    out = outer_f()
+
+    if np.ndim(out) == 0:
+        return float(out)
+
+    return out
+
+def make_numeric_integral_evaluator(expr, params):
+    """
+    Create a callable numerical evaluator for a SymPy expression with Integrals.
+
+    Example:
+        f = make_numeric_integral_evaluator(result, [beta[1], beta[2], m, x])
+        f(1.5, -0.5, 10, 4)
+    """
+    def evaluator(*args, **kwargs):
+        if args and kwargs:
+            raise ValueError("Use either positional args or keyword args, not both.")
+
+        if args:
+            if len(args) != len(params):
+                raise ValueError(f"Expected {len(params)} arguments, got {len(args)}.")
+            values = dict(zip(params, args))
+        else:
+            values = {p: kwargs[str(p)] for p in params}
+
+        return eval_with_numeric_integrals(expr, values)
+
+    return evaluator
+
+
+
+m, x, theta, theta2 = sy.symbols('m x theta theta2')
+beta = sy.IndexedBase('beta')
+
+class LogisticSigmoid(sy.Function):
+    def fdiff(self, argindex=1):
+        return self * (1 - self)
+    
+    def _eval_evalf(self, prec):
+        # 1. Get the argument as a SymPy float
+        arg = self.args[0]._eval_evalf(prec)
+    
+pdf_normal = 1 / sy.sqrt(2 * sy.pi) * sy.exp(-theta**2 / 2)
+z = beta[2] + sy.sqrt(beta[1]) * theta
+pr = LogisticSigmoid(z)
+
+# 3. Build the integral and take the log
+integrand = sy.binomial(m, x) * (pr**x) * ((1 - pr)**(m - x)) * pdf_normal
+likUnit = sy.Integral(integrand, (theta,-sy.oo,sy.oo))
+lUnit = sy.log(likUnit)
+
+
+loglik_derivs = {combn : lUnit.diff(*combn) for combn in itertools.product([beta[1],beta[2]], repeat=3)}
+for k in loglik_derivs:
+    loglik_derivs[k] = loglik_derivs[k].replace(sy.Integral, lambda expr, var: sy.Integral(sy.factor(expr), var))
+
+
+mu_null = 0
+tau2_null = 1/2
+m_obs = 20
+n = 10
+
+
+modules = [
+        {"LogisticSigmoid": expit},
+        "numpy",
+    ]
+quad_opts = {
+    "epsabs": 1e-10,
+    "epsrel": 1e-10,
+    "limit": 200,
+}
+
+
+
+
+
+# orders = [[{"inner" : tup, "outer" : () } for tup in itertools.product([1,2],repeat=rep)] for rep in [2,3,4]]
+p = 1
+idx = list(range(1,p+1))
+simple_orders = [[(tup,()) for tup in itertools.product(idx,repeat=rep)] for rep in [2,3,4]]
+# mixed_orders_2 = [itertools.product(itertools.product(idx,repeat=2), itertools.product(idx,repeat=rep))  for rep in [1,2]]
+mixed_orders = [itertools.product(itertools.product(idx,repeat=rep[0]), itertools.product(idx,repeat=rep[1]))  for rep in [[2,1],[2,2],[3,1]]]
+# mixed_orders_3 = itertools.product(itertools.product(idx,repeat=3), itertools.product(idx,repeat=1))
+orders = [item for sublist in (simple_orders+mixed_orders) for item in sublist]
+
+k_num = {}
+for order in orders:        
+    print(order)
+    inner_order, outer_order = order
+    inner_deriv = lUnit.diff(*[beta[i] for i in inner_order])
+    inner_deriv = inner_deriv.replace(sy.Integral, lambda expr, var: sy.Integral(sy.factor(expr), var))
+    expected = sy.Integral(
+        sy.summation(inner_deriv * ((pr**x * (1-pr)**(m_obs-x)* pdf_normal).subs(theta,theta2)), (x,0,m_obs)),
+                        (theta2,-sy.oo,sy.oo)
+                        )
+    if len(outer_order)==0:
+        out = eval_with_numeric_integrals(expected,values={beta[1]:tau2_null,beta[2]:mu_null,m:m_obs,theta2:2})
+    else:
+        outer_deriv = expected.diff(*[beta[i] for i in outer_order])
+        out = eval_with_numeric_integrals(outer_deriv,values={beta[1]:tau2_null,beta[2]:mu_null,m:m_obs,theta2:2})
+    # out = np.random.randint(10)
+    k_num[order] = n*out
+
+def k(inner_order, outer_order=()):
+    return( k_num[(inner_order,outer_order)])
+inf_mat = np.matrix( [-k(inner_order) for inner_order in itertools.product(idx,repeat=2)] ).reshape(p,p)
+inv_inf = np.linalg.inv(inf_mat)
+
+lawley4 = {}
+for tup in itertools.product(idx,repeat=4):
+    r, s, t, u = tup
+    lawley4[tup] = inv_inf[r-1,s-1] * inv_inf[t-1,u-1] * (1/4*k((r,s,t,u))
+                                                        - k((r,s,t),(u,))
+                                                        + k((r,s),(t,u)))
+
+lawley6 = {}
+for tup in itertools.product(idx,repeat=6):
+    r,s,t,u,v,w = tup
+    lawley6[tup] = inv_inf[r-1,s-1] * inv_inf[t-1,u-1] * inv_inf[v-1,w-1] * (1/6*k((r,t,v))*k((s,u,w)) 
+                                                            + 1/4*k((r,t,u))*k((s,u,w))
+                                                            - k((r,t,v))*k((s,w),(u,))
+                                                            - k((r,t,u))*k((s,w),(v,)) 
+                                                            + k((r,t),(v,))*k((s,w),(u,))
+                                                            + k((r,t),(u,))*k((s,w),(v,)))
+    
+bias = sum(lawley4.values()) - sum(lawley6.values())

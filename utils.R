@@ -128,3 +128,53 @@ str.to.fun <- function(str, args, bindings = list(), parent = baseenv()) {
   environment(f) <- env
   f
 }
+
+
+
+
+lawley <- function(p,m,beta,l.derivs) {
+    n <- length(m)
+    k.vals <- sapply(l.derivs, function(l.deriv) {
+        ## browser()
+        sapply(1:length(m), function(j) 
+            sapply(1:(m[j]-1), function(k) {
+                ## browser()
+                integrate(function(theta)l.deriv(theta,m[j],k,beta)*dnorm(theta),-Inf,Inf)$val
+            }) |> sum()
+            ) |> sum()
+    })
+    idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+    idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
+    k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
+    k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(inner,collapse='') & k.df$outer==paste(outer,collapse='')]
+    inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
+    inv.inf <- solve(inf)
+    lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
+        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
+        inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
+    })
+    lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
+        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
+        inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
+    })
+    ## sum(l4)
+    ## sum(l6)
+    return( sum(lawley.4) - sum(lawley.6) )
+}
+read.mma <- function(mma.str.path) {
+    filelist <- dir(mma.str.path)
+    filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+    mma.strings <- sapply(filelist,function(file)paste(readLines(file,warn=FALSE),collapse=''))
+    mma.strings <- sapply(mma.strings,
+                          function(mma.str) mma.to.R(mma.str,
+                                                     funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                                                     rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
+                                                     )
+                          )
+    l.derivs <- sapply(mma.strings,function(mma.str) 
+        str.to.fun(
+            gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
+            args = c('theta','m','k','beta'),
+            binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt)
+        ))
+}

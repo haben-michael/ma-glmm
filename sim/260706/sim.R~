@@ -1,0 +1,46 @@
+args <- commandArgs(trailingOnly=TRUE)
+n <- as.numeric(args[1])
+m.mean <- as.numeric(args[2])
+
+
+base.dir <- '../../'
+source(paste0(base.dir,'utils.R'))
+require(lme4)
+## n <- 10
+mu.null <- 0
+tau2.null <- 1
+## beta <- runif(2)#c(mle[c('tau2','mu')]) ## should be passed to make.fun
+l.derivs.full <- read.mma(paste0(base.dir,'mma-formulas/full/'))
+l.derivs.redu <- read.mma(paste0(base.dir,'mma-formulas/redu/'))
+start <- Sys.time()
+## m <- rpois(n,lambda=60)
+m <- rep(m.mean,n)
+stats <- replicate(n^3, {
+    cat('.')
+    theta <- rnorm(n)
+    e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
+    if(any(e==0)||any(e==m))return(c(NA,NA))
+    ## rm(theta)
+    dat <- data.frame(e = e, non = m - e, study = factor(seq_along(e)),off = mu.null)
+    fit.alt <- glmer(cbind(e, non) ~ 1 + (1 | study), data = dat,family = binomial(link = "logit"),nAGQ = 7)
+    fit.null <- glmer(cbind(e, non) ~ 0 + offset(off) + (1 | study),data = dat, family = binomial(link = "logit"), nAGQ = 7)
+    ## LR <- 2 * (as.numeric(logLik(fit.alt)) - as.numeric(logLik(fit.null)))
+    loglik.full <- as.numeric(logLik(fit.alt))
+    loglik.redu <- as.numeric(logLik(fit.null))
+    LR <- 2 * (loglik.full - loglik.redu)
+    tau2.mle.redu <- VarCorr(fit.null)$study |> as.numeric() |> unname()
+    beta <- c(tau2.mle.redu,mu.null)
+    eps.full <- lawley(p=2,m=m,beta=beta,l.derivs=l.derivs.full)
+    eps.redu <- lawley(p=1,m=m,beta=beta,l.derivs=l.derivs.redu)
+    correction <- 1 + eps.full - eps.redu
+    if(correction<0)browser()
+    ## correction <- 1#!!!
+    if(abs(eps.full)>7 || abs(eps.redu)>7)browser()    
+    c(LR=LR,LR.bartlett=LR/correction,correction=correction,eps.full=eps.full,eps.redu=eps.redu,loglik.full=loglik.full,loglik.redu=loglik.redu)
+})
+
+
+
+filename <- paste0('save',as.integer(abs(rnorm(1))*1e8),'.RData')
+save(m.mean=m.mean,n=n,stat=stats,file=filename)
+
