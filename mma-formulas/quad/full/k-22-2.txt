@@ -1,0 +1,75 @@
+(Binomial[m, x]*
+   ((2*Pi^(3/2)*(Sum[u[j]^x*(-(m*(1 - u[j])^(m - x)*u[j]) + 
+            x*(1 - u[j])^(m - x)*u[j])*w[j], {j, 1, K}]/Sqrt[Pi] + 
+        Sum[(1 - u[j])^(m - x)*(x*u[j]^x - x*u[j]^(1 + x))*w[j], {j, 1, K}]/
+         Sqrt[Pi])^3)/Sum[(1 - u[j])^(m - x)*u[j]^x*w[j], {j, 1, K}]^3 - 
+    (3*Pi*(Sum[u[j]^x*(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*
+            u[j])*w[j], {j, 1, K}]/Sqrt[Pi] + 
+       Sum[(1 - u[j])^(m - x)*(x*u[j]^x - x*u[j]^(1 + x))*w[j], {j, 1, K}]/
+        Sqrt[Pi])*((2*Sum[(-(m*(1 - u[j])^(m - x)*u[j]) + 
+            x*(1 - u[j])^(m - x)*u[j])*(x*u[j]^x - x*u[j]^(1 + x))*w[j], 
+          {j, 1, K}])/Sqrt[Pi] + 
+       Sum[u[j]^x*(-(m*(1 - u[j])^(1 + m - x)*u[j]) + 
+           x*(1 - u[j])^(1 + m - x)*u[j] - m*u[j]*
+            (-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*u[j]) + 
+           x*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*u[j]))*
+          w[j], {j, 1, K}]/Sqrt[Pi] + 
+       Sum[(1 - u[j])^(m - x)*(x*(x*u[j]^x - x*u[j]^(1 + x)) - 
+           x*(u[j]^(1 + x) + x*u[j]^(1 + x) - u[j]^(2 + x) - x*u[j]^(2 + x)))*
+          w[j], {j, 1, K}]/Sqrt[Pi]))/Sum[(1 - u[j])^(m - x)*u[j]^x*w[j], 
+       {j, 1, K}]^2 + 
+    (Sqrt[Pi]*((3*Sum[(x*u[j]^x - x*u[j]^(1 + x))*
+           (-(m*(1 - u[j])^(1 + m - x)*u[j]) + x*(1 - u[j])^(1 + m - x)*
+             u[j] - m*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^
+                (m - x)*u[j]) + x*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + 
+              x*(1 - u[j])^(m - x)*u[j]))*w[j], {j, 1, K}])/Sqrt[Pi] + 
+       (3*Sum[(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*u[j])*
+           (x*(x*u[j]^x - x*u[j]^(1 + x)) - x*(u[j]^(1 + x) + 
+              x*u[j]^(1 + x) - u[j]^(2 + x) - x*u[j]^(2 + x)))*w[j], 
+          {j, 1, K}])/Sqrt[Pi] + 
+       Sum[u[j]^x*(-(m*(1 - u[j])^(2 + m - x)*u[j]) + 
+           x*(1 - u[j])^(2 + m - x)*u[j] - m*(1 - u[j])*u[j]*
+            (-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*u[j]) + 
+           x*(1 - u[j])*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + 
+             x*(1 - u[j])^(m - x)*u[j]) - m*u[j]*
+            (-((1 - u[j])^(1 + m - x)*u[j]) - m*(1 - u[j])^(1 + m - x)*u[j] + 
+             x*(1 - u[j])^(1 + m - x)*u[j]) + x*u[j]*
+            (-((1 - u[j])^(1 + m - x)*u[j]) - m*(1 - u[j])^(1 + m - x)*u[j] + 
+             x*(1 - u[j])^(1 + m - x)*u[j]) - m*u[j]*
+            (-(m*(1 - u[j])^(1 + m - x)*u[j]) + x*(1 - u[j])^(1 + m - x)*
+              u[j] - m*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^
+                 (m - x)*u[j]) + x*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + x*
+                (1 - u[j])^(m - x)*u[j])) + x*u[j]*
+            (-(m*(1 - u[j])^(1 + m - x)*u[j]) + x*(1 - u[j])^(1 + m - x)*
+              u[j] - m*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^
+                 (m - x)*u[j]) + x*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + x*
+                (1 - u[j])^(m - x)*u[j])))*w[j], {j, 1, K}]/Sqrt[Pi] + 
+       Sum[(1 - u[j])^(m - x)*(x*(x*(x*u[j]^x - x*u[j]^(1 + x)) - 
+             x*(u[j]^(1 + x) + x*u[j]^(1 + x) - u[j]^(2 + x) - x*
+                u[j]^(2 + x))) - x*(u[j]^(1 + x) + x*u[j]^(1 + x) - 
+             3*u[j]^(2 + x) - 2*x*u[j]^(2 + x) + 2*u[j]^(3 + x) + 
+             x*u[j]^(3 + x) + x*(u[j]^(1 + x) + x*u[j]^(1 + x) - u[j]^
+                (2 + x) - x*u[j]^(2 + x)) - x*(2*u[j]^(2 + x) + x*
+                u[j]^(2 + x) - 2*u[j]^(3 + x) - x*u[j]^(3 + x))))*w[j], 
+         {j, 1, K}]/Sqrt[Pi]))/Sum[(1 - u[j])^(m - x)*u[j]^x*w[j], 
+      {j, 1, K}])*Sum[(1 - u[k])^(m - x)*u[k]^x*w[k], {k, 1, K}])/Sqrt[Pi] + 
+ Binomial[m, x]*
+  (
+   -((Pi*(Sum[u[j]^x*(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*
+             u[j])*w[j], {j, 1, K}]/Sqrt[Pi] + 
+        Sum[(1 - u[j])^(m - x)*(x*u[j]^x - x*u[j]^(1 + x))*w[j], {j, 1, K}]/
+         Sqrt[Pi])^2)/Sum[(1 - u[j])^(m - x)*u[j]^x*w[j], {j, 1, K}]^2) + 
+   (Sqrt[Pi]*((2*Sum[(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*
+            u[j])*(x*u[j]^x - x*u[j]^(1 + x))*w[j], {j, 1, K}])/Sqrt[Pi] + 
+      Sum[u[j]^x*(-(m*(1 - u[j])^(1 + m - x)*u[j]) + x*(1 - u[j])^(1 + m - x)*
+           u[j] - m*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*
+             u[j]) + x*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + 
+            x*(1 - u[j])^(m - x)*u[j]))*w[j], {j, 1, K}]/Sqrt[Pi] + 
+      Sum[(1 - u[j])^(m - x)*(x*(x*u[j]^x - x*u[j]^(1 + x)) - 
+          x*(u[j]^(1 + x) + x*u[j]^(1 + x) - u[j]^(2 + x) - x*u[j]^(2 + x)))*
+         w[j], {j, 1, K}]/Sqrt[Pi]))/Sum[(1 - u[j])^(m - x)*u[j]^x*w[j], 
+     {j, 1, K}])*
+  (Sum[u[k]^x*(-(m*(1 - u[k])^(m - x)*u[k]) + x*(1 - u[k])^(m - x)*u[k])*
+      w[k], {k, 1, K}]/Sqrt[Pi] + 
+   Sum[(1 - u[k])^(m - x)*(x*u[k]^x - x*u[k]^(1 + x))*w[k], {k, 1, K}]/
+    Sqrt[Pi])

@@ -60,7 +60,8 @@ def sim(n):
 if __name__ == "__main__":
     tic = time.time()
 
-    ns = range(5,15+1) # change to K    
+    #ns = range(5,15+1) # change to K
+    ns = range(15,25+1)    
     ks = np.empty(len(ns))
     ks_bartlett = np.empty(len(ns))
     for i,n in enumerate(ns):

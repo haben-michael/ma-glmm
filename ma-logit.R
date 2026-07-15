@@ -463,7 +463,7 @@ lawley <- function(p,m,beta,l.derivs) {
     })
     lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
-        inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,u,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
+        -inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
     })
     ## sum(l4)
     ## sum(l6)
@@ -491,10 +491,11 @@ n <- 20
 mu.null <- 1
 tau2.null <- 2
 ## beta <- runif(2)#c(mle[c('tau2','mu')]) ## should be passed to make.fun
-l.derivs.full <- read.mma('./mma-formulas/full/')
-l.derivs.redu <- read.mma('./mma-formulas/redu/')
+l.derivs.full <- read.mma('./mma-formulas/laplace/full/')
+l.derivs.redu <- read.mma('./mma-formulas/laplace/redu/')
 start <- Sys.time()
 m <- rpois(n,lambda=20)
+m <- rep(20,n)
 theta <- rnorm(n)
 e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
 rm(theta)
@@ -716,3 +717,173 @@ k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,
 k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(inner,collapse='') & k.df$outer==paste(outer,collapse='')]
 inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
 inv.inf <- solve(inf)
+
+
+## using gauss-hermite quadrature
+
+source('utils.R')
+tic <- Sys.time()
+p <- 1
+mma.str.path <- './mma-formulas/redu/'
+## p <- 2
+## mma.str.path <- './mma-formulas/full/'
+mu.null <- 0
+tau2.null <- 1/2
+m <- 20
+n.GH <- 80
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+mma.strings <- sapply(filelist,function(file)paste(readLines(file,warn=FALSE),collapse=''))
+k.vals <- parallel::mclapply(mma.strings,mc.cores=parallel::detectCores()-2,FUN=function(mma.str) {
+    cat('.')
+    mma.str <- mma.to.R(mma.str,
+                        funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                        rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
+                        )
+    bindings <- list(u=plogis(mu.null + sqrt(2)*sqrt(tau2.null)*GH$x),
+                     m=m,
+                     K=n.GH,
+                     theta=GH$x,
+                     w=GH$w,
+                     beta=c(tau2.null,mu.null),
+                     Pi=pi)
+    pmf <- str.to.fun(str=mma.str,args = c('x'),bindings=bindings)
+    ## sum(sapply(0:m,pmf))
+}) |> simplify2array()
+idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
+k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
+k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]
+inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
+inv.inf <- solve(inf)
+lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
+    r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
+    inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
+})
+lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
+    r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
+    -inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
+})
+sum(lawley.4) - sum(lawley.6) 
+print(Sys.time()-tic)
+
+
+## encapsulate
+
+source('utils.R')
+## p <- 1
+## mma.str.path <- './mma-formulas/redu/'
+## p <- 2
+## mma.str.path <- './mma-formulas/full/'
+lawley <- function(k.strings,p,m,mu.null,tau2.hat,n.GH=80) {
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    k.vals <- parallel::mclapply(k.strings,mc.cores=parallel::detectCores()-2,FUN=function(k.str) {
+        cat('.')
+        bindings <- list(u=plogis(mu.null + sqrt(2)*sqrt(tau2.hat)*GH$x),
+                         m=m,
+                         K=n.GH,
+                         theta=GH$x,
+                         w=GH$w,
+                         beta=c(tau2.hat,mu.null),
+                         Pi=pi)
+        pmf <- str.to.fun(str=k.str,args = c('x'),bindings=bindings)
+        sum(sapply(0:m,pmf))
+    }) |> simplify2array()
+    idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+    idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
+    k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
+    ## print(k.df)
+    k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]
+    inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
+    inv.inf <- solve(inf)
+    lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
+        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
+        inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
+    })
+    lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
+        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
+        -inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
+    })
+    bias <- out <- sum(lawley.4) - sum(lawley.6)
+    return(out)
+}
+tic <- Sys.time()
+mu.null <- 0
+tau2.null <- 1/2
+m <- 20
+k.strings <- lapply(c(full='./mma-formulas/quad/full/', redu='./mma-formulas/quad/redu/'), function(mma.str.path) {
+    filelist <- dir(mma.str.path)
+    filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+    mma.strings <- sapply(filelist,function(file)paste(readLines(file,warn=FALSE),collapse=''))
+    k.strings <- sapply(mma.strings, function(mma.str) mma.to.R(mma.str,
+                                                                funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                                                                rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
+                                                                ))
+    })
+eps.redu <- lawley(k.strings=k.strings[['redu']],p=1,m=m,mu.null=0,tau2.hat=1/2)
+eps.full <- lawley(k.strings=k.strings[['full']],p=2,m=m,mu.null=0,tau2.hat=1/2)
+print(Sys.time()-tic)
+## > eps.full
+## [1] 1.734166
+## > eps.redu
+## [1] 0.4079947
+
+
+## rate sim
+
+## set.seed(1)
+tic <- Sys.time()
+bartlett.C <- 1.734166 - 0.4079947 #tied to mi=20 for all i
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+ns <- 10:20
+by.n <- parallel::mclapply(ns,mc.cores=4,FUN=function(n) {
+## by.n <- sapply(ns, function(n) {
+    cat('.')
+    m <- rep(20,n)
+    stats <- replicate(n^3, {
+        theta <- rnorm(n)
+        pr <- plogis(mu.true+sqrt(tau2.true)*theta)
+        x <- rbinom(n,size=m,prob=pr)
+        GH <- fastGHQuad::gaussHermiteData(30)
+        loglik.unit <- function(mu,tau2,mi,xi,GH=NULL) {
+            if(is.null(GH)) GH <- fastGHQuad::gaussHermiteData(20)
+            pr <- function(theta)plogis(mu+sqrt(tau2)*theta)
+            integrand <- function(theta)pr(theta)^xi*(1-pr(theta))^(mi-xi)
+            integral.approx <- choose(mi,xi)*sum(GH$w*integrand(sqrt(2)*GH$x))/sqrt(pi)
+            return(log(integral.approx))
+        }
+        ## loglik.unit(mu,tau2,m[2],x[3])
+        loglik <- function(mu,tau2,m,x) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,m[i],x[i],GH=GH)))
+        ## loglik(mu.null,tau2.null,m,x)
+        logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),m,x),interval=c(-5,5),maximum=TRUE)$max
+        tau2.mle.redu <- exp(logtau2.mle.redu)
+        mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),m,x),method='BFGS')$par
+        mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+        ## print(mle.full)
+        LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,m,x) - loglik(mu.null,tau2.mle.redu,m,x))
+        LR.bartlett <- LR / (1+bartlett.C/n)
+        c(LR=LR,LR.bartlett=LR.bartlett)
+    })
+    ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
+    ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
+}) |> simplify2array()
+print(Sys.time()-tic)
+plot(ns,by.n['LR',],ylim=range(by.n),type='l')
+lines(ns,by.n['LR.bartlett',],col=2)
+apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
+
+
+
+## process 260714 rate sim (IID data, using R with gauss-hermite)
+save.path <- './sim/260714/'
+## png.file <- './figs/gaussian.png'
+filelist <- dir(save.path)
+filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+print(length(filelist))
+by.sim <- sapply(filelist, function(file) {
+    load(paste0(save.path,file))
+    apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
+})
+apply(by.sim,1,median)

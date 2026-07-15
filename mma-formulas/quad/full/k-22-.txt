@@ -1,0 +1,16 @@
+(Binomial[m, x]*
+  (
+   -((Pi*(Sum[u[j]^x*(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*
+             u[j])*w[j], {j, 1, K}]/Sqrt[Pi] + 
+        Sum[(1 - u[j])^(m - x)*(x*u[j]^x - x*u[j]^(1 + x))*w[j], {j, 1, K}]/
+         Sqrt[Pi])^2)/Sum[(1 - u[j])^(m - x)*u[j]^x*w[j], {j, 1, K}]^2) + 
+   (Sqrt[Pi]*((2*Sum[(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*
+            u[j])*(x*u[j]^x - x*u[j]^(1 + x))*w[j], {j, 1, K}])/Sqrt[Pi] + 
+      Sum[u[j]^x*(-(m*(1 - u[j])^(1 + m - x)*u[j]) + x*(1 - u[j])^(1 + m - x)*
+           u[j] - m*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + x*(1 - u[j])^(m - x)*
+             u[j]) + x*u[j]*(-(m*(1 - u[j])^(m - x)*u[j]) + 
+            x*(1 - u[j])^(m - x)*u[j]))*w[j], {j, 1, K}]/Sqrt[Pi] + 
+      Sum[(1 - u[j])^(m - x)*(x*(x*u[j]^x - x*u[j]^(1 + x)) - 
+          x*(u[j]^(1 + x) + x*u[j]^(1 + x) - u[j]^(2 + x) - x*u[j]^(2 + x)))*
+         w[j], {j, 1, K}]/Sqrt[Pi]))/Sum[(1 - u[j])^(m - x)*u[j]^x*w[j], 
+     {j, 1, K}])*Sum[(1 - u[k])^(m - x)*u[k]^x*w[k], {k, 1, K}])/Sqrt[Pi]

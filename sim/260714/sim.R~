@@ -1,0 +1,45 @@
+## tic <- Sys.time()
+bartlett.C <- 1.734166 - 0.4079947 #tied to mi=20 for all i
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+ns <- 5:15
+m.mean <- 20
+## by.n <- parallel::mclapply(ns,mc.cores=4,FUN=function(n) {
+by.n <- sapply(ns, function(n) {
+    cat('.')
+    m <- rep(m.mean,n)
+    stats <- replicate(n^4, {
+        theta <- rnorm(n)
+        pr <- plogis(mu.true+sqrt(tau2.true)*theta)
+        x <- rbinom(n,size=m,prob=pr)
+        GH <- fastGHQuad::gaussHermiteData(30)
+        loglik.unit <- function(mu,tau2,mi,xi,GH=NULL) {
+            if(is.null(GH)) GH <- fastGHQuad::gaussHermiteData(20)
+            pr <- function(theta)plogis(mu+sqrt(tau2)*theta)
+            integrand <- function(theta)pr(theta)^xi*(1-pr(theta))^(mi-xi)
+            integral.approx <- choose(mi,xi)*sum(GH$w*integrand(sqrt(2)*GH$x))/sqrt(pi)
+            return(log(integral.approx))
+        }
+        ## loglik.unit(mu,tau2,m[2],x[3])
+        loglik <- function(mu,tau2,m,x) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,m[i],x[i],GH=GH)))
+        ## loglik(mu.null,tau2.null,m,x)
+        logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),m,x),interval=c(-5,5),maximum=TRUE)$max
+        tau2.mle.redu <- exp(logtau2.mle.redu)
+        mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),m,x),method='BFGS')$par
+        mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+        ## print(mle.full)
+        LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,m,x) - loglik(mu.null,tau2.mle.redu,m,x))
+        LR.bartlett <- LR / (1+bartlett.C/n)
+        c(LR=LR,LR.bartlett=LR.bartlett)
+    })
+    ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
+    ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
+}) |> simplify2array()
+#print(Sys.time()-tic)
+plot(ns,by.n['LR',],ylim=range(by.n),type='l')
+lines(ns,by.n['LR.bartlett',],col=2)
+## apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
+
+filename <- paste0('save',as.integer(abs(rnorm(1))*1e8),'.RData')
+save(m.mean=m.mean,ns=ns,by.n=by.n,file=filename)
+
