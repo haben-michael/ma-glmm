@@ -1,0 +1,1 @@
+pmfSum01^3/pmfSum00^2 - (2*pmfSum01*pmfSum02)/pmfSum00 + pmfSum03

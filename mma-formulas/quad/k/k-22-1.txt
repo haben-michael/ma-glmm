@@ -1,0 +1,1 @@
+(gSum01^2*gSum10)/gSum00^2 - (2*gSum01*gSum11)/gSum00 + gSum12

@@ -1,0 +1,7 @@
+(E^(x*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, s - x]*Binomial[mT, x]*
+  (x*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, -j + s]*
+      Binomial[mT, j], {j, 0, mT}] - Inactive[Sum][
+    E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j*Binomial[mC, -j + s]*
+     Binomial[mT, j], {j, 0, mT}]))/
+ Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, -j + s]*
+    Binomial[mT, j], {j, 0, mT}]^2

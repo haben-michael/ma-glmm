@@ -1,9 +1,9 @@
 ## tic <- Sys.time()
-bartlett.C <- 1.734166 - 0.4079947 #tied to mi=20 for all i
+bartlett.C <- 1.734166 - 0.4079947 #assumes to mi=20 for all i
 mu.true <- mu.null <- 0
 tau2.true <- tau2.null <- 1/2
 ns <- 5:15
-m.mean <- 20
+m.mean <- 80
 ## by.n <- parallel::mclapply(ns,mc.cores=4,FUN=function(n) {
 by.n <- sapply(ns, function(n) {
     cat('.')
@@ -12,7 +12,7 @@ by.n <- sapply(ns, function(n) {
         theta <- rnorm(n)
         pr <- plogis(mu.true+sqrt(tau2.true)*theta)
         x <- rbinom(n,size=m,prob=pr)
-        GH <- fastGHQuad::gaussHermiteData(30)
+        GH <- fastGHQuad::gaussHermiteData(60)
         loglik.unit <- function(mu,tau2,mi,xi,GH=NULL) {
             if(is.null(GH)) GH <- fastGHQuad::gaussHermiteData(20)
             pr <- function(theta)plogis(mu+sqrt(tau2)*theta)

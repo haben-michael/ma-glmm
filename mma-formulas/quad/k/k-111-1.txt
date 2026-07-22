@@ -1,0 +1,2 @@
+(-4*gSum10^4)/gSum00^3 + (9*gSum10^2*gSum20)/gSum00^2 - 
+ (3*(gSum20^2 + gSum10*gSum30))/gSum00 + gSum40

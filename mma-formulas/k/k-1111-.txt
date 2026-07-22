@@ -1,0 +1,2 @@
+(-6*pmfSum10^4)/pmfSum00^3 + (12*pmfSum10^2*pmfSum20)/pmfSum00^2 - 
+ (3*pmfSum20^2 + 4*pmfSum10*pmfSum30)/pmfSum00 + pmfSum40

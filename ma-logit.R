@@ -447,7 +447,7 @@ lawley <- function(p,m,beta,l.derivs) {
         sapply(1:length(m), function(j) 
             sapply(1:(m[j]-1), function(k) {
                 ## browser()
-                integrate(function(theta)l.deriv(theta,m[j],k,beta)*dnorm(theta),-Inf,Inf)$val
+                integrate(function(theta)l.deriv(theta,m[j],x,beta)*dnorm(theta),-Inf,Inf)$val
             }) |> sum()
             ) |> sum()
     })
@@ -482,7 +482,7 @@ read.mma <- function(mma.str.path) {
     l.derivs <- sapply(mma.strings,function(mma.str) 
         str.to.fun(
             gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
-            args = c('theta','m','k','beta'),
+            args = c('theta','m','x','beta'),
             binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt)
         ))
 }
@@ -549,24 +549,6 @@ curve(x-x^2/2,add=TRUE,col=2)
 
 curve(27*(x+1),0,1)
 curve((x+3)^3,add=T,col=2)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -724,7 +706,7 @@ inv.inf <- solve(inf)
 source('utils.R')
 tic <- Sys.time()
 p <- 1
-mma.str.path <- './mma-formulas/redu/'
+mma.str.path <- './mma-formulas/quad/redu/'
 ## p <- 2
 ## mma.str.path <- './mma-formulas/full/'
 mu.null <- 0
@@ -749,7 +731,7 @@ k.vals <- parallel::mclapply(mma.strings,mc.cores=parallel::detectCores()-2,FUN=
                      beta=c(tau2.null,mu.null),
                      Pi=pi)
     pmf <- str.to.fun(str=mma.str,args = c('x'),bindings=bindings)
-    ## sum(sapply(0:m,pmf))
+    sum(sapply(0:m,pmf))
 }) |> simplify2array()
 idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
 idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
@@ -887,3 +869,1035 @@ by.sim <- sapply(filelist, function(file) {
     apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
 })
 apply(by.sim,1,median)
+
+
+
+
+
+## ehcking why laplace is producing such different k's.
+
+## compare quadrature and laplace k's. similar for large m (eg 80)
+## when using slow 2nd order approx. large m and 1st order still way
+## off.  get quad k's
+source('utils.R')
+m <- 20
+mu.null <- 0
+tau2.null <- 1/2
+n.GH <- 20
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+mma.str.path <- './mma-formulas/quad-old/redu/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+mma.strings <- sapply(filelist,function(file)paste(readLines(file,warn=FALSE),collapse=''))
+k.vals <- parallel::mclapply(mma.strings,mc.cores=parallel::detectCores()-2,FUN=function(mma.str) {
+    cat('.')
+    mma.str <- mma.to.R(mma.str,
+                        funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                        rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
+                        )
+    bindings <- list(u=plogis(mu.null + sqrt(2)*sqrt(tau2.null)*GH$x),
+                     m=m,
+                     K=n.GH,
+                     theta=GH$x,
+                     w=GH$w,
+                     beta=c(tau2.null,mu.null),
+                     Pi=pi)
+    pmf <- str.to.fun(str=mma.str,args = c('x'),bindings=bindings)
+    sum(sapply(0:m,pmf))
+}) |> simplify2array()
+idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
+k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
+colnames(k.df) <- NULL
+k.df.quad <- k.df
+## read in laplace k's
+beta <- c(tau2.null,mu.null)
+l.derivs <- read.mma('./mma-formulas/laplace/redu/')
+k.vals <- sapply(l.derivs, function(l.deriv) {
+    sapply(1:(m-1), function(x) {
+        integrate(function(theta)l.deriv(theta,m,x,beta)*dnorm(theta),-Inf,Inf)$val
+    }) |> sum()
+})
+idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
+k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
+colnames(k.df) <- NULL
+k.df.laplace <- k.df
+print(k.df.quad)
+print(k.df.laplace)
+
+
+## look at what step the big error is creeping in. seems when the expectation is taken of the inner derivative.
+
+source('utils.R')
+file <- './mma-formulas/tryLaplace.txt'
+mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+mma.str <-  mma.to.R(mma.str,
+                     funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                     rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose"))
+l.deriv <- 
+    str.to.fun(
+            gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
+            args = c('theta','m','x','beta'),
+            binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt)
+    )
+m <- 20
+## x <- 7
+beta <- c(1/2,0)
+pr <- function(theta)plogis(beta[2]+sqrt(beta[1])*theta)
+## ## 1. check loglikelihood
+## approx <- function(x){
+##     r <- function(theta)-(x/m*log(pr(theta))+(1-x/m)*log(1-pr(theta)))
+##     r.deriv2 <- function(theta)-beta[1]*(pr(theta)-1)*pr(theta)
+##     theta.min <- 1/sqrt(beta[1])*(beta[2]+log(x/(m-x)))
+##     log(exp(-m*r(theta.min))*dnorm(theta.min)*sqrt(2*pi)/sqrt(m)/sqrt(r.deriv2(theta.min)))
+## }
+## approx <- function(x)l.deriv(NA,m,x,beta)
+## true <- function(x)log(integrate(function(theta)pr(theta)^x*(1-pr(theta))^(m-x)*dnorm(theta),-Inf,Inf)$val)
+## vals <- sapply(1:(m-1),function(x)c(approx=approx(x),true=true(x)))
+## plot(1:(m-1),vals['approx',],ylim=range(vals))
+## points(1:(m-1),vals['true',],col=2)
+## ## 2. check expected loglikelihood ie kUnit[{}]
+## sapply(1:(m-1),function(x)integrate(function(theta)l.deriv(theta,m,x,beta)*dnorm(theta),-Inf,Inf)$val) |> sum()
+## sapply(1:(m-1),function(x)log(integrate(function(theta)pr(theta)^x*(1-pr(theta))^(m-x)*dnorm(theta),-Inf,Inf)$val)*integrate(function(theta2)dbinom(x,m,pr(theta2))*dnorm(theta2),-Inf,Inf)$val) |> sum()
+## 3. check derivative wrt beta[1] of loglik
+approx <- function(x)integrate(function(theta)l.deriv(theta,m,x,beta)*dnorm(theta),-Inf,Inf)$val
+I <- function(x)integrate(function(theta)pr(theta)^x*(1-pr(theta))^(m-x)*dnorm(theta),-Inf,Inf)$val
+true <- function(x)1/I(x) * integrate(function(theta)dnorm(theta)*(x*pr(theta)^x*(1-pr(theta))^(m-x+1)-pr(theta)^(x+1)*(m-x)*(1-pr(theta))^(m-x))*theta/2/sqrt(beta[1]),-Inf,Inf)$val
+vals <- sapply(1:(m-1),function(x)c(approx=approx(x),true=true(x)))
+plot(1:(m-1),vals['approx',],ylim=range(vals))
+points(1:(m-1),vals['true',],col=2)
+abline(h=0)
+## 4. expected derivative derivative wrt beta[1] of loglik ie
+## k[{1}]. this is where the approximation breaks down.
+pmf <- function(x)choose(m,x)*I(x)
+pmf.vals <- sapply(1:(m-1),function(x)pmf(x))
+points(1:(m-1),-log(pmf.vals),col=3)
+sum(sapply(1:(m-1),function(x)approx(x)*pmf(x)))
+sum(sapply(1:(m-1),function(x)true(x)*pmf(x)))
+
+
+
+
+
+
+
+
+
+
+## try to speed up G-H
+
+source('utils.R')
+## m <- 20
+ms <- rep(20,10)
+mu.null <- 0
+tau2.null <- 1/2
+beta <- c(tau2.null,mu.null)
+n.GH <- 20
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+## read in g derivs, these depend on m, theta, and x
+mma.str.path <- './mma-formulas/quad/g/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+g.derivs <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    mma.str <- gsub('Pi','pi',mma.str)
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose"))
+    g.deriv <- 
+        str.to.fun(mma.str,
+                   args = c('theta','x','m'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt,beta=beta)
+                   )
+})
+orders.g <- paste0('gSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
+mma.str.path <- './mma-formulas/quad/k/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+k.funs <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    ## mma.str <-  mma.to.R(mma.str,
+    ##                      funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+    ##                      rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose"))
+    matches.idx <- gregexpr("gSum[[:digit:]][[:digit:]]", mma.str)
+    variables <- regmatches(mma.str, matches.idx)[[1]] |> unique()
+    ## all.vars <<- c(all.vars,variables)
+    fun.str <- sprintf(
+        "function(%s) { %s }", 
+        paste(variables, collapse = ", "), 
+        mma.str
+    )
+    k.fun <- l.deriv.fun <- eval(parse(text = fun.str))
+    list(fun=k.fun,args=variables)
+})
+orders.k <- gsub('.txt','',filelist,fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+orders.k <- lapply(orders.k,function(x)if(length(x)==1)c(x,0)else x)
+k.vals.by.m <- sapply(ms, function(m) {
+    cat('.')
+    ## for given m, sum g.derivs over theta, leaving functions of x
+    ## g.deriv <- g.derivs[[1]]
+    g.sums.x <- lapply(g.derivs, function(g.deriv) {
+        g.deriv.mat <- outer(X=GH$x,Y=0:m,function(theta,x)g.deriv(theta,x,m))
+        g.deriv.x <- colSums(GH$w * g.deriv.mat)
+    })
+    ## orders <- substr(filelist,nchar(filelist)-5,nchar(filelist)-4)
+    ## colnames(g.sums.x) <- variable.names
+    names(g.sums.x) <- orders.g
+    ## for given m, compute k values by weighted sum over x
+    k.vals <- sapply(seq_along(k.funs), function(i) {
+        k.fun <- k.funs[[i]]$fun; args <- k.funs[[i]]$args
+        k.fun.x <- do.call(k.fun, g.sums.x[args])
+        k.val <- sum( choose(m,0:m) * k.fun.x )
+    })
+    return(k.vals)
+})
+k.vals <- rowSums(k.vals.by.m)
+bartlett.C <- lawley(k.vals,2) - lawley(k.vals,1)
+
+
+## convert mma strings to R strings to avoid eval(parse) slowdown
+
+## g orders needed for input to mma:
+all.vars <- unique(all.vars)
+paste0(paste0('{',substr(all.vars,5,5),',',substr(all.vars,6,6),'}'),collapse=', ')
+[1] "{1,0}, {0,0}, {2,0}, {3,0}, {4,0}, {0,1}, {1,1}, {2,1}, {3,1}, {0,2}, {1,2}, {2,2}, {0,3}, {1,3}, {0,4}"
+
+## convert mma strings of k functions to R functions, save the R
+## functions to disk in a single file.
+mma.str.path <- './mma-formulas/quad/k/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+ks.fun <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    matches.idx <- gregexpr("gSum[[:digit:]][[:digit:]]", mma.str)
+    variables <- regmatches(mma.str, matches.idx)[[1]] |> unique()
+    fun.str <- sprintf(
+        "function(%s) { %s }", 
+        paste(variables, collapse = ", "), 
+        mma.str
+    )
+    k.fun <- l.deriv.fun <- eval(parse(text = fun.str))
+    list(fun=k.fun,args=variables)
+})
+orders.k <- gsub('.txt','',filelist,fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+orders.k <- lapply(orders.k,function(x)if(length(x)==1)c(x,0)else x)
+ks.fun <- lapply(seq_along(ks.fun), function(i)c(ks.fun[[i]],order=list(orders.k[[i]])))
+saveRDS(ks.fun,file='ks.fun.rds',compress=FALSE)
+
+
+
+## convert mma strings of g functions to R functions of theta,beta,x, and m, save the R functions to disk.
+mma.str.path <- './mma-formulas/quad/g/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+gs.fun <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    mma.str <- gsub('Pi','pi',mma.str)
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose"))
+    g.deriv <- 
+        str.to.fun(mma.str,
+                   args = c('beta','theta','x','m'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+})
+g.orders <- paste0('gSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
+names(gs.fun) <- g.orders
+saveRDS(gs.fun,file='gs.fun.rds',compress=FALSE)
+
+
+## further speedup: reorganize sped up version to allow for parallelization, use saved
+## R functions rather than mma strings
+
+source('utils.R')
+## m <- 20
+mu.null <- 0
+tau2.null <- 1/2
+beta <- c(tau2.null,mu.null)
+
+## 1. read in k's as functions of g derivatives. these are rational
+## expressions of the g derivatives and are common to any parameters
+## and data.
+
+ks.fun <- readRDS('ks.fun.rds')
+k.orders <- lapply(ks.fun,function(k.fun)k.fun$order)
+
+## 2. read in g's depending on m, theta, x, and beta. obtain ma-level
+## g(m,theta,x) by currying mle's.
+
+gs.fun <- readRDS('gs.fun.rds')
+gs.ma <- lapply(gs.fun,function(g.fun)function(theta,x,m)g.fun(beta,theta,x,m))
+
+## 3. fixing m, for each g get g values at all support x points by
+## weighted summing over theta for each support point x, leaving
+## g(x1),...,g(xm)=g(0),...,g(m). apply k functions. this is study
+## level and is the parallelizable part.
+
+ks.study <- function(m,gs.ma,ks.fun,GH=NULL) {
+    if(is.null(GH)) {
+        GH <- fastGHQuad::gaussHermiteData(30)
+        names(GH) <- c('theta.grid','w')
+    }
+    ## sum ma-level g's over theta, getting a vector g(x,m) with
+    ## unit-level components
+    gs.unit <- lapply(gs.ma, function(g) {
+        g.mat <- outer(X=GH$theta.grid,Y=0:m,function(theta,x)g(theta,x,m))
+        g.unit <- colSums(GH$w * g.mat)
+    })
+    ## apply ks.fun to unit-level g's to get unit-level k's, take sum
+    ## weighted by binomial coefficient to get study-level k
+    k.study <- sapply(seq_along(ks.fun), function(i) {
+        k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+        k.fun.unit <- do.call(k.fun, gs.unit[args])
+        k.val <- sum( choose(m,0:m) * k.fun.unit )
+    })
+    return(k.study)
+}
+
+ms <- rep(20,10)
+n.GH <- 20
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+names(GH) <- c('theta.grid','w')
+k.vals <- ks.study(ms[1],gs.ma,ks.fun)
+k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+bartlett.C <- lawley(k.df,2) - lawley(k.df,1)
+
+
+
+
+
+## compare speed of my computation of the mle's with glmer's. glmer much slower.
+
+set.seed(1)
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+n <- 10
+m <- 20
+theta <- rnorm(n)
+pr <- plogis(mu.true+sqrt(tau2.true)*theta)
+x <- rbinom(n,size=m,prob=pr)
+times <- replicate(1e2, {
+    tic <- Sys.time()
+    GH <- fastGHQuad::gaussHermiteData(30)
+    loglik.unit <- function(mu,tau2,mi,xi,GH=NULL) {
+        if(is.null(GH)) GH <- fastGHQuad::gaussHermiteData(20)
+        pr <- function(theta)plogis(mu+sqrt(tau2)*theta)
+        integrand <- function(theta)pr(theta)^xi*(1-pr(theta))^(mi-xi)
+        integral.approx <- choose(mi,xi)*sum(GH$w*integrand(sqrt(2)*GH$x))/sqrt(pi)
+        return(log(integral.approx))
+    }
+    ## loglik.unit(mu,tau2,m[2],x[3])
+    loglik <- function(mu,tau2,m,x) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,m,x[i],GH=GH)))
+    ## loglik(mu.null,tau2.null,m,x)
+    logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),m,x),interval=c(-5,5),maximum=TRUE)$max
+    tau2.mle.redu <- exp(logtau2.mle.redu)
+    mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),m,x),method='BFGS')$par
+    mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+    LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,m,x) - loglik(mu.null,tau2.mle.redu,m,x))
+    toc <- Sys.time()
+    toc - tic
+})
+hist(times)
+summary(times)
+
+set.seed(1)
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+n <- 10
+m <- 20
+theta <- rnorm(n)
+pr <- plogis(mu.true+sqrt(tau2.true)*theta)
+x <- rbinom(n,size=m,prob=pr)
+times <- replicate(1e2, {
+    tic <- Sys.time()
+    dat <- data.frame(x=x, non = m - x, study = factor(seq_along(x)),off = mu.null)
+    fit.alt <- glmer(cbind(x, non) ~ 1 + (1 | study), data = dat,family = binomial(link = "logit"),nAGQ = 7)
+    fit.null <- glmer(cbind(x, non) ~ 0 + offset(off) + (1 | study),data = dat, family = binomial(link = "logit"), nAGQ = 7)
+    LR <- 2 * (as.numeric(logLik(fit.alt)) - as.numeric(logLik(fit.null)))
+    toc <- Sys.time()
+    toc - tic
+})
+hist(times,add=TRUE,col=2)
+summary(times)
+
+
+
+
+## re-parameterize the sinh-ainh family
+
+rsas <- function(n,eps,delta) {
+    z <- rnorm(n)
+    sinh((asinh(z)+eps)/delta)
+}
+dsas <- function(x,eps,delta) {
+    S2 <- sinh(delta*asinh(x)-eps)^2
+    delta * sqrt( (1+S2) / (2*pi*(1+x^2)) ) * exp(-S2/2)
+}
+## curve(dsas(x,-1,.1),-4,4)
+moment <- function(k,eps,delta)
+    integrate(function(x)x^k*dsas(x,eps,delta),-Inf,Inf)$val
+## moment(1,0,1)
+## skew <- function(eps,delta) moment(3,eps
+## eps <- .3; delta <- 1
+## m <- sapply(1:4, function(k)moment(k,eps,delta))
+## var <- m[2]-m[1]^2
+sas.skew <- function(eps,delta,m) {
+    var <- m[2]-m[1]^2
+    skew.unstand <- m[3] - 3*m[2]*m[1] + 3*m[1]*m[1]^2 - m[1]^3
+    skew.unstand / var^(3/2)
+}
+sas.kurt <- function(eps,delta,m) {
+    var <- m[2]-m[1]^2
+    kurt.unstand <- m[4] - 4*m[3]*m[1] + 6*m[2]*m[1]^2 - 4*m[1]*m[1]^3 + m[1]^4
+    kurt.unstand / var - 3
+}
+## target.skew <- 0
+## target.kurt <- .5
+sas.invert.params <- function(target.skew,target.kurt) {
+    obj <- function(par) {
+        eps <- par[1]; delta <- exp(par[2])
+        m <- sapply(1:4, function(k)moment(k,eps,delta))
+        var <- m[2]-m[1]^2
+        (sas.skew(eps,delta,m) - target.skew)^2 + (sas.kurt(eps,delta,m) - target.kurt)^2
+    }
+    argmin <- optim(par=c(0,0),fn=obj)$par
+    return( c(argmin[1],exp(argmin[2])) )
+}
+sas.invert.params(0,0)
+
+
+
+
+
+
+## make code generic to allow for other models
+
+
+
+## computing mle's in model with normal RE. swap out loglik.unit.
+set.seed(1)
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+n <- 10
+m <- rep(20,n)
+params=cbind(m=m)
+theta <- rnorm(n)
+pr <- plogis(mu.true+sqrt(tau2.true)*theta)
+x <- rbinom(n,size=m,prob=pr)
+## times <- replicate(1e2, {
+## tic <- Sys.time()
+GH <- fastGHQuad::gaussHermiteData(30)
+GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL) {
+    mi <- paramsi['m']
+    pr <- function(theta)plogis(mu+sqrt(tau2)*theta)
+    integrand <- function(theta)pr(theta)^xi*(1-pr(theta))^(mi-xi)
+    integral.approx <- if(is.null(GH)) integrate(function(theta)integrand(theta)*dnorm(theta),-Inf,Inf)$val
+    else
+        choose(mi,xi)*sum(GH$w*integrand(GH$x))
+    return(log(integral.approx))
+}
+loglik <- function(mu,tau2,x,params,GH=NULL) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,],GH=GH)))
+logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params),interval=c(-5,5),maximum=TRUE)$max
+tau2.mle.redu <- exp(logtau2.mle.redu)
+mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params),method='BFGS')$par
+mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params) - loglik(mu.null,tau2.mle.redu,x,params))
+LR
+
+
+
+
+## read in R-format formulas and compute correction
+
+source('utils.R')
+## m <- 20
+mu.null <- 0
+tau2.null <- 1/2
+beta <- c(tau2.null,mu.null)
+
+## 1. read in k's as functions of f derivatives. these are rational
+## expressions of the g derivatives and are common to any model,
+## parameters and data.
+
+
+## ## k's: this is for all models
+## mma.str.path <- './mma-formulas/k/'
+## filelist <- dir(mma.str.path)
+## filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## ## file <- './mma-formulas/quad/g/g-10.txt'
+## ks.fun <- lapply(filelist, function(file) {
+##     mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+##     matches.idx <- gregexpr("pmfSum[[:digit:]][[:digit:]]", mma.str)
+##     variables <- regmatches(mma.str, matches.idx)[[1]] |> unique()
+##     fun.str <- sprintf(
+##         "function(%s) { %s }", 
+##         paste(variables, collapse = ", "), 
+##         mma.str
+##     )
+##     k.fun <- l.deriv.fun <- eval(parse(text = fun.str))
+##     list(fun=k.fun,args=variables)
+## })
+## k.orders <- gsub('.txt','',filelist,fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+## k.orders <- lapply(k.orders,function(x)if(length(x)==1)c(x,0)else x)
+## ks.fun <- lapply(seq_along(ks.fun), function(i)c(ks.fun[[i]],order=list(k.orders[[i]])))
+
+## ## saveRDS(ks.fun,file='ks.fun.rds',compress=FALSE)
+ks.fun <- readRDS('ks.fun.rds')
+k.orders <- lapply(ks.fun,function(k.fun)k.fun$order)
+
+## 2. read in pmf derivatives depending on m, theta, x, and
+## beta. obtain ma-level f(m,theta,x) derivatives by currying mle's.
+
+## pmfs: this is specific to the model (eg single-arm logit-normal
+mma.str.path <- './mma-formulas/pmf/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+pmf.derivs.fun <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    ## mma.str <- gsub('Pi','pi',mma.str)
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose"))
+    g.deriv <- 
+        str.to.fun(mma.str,
+                   args = c('beta','theta','x','m'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+})
+pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
+names(pmf.derivs.fun) <- pmf.deriv.orders
+pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,m)pmf.deriv.fun(beta,theta,x,m))
+
+## ## saveRDS(pmf.derivs.fun,file='pmf.derivs.fun.rds',compress=FALSE)
+## pmf.derivs.fun <- readRDS('pmf.derivs.fun.rds')
+## pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,m)pmf.deriv.fun(beta,theta,x,m))
+
+
+## 3. fixing m, for each pmf derivative get pmf deriv values at all
+## support x points by weighted summing over theta for each support
+## point x, leaving g(x1),...,g(xm)=g(0),...,g(m). apply k
+## functions. this is study level and is the parallelizable part.
+
+ks.study <- function(m,pmf.derivs.fun.ma,ks.fun,GH=NULL) {
+    if(is.null(GH)) {
+        GH <- fastGHQuad::gaussHermiteData(30)
+        GH$x <- sqrt(2)*GH$x
+        GH$w <- GH$w / sqrt(pi)
+        names(GH) <- c('theta.grid','w')
+    }
+    ## sum ma-level g's over theta, getting a vector g(x,m) with
+    ## unit-level components
+    pmf.derivs.unit <- lapply(pmf.derivs.fun.ma, function(pmf.deriv.unit) {
+        g.mat <- outer(X=GH$theta.grid,Y=0:m,function(theta,x)pmf.deriv.unit(theta,x,m))
+        g.unit <- colSums(GH$w * g.mat)
+    })
+    ## apply ks.fun to unit-level g's to get unit-level k's, take sum
+    ## weighted by binomial coefficient to get study-level k
+    k.study <- sapply(seq_along(ks.fun), function(i) {
+        k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+        k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+        k.val <- sum( choose(m,0:m) * k.fun.unit )
+    })
+    return(k.study)
+}
+
+ms <- rep(20,10)
+k.vals <- ks.study(ms[1],pmf.derivs.fun.ma,ks.fun)
+k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+bartlett.C <- lawley(k.df,2) - lawley(k.df,1)
+print(bartlett.C)
+
+
+
+
+## two-arm studies via hypergeometric-normal model
+
+
+## code for computing the mle's
+## require(BiasedUrn)
+set.seed(1)
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+n <- 10
+m.T <- rep(20,n)
+m.C <- rep(15,n)
+s <- sapply(1:n,function(i)sample(max(m.T[i],m.C[i]),1))
+theta <- rnorm(n)
+odds <- exp(mu.true+sqrt(tau2.true)*theta)
+x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
+params <- cbind(m.T=m.T,m.C=m.C,s=s)
+GH <- fastGHQuad::gaussHermiteData(30)
+GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL) {
+    m.Ti <- paramsi['m.T']
+    m.Ci <- paramsi['m.C']
+    si <- paramsi['s']
+    ## pmf <- Vectorize(function(theta)BiasedUrn::dFNCHypergeo(xi,m.Ti,m.Ci,si,exp(mu+sqrt(tau2)*theta))) # slow
+    ## pmf <- function(theta) { # numerically unsafe
+    ##     numer <- choose(m.Ti,xi)*choose(m.Ci,si-xi)*exp((mu+sqrt(tau2)*theta)*xi) 
+    ##     denom <- rowSums(  outer(theta,0:m.Ti,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+    ##     numer / denom
+    ## }
+    pmf <- function(theta) {
+        ## logpmf.raw <- function(xi,theta)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1) + (mu+sqrt(tau2)*theta)*xi
+        ## lognumer <- logpmf.raw(xi,theta)
+        ## logpmf.mat <- outer(0:m.Ti,theta,logpmf.raw) # speed this up
+        logpmf.part <- function(xi)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1)
+        lognumer <- logpmf.part(xi)+ (mu+sqrt(tau2)*theta)*xi
+        logpmf.mat <- logpmf.part(0:m.Ti) + outer(0:m.Ti,theta)*sqrt(tau2) + (0:m.Ti)*mu
+        colmaxes <- apply(logpmf.mat,2,max)
+        logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
+        exp(lognumer - logdenom)
+    }
+    integral.approx <- if(is.null(GH)) integrate(function(theta)pmf(theta)*dnorm(theta),-Inf,Inf)$val
+    else
+        sum(GH$w*pmf(GH$x))
+    return(log(integral.approx))
+}
+loglik <- function(mu,tau2,x,params,GH=NULL) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,],GH=GH)))
+logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=c(-5,5),maximum=TRUE)$max
+tau2.mle.redu <- exp(logtau2.mle.redu)
+mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
+mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
+## LR
+print(tau2.mle.redu)
+print(c(mu.mle.full,tau2.mle.full))
+
+
+## encapsulate, diagnostics
+
+LR.gaussian <- function(x,params,mu.null,loglik.unit,n.GH=30) {
+        GH <- fastGHQuad::gaussHermiteData(30)
+        GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+        loglik <- function(mu,tau2,x,params,GH=NULL) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,],GH=GH)))
+        logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=c(-5,5),maximum=TRUE)$max
+        tau2.mle.redu <- exp(logtau2.mle.redu)
+        mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
+        mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+        LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
+        return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR))
+}
+
+loglik.unit.hyperg <- function(mu,tau2,xi,paramsi,GH=NULL) {
+    m.Ti <- paramsi['m.T']
+    m.Ci <- paramsi['m.C']
+    si <- paramsi['s']
+    ## pmf <- Vectorize(function(theta)BiasedUrn::dFNCHypergeo(xi,m.Ti,m.Ci,si,exp(mu+sqrt(tau2)*theta))) # slow
+    pmf <- function(theta) { # numerically unsafe
+        numer <- choose(m.Ti,xi)*choose(m.Ci,si-xi)*exp((mu+sqrt(tau2)*theta)*xi)
+        supp <- max(0,si-m.Ci):min(si,m.Ti)
+        denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+        ## denom <- rowSums(  outer(theta,0:m.Ti,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+        numer / denom
+    }
+    ## pmf <- function(theta) {
+    ##     ## logpmf.raw <- function(xi,theta)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1) + (mu+sqrt(tau2)*theta)*xi
+    ##     ## lognumer <- logpmf.raw(xi,theta)
+    ##     ## logpmf.mat <- outer(0:m.Ti,theta,logpmf.raw) # speed this up
+    ##     logpmf.part <- function(xi)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1)
+    ##     lognumer <- logpmf.part(xi)+ (mu+sqrt(tau2)*theta)*xi
+    ##     ## logpmf.mat <- logpmf.part(0:m.Ti) + outer(0:m.Ti,theta)*sqrt(tau2) + (0:m.Ti)*mu
+    ##     supp <- max(0,si-m.Ci):min(si,m.Ti)
+    ##     logpmf.mat <- logpmf.part(supp) + outer(supp,theta)*sqrt(tau2) + supp*mu
+    ##     colmaxes <- apply(logpmf.mat,2,max)        
+    ##     logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
+    ##     exp(lognumer - logdenom)
+    ## }
+    integral.approx <- if(is.null(GH)) integrate(function(theta)pmf(theta)*dnorm(theta),-Inf,Inf)$val
+    else
+        sum(GH$w*pmf(GH$x))
+    return(log(integral.approx))
+}
+## set.seed(1)
+mu <- runif(1); tau2 <- rexp(1); xi <- rpois(1,10); paramsi <- c(m.T=20,m.C=15,s=xi+5)
+GH <- fastGHQuad::gaussHermiteData(30)
+GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+loglik.unit.hyperg(mu,tau2,xi,paramsi,GH=GH)
+
+## check mle's
+n <- 10
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+## n <- 10
+ns <- 5:15
+## by.n <- sapply(ns, function(n) {
+m.T <- rep(20,n)
+m.C <- rep(15,n)
+s <- sapply(1:n,function(i)sample(max(m.T[i],m.C[i]),1))
+mles <- replicate(1e2, {
+    theta <- rnorm(n)
+    odds <- exp(mu.true+sqrt(tau2.true)*theta)
+    x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
+    params <- cbind(m.T=m.T,m.C=m.C,s=s)
+    LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$mle.full
+})
+## ## metafor. mle's for mu match.
+## ai <- x.T
+## bi <- m.T - x.T
+## ci <- s - x.T
+## di <- m.C - ci
+## fit <- metafor::rma.glmm(
+##   ai = ai, bi = bi, 
+##   ci = ci, di = di, 
+##   measure = "OR", 
+##   model = "CM.EL", 
+##   method = "ML"
+## )
+## summary(fit)
+op <- par(mfrow=c(1,2))
+hist(mles['mu',])
+abline(v=mu.true,col=2)
+abline(v=mean(mles['mu',]),col=3)
+hist(mles['tau2',])
+abline(v=tau2.true,col=2)
+abline(v=mean(mles['tau2',]),col=3)
+par(op)
+
+
+
+
+
+
+## check rates        
+## set.seed(1)
+for(j in 1:20) {
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+## n <- 10
+ns <- 5:15
+## by.n <- sapply(ns, function(n) {
+by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
+    cat('.')
+    m.T <- rep(20,n)
+    m.C <- rep(15,n)
+    s <- sapply(1:n,function(i)sample(max(m.T[i],m.C[i]),1))
+    ## s <- rep(10,n)
+    stats <- replicate(round(n^2.3), {
+        theta <- rnorm(n)
+        odds <- exp(mu.true+sqrt(tau2.true)*theta)
+        x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
+        params <- cbind(m.T=m.T,m.C=m.C,s=s)
+        LR <- LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$LR
+    })
+    ## stats <- as.matrix(stats,nrow=1)
+    ecdf.LR <- ecdf(pchisq(stats,df=1,lower=FALSE))
+    ks <- max(abs(ecdf.LR(knots(ecdf.LR)) - knots(ecdf.LR)))
+})
+by.n <- simplify2array(by.n)
+plot(ns,by.n)
+print(coef(lm(log(by.n) ~ log(ns)))[2])
+}
+
+
+
+## bartlett correction for the hyperg-normal model
+
+source('utils.R')
+## m <- 20
+mu.null <- 0
+tau2.null <- 1/2
+beta <- c(tau2.null,mu.null)
+
+ks.fun <- readRDS('ks.fun.rds')
+k.orders <- lapply(ks.fun,function(k.fun)k.fun$order)
+
+## read in pmf derivatives
+source('utils.R')
+mma.str.path <- './mma-formulas/pmf-hyperg/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+pmf.derivs.fun <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    ## mma.str <- gsub('Pi','pi',mma.str)
+    mma.str <- gsub('Inactive[Sum]','Sum',mma.str,fixed=TRUE)
+    mma.str <- gsub('mC','m.C',mma.str,fixed=TRUE)
+    mma.str <- gsub('mT','m.T',mma.str,fixed=TRUE)
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","Hypergeometric2F1"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",Hypergeometric2F1="gsl::hyperg_2F1"))
+    g.deriv <- 
+        str.to.fun(mma.str,
+                   args = c('beta','theta','x','m.T','m.C','s'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+})
+pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
+names(pmf.derivs.fun) <- pmf.deriv.orders
+pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,m.T,m.C,s)pmf.deriv.fun(beta,theta,x,m.T,m.C,s))
+
+
+ks.study <- function(m,pmf.derivs.fun.ma,ks.fun,GH=NULL) {
+    if(is.null(GH)) {
+        GH <- fastGHQuad::gaussHermiteData(30)
+        GH$x <- sqrt(2)*GH$x
+        GH$w <- GH$w / sqrt(pi)
+        names(GH) <- c('theta.grid','w')
+    }
+    ## sum ma-level g's over theta, getting a vector g(x,m) with
+    ## unit-level components
+    pmf.derivs.unit <- lapply(pmf.derivs.fun.ma, function(pmf.deriv.unit) {
+        pmf.deriv.unit <- Vectorize(pmf.deriv.unit,c('theta','x'))
+        supp <- max(0,s-m.C):min(s,m.T)
+        g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.unit(theta,x,m,m.C,s)) # these are globals!!!
+        g.unit <- colSums(GH$w * g.mat)
+    })
+    ## apply ks.fun to unit-level g's to get unit-level k's, take sum
+    ## weighted by binomial coefficient to get study-level k
+    k.study <- sapply(seq_along(ks.fun), function(i) {
+        k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+        k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+        k.val <- sum( k.fun.unit)
+    })
+    return(k.study)
+}
+
+m <- m.T <- 20; m.C <- 15; s <- 10;
+k.vals <- ks.study(m,pmf.derivs.fun.ma,ks.fun)
+k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+bartlett.C <- lawley(k.df,2) - lawley(k.df,1)
+print(bartlett.C)
+
+
+
+
+## diagnostic -- check z-statistics to verify k formula for information -- these
+## look good. skew for tau2 is very strong there, need n >= about 40
+## for match.
+n <- 40
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+inf.22 <- -k.df[k.df[,'inner']=='22'  & k.df[,'outer']=='0','k.val']
+inf.11 <- -k.df[k.df[,'inner']=='11'  & k.df[,'outer']=='0','k.val']
+inf.12 <- -k.df[k.df[,'inner']=='12'  & k.df[,'outer']=='0','k.val']
+inf <- matrix(c(inf.11,inf.12,inf.12,inf.22),nrow=2)
+vcov.hat <- solve(inf)
+## n <- 10
+ns <- 5:15
+## by.n <- sapply(ns, function(n) {
+m.T <- rep(20,n)
+m.C <- rep(15,n)
+s <- sapply(1:n,function(i)sample(max(m.T[i],m.C[i]),1))
+z.stats <- replicate(1e2, {
+    theta <- rnorm(n)
+    odds <- exp(mu.true+sqrt(tau2.true)*theta)
+    x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
+    params <- cbind(m.T=m.T,m.C=m.C,s=s)
+    ## mu.hat <- LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$mle.full['mu']
+    ## (mu.hat - mu.true) / sqrt(vcov.hat[2,2]/n)
+    mles <- rev(LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$mle.full)
+    (mles-c(tau2.true,mu.true)) / sqrt(diag(vcov.hat)/n)
+})
+op <- par(mfrow=c(1,2))
+qqnorm(z.stats['mu',]); abline(0,1)
+qqnorm(z.stats['tau2',]); abline(0,1)
+par(op)
+
+
+source('utils.R')
+## check bartlett rates        
+## set.seed(1)
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+## n <- 10
+ns <- 5:15
+bartlett.C <- 1.36433398617429
+tic <- Sys.time()
+## by.n <- sapply(ns, function(n) {
+repeat{
+by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
+    cat('.')
+    m.T <- rep(20,n)
+    m.C <- rep(15,n)
+    s <- rep(10,n)
+    ## s <- rep(10,n)
+    stats <- replicate(round(n^2.3), {
+        theta <- rnorm(n)
+        odds <- exp(mu.true+sqrt(tau2.true)*theta)
+        x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
+        params <- cbind(m.T=m.T,m.C=m.C,s=s)
+        LR <- LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$LR
+        LR.bartlett <- LR / (1+bartlett.C/n)
+        c(LR=LR,LR.bartlett=LR.bartlett)
+    })
+    ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
+    ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
+})
+by.n <- simplify2array(by.n)
+print(Sys.time() - tic)
+plot(ns,by.n['LR',],type='l',ylim=range(by.n))
+lines(ns,by.n['LR.bartlett',],col=2)
+apply(by.n,1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
+}
+
+
+
+
+## poisson-normal model
+
+cond.pmf.poisson <- function(x,theta,mu,tau2,params) {
+    T <- params[,'T']
+    lambda <- T*exp(mu+sqrt(tau2)*theta)
+    dpois(x,lambda=lambda)
+    }
+loglik.unit <- function(mu,tau2,xi,paramsi,cond.pmf,GH=NULL) {
+    ## browser()
+    if(is.null(GH)) {
+        likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
+    } else {
+        likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+    }
+    return(log(likelihood))
+}
+## set.seed(1)
+## mu <- runif(1); tau2 <- rexp(1); paramsi <- c(T=10); xi <- sample(paramsi['T'],1)
+## GH <- fastGHQuad::gaussHermiteData(30)
+## GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+## loglik.unit(mu,tau2,xi,paramsi,cond.pmf.poisson,GH=GH)
+
+## diagnostics
+
+## check mle's
+source('utils.R')
+n <- 10
+mu.null <- runif(1)
+tau2.null <- runif(1,1/2,2)
+loglik.unit.poisson <- function(mu,tau2,xi,paramsi,GH=NULL)loglik.unit(mu,tau2,xi,paramsi,cond.pmf.poisson,GH)
+mles <- replicate(1e2, {
+    theta <- rnorm(n)
+    T <- 4 + rexp(n)
+    lambda <- T*exp(mu.null+sqrt(tau2.null)*theta)
+    x <- rpois(n,lambda)
+    params <- cbind(T=T)
+    LR.gaussian(x,params,mu.null,loglik.unit.poisson)$mle.full
+})
+## ## metafor. mle's for mu match.
+## ai <- x.T
+## bi <- m.T - x.T
+## ci <- s - x.T
+## di <- m.C - ci
+## fit <- metafor::rma.glmm(
+##   ai = ai, bi = bi, 
+##   ci = ci, di = di, 
+##   measure = "OR", 
+##   model = "CM.EL", 
+##   method = "ML"
+## )
+## summary(fit)
+op <- par(mfrow=c(1,2))
+hist(mles['mu',])
+abline(v=mu.null,col=2)
+abline(v=mean(mles['mu',]),col=3)
+hist(mles['tau2',])
+abline(v=tau2.null,col=2)
+abline(v=mean(mles['tau2',]),col=3)
+par(op)
+
+
+
+
+## bartlett correction 
+
+source('utils.R')
+## m <- 20
+mu.null <- 0
+tau2.null <- 1/2
+beta <- c(tau2.null,mu.null)
+
+ks.fun <- readRDS('ks.fun.rds')
+k.orders <- lapply(ks.fun,function(k.fun)k.fun$order)
+
+## read in pmf derivatives
+source('utils.R')
+mma.str.path <- './mma-formulas/pmf-poisson/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+pmf.derivs.fun <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    ## mma.str <- gsub('Pi','pi',mma.str)
+    ## mma.str <- gsub('Inactive[Sum]','Sum',mma.str,fixed=TRUE)
+    ## mma.str <- gsub('mC','m.C',mma.str,fixed=TRUE)
+    ## mma.str <- gsub('mT','m.T',mma.str,fixed=TRUE)
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","factorial"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",factorial="factorial"))
+    g.deriv <- 
+        str.to.fun(mma.str,
+                   args = c('beta','theta','x','T'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+})
+pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
+names(pmf.derivs.fun) <- pmf.deriv.orders
+pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,T)pmf.deriv.fun(beta,theta,x,T))
+
+
+ks.study <- function(m,pmf.derivs.fun.ma,ks.fun,GH=NULL) {
+    if(is.null(GH)) {
+        GH <- fastGHQuad::gaussHermiteData(40)
+        GH$x <- sqrt(2)*GH$x
+        GH$w <- GH$w / sqrt(pi)
+        names(GH) <- c('theta.grid','w')
+    }
+    ## sum ma-level g's over theta, getting a vector g(x,m) with
+    ## unit-level components
+    pmf.derivs.unit <- lapply(pmf.derivs.fun.ma, function(pmf.deriv.unit) {
+        ## pmf.deriv.unit <- Vectorize(pmf.deriv.unit,c('theta','x'))
+        supp <- 0:50 #!!!!!!!!
+        g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.unit(theta,x,T)) # these are globals!!!
+        g.unit <- colSums(GH$w * g.mat)
+    })
+    ## apply ks.fun to unit-level g's to get unit-level k's, take sum
+    ## weighted by binomial coefficient to get study-level k
+    k.study <- sapply(seq_along(ks.fun), function(i) {
+        k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+        k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+        k.val <- sum( k.fun.unit, na.rm=TRUE) #!!!!
+    })
+    return(k.study)
+}
+
+T <- 1
+k.vals <- ks.study(m,pmf.derivs.fun.ma,ks.fun)
+k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+bartlett.C <- lawley(k.df,2) - lawley(k.df,1)
+print(bartlett.C)
+
+
+
+
+## diagnostic -- check z-statistics -- look fine for large enough n
+k.22 <- k.df[k.df[,'inner']=='22'  & k.df[,'outer']=='0','k.val']
+k.11 <- k.df[k.df[,'inner']=='11'  & k.df[,'outer']=='0','k.val']
+k.12 <- k.df[k.df[,'inner']=='12'  & k.df[,'outer']=='0','k.val']
+n <- 1e2
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+## k.11 <-  -0.3897629 # information in tau2
+## k.22 <- -0.7201051 # information in mu
+## k.12 <- -0.2889417
+inf <- -matrix(c(k.11,k.12,k.12,k.22),nrow=2)
+vcov.hat <- solve(inf)
+T <- rep(1,n)
+z.stats <- replicate(1e2, {
+    theta <- rnorm(n)
+    ## T <- 4 + rexp(n)
+    lambda <- T*exp(mu.null+sqrt(tau2.null)*theta)
+    x <- rpois(n,lambda)
+    params <- cbind(T=T)
+    mles <- LR.gaussian(x,params,mu.null,loglik.unit.poisson)$mle.full
+    (rev(mles)-c(tau2.true,mu.true)) / sqrt(diag(vcov.hat)/n)
+})
+op <- par(mfrow=c(1,2))
+qqnorm(z.stats['mu',]); abline(0,1)
+qqnorm(z.stats['tau2',]); abline(0,1)
+par(op)
+
+
+

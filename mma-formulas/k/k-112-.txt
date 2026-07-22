@@ -1,0 +1,2 @@
+(pmfSum01*(2*pmfSum10^2 - pmfSum00*pmfSum20) + 
+  pmfSum00*(-2*pmfSum10*pmfSum11 + pmfSum00*pmfSum21))/pmfSum00^2

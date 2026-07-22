@@ -426,36 +426,74 @@ str.to.fun <- function(str, args, bindings = list(), parent = baseenv()) {
 
 
 
-## WRONG SIGN ON INFORMATION MATRIX
-lawley <- function(p,m,beta,l.derivs) {
-    n <- length(m)
-    k.vals <- sapply(l.derivs, function(l.deriv) {
-        ## browser()
-        sapply(1:length(m), function(j) 
-            sapply(1:(m[j]-1), function(k) {
-                ## browser()
-                integrate(function(theta)l.deriv(theta,m[j],k,beta)*dnorm(theta),-Inf,Inf)$val
-            }) |> sum()
-            ) |> sum()
-    })
-    idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
-    idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
-    k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
-    k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(inner,collapse='') & k.df$outer==paste(outer,collapse='')]
-    inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
-    inv.inf <- solve(inf)
+## ## WRONG SIGN ON INFORMATION MATRIX
+## lawley <- function(p,m,beta,l.derivs) {
+##     n <- length(m)
+##     k.vals <- sapply(l.derivs, function(l.deriv) {
+##         ## browser()
+##         sapply(1:length(m), function(j) 
+##             sapply(1:(m[j]-1), function(k) {
+##                 ## browser()
+##                 integrate(function(theta)l.deriv(theta,m[j],k,beta)*dnorm(theta),-Inf,Inf)$val
+##             }) |> sum()
+##             ) |> sum()
+##     })
+##     idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+##     idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
+##     k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
+##     k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(inner,collapse='') & k.df$outer==paste(outer,collapse='')]
+##     inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
+##     inv.inf <- solve(inf)
+##     lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
+##         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
+##         inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
+##     })
+##     lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
+##         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
+##         inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
+##     })
+##     ## sum(l4)
+##     ## sum(l6)
+##     return( sum(lawley.4) - sum(lawley.6) )
+## }
+## lawley <- function(k.vals,k.p) {
+##     k.df <- data.frame(inner=sapply(orders.k,`[`,1),outer=sapply(orders.k,`[`,2),k.val=k.vals)
+##     ## print(k.df)
+##     k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]
+##     inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
+##     inv.inf <- solve(inf)
+##     lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
+##         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
+##         inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
+##     })
+##     lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
+##         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
+##         -inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
+##     })
+##     bias <- out <- sum(lawley.4) - sum(lawley.6)
+##     return(bias)
+## }
+
+
+
+lawley <- function(k.df,p) {
+    ## k.df <- data.frame(inner=sapply(orders.k,`[`,1),outer=sapply(orders.k,`[`,2),k.val=k.vals)
+    ## print(k.df)
+    k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]
+    information <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
+    inv.inf <- solve(information)
     lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
         inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
     })
     lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
-        inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
+        -inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
     })
-    ## sum(l4)
-    ## sum(l6)
-    return( sum(lawley.4) - sum(lawley.6) )
+    bias <- out <- sum(lawley.4) - sum(lawley.6)
+    return(bias)
 }
+
 read.mma <- function(mma.str.path) {
     filelist <- dir(mma.str.path)
     filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
@@ -469,7 +507,50 @@ read.mma <- function(mma.str.path) {
     l.derivs <- sapply(mma.strings,function(mma.str) 
         str.to.fun(
             gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
-            args = c('theta','m','k','beta'),
+            args = c('theta','m','x','beta'),
             binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt)
         ))
+}
+
+
+LR.gaussian <- function(x,params,mu.null,loglik.unit,n.GH=30) {
+        GH <- fastGHQuad::gaussHermiteData(30)
+        GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+        loglik <- function(mu,tau2,x,params,GH=NULL) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH=GH)))
+        logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=c(-5,5),maximum=TRUE)$max
+        tau2.mle.redu <- exp(logtau2.mle.redu)
+        mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
+        mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+        LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
+        return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR))
+}
+
+loglik.unit.hyperg <- function(mu,tau2,xi,paramsi,GH=NULL) {
+    m.Ti <- paramsi['m.T']
+    m.Ci <- paramsi['m.C']
+    si <- paramsi['s']
+    pmf <- function(theta) { # numerically unsafe
+        numer <- choose(m.Ti,xi)*choose(m.Ci,si-xi)*exp((mu+sqrt(tau2)*theta)*xi)
+        supp <- max(0,si-m.Ci):min(si,m.Ti)
+        denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+        ## denom <- rowSums(  outer(theta,0:m.Ti,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+        numer / denom
+    }
+    ## pmf <- function(theta) {
+    ##     ## logpmf.raw <- function(xi,theta)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1) + (mu+sqrt(tau2)*theta)*xi
+    ##     ## lognumer <- logpmf.raw(xi,theta)
+    ##     ## logpmf.mat <- outer(0:m.Ti,theta,logpmf.raw) # speed this up
+    ##     logpmf.part <- function(xi)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1)
+    ##     lognumer <- logpmf.part(xi)+ (mu+sqrt(tau2)*theta)*xi
+    ##     ## logpmf.mat <- logpmf.part(0:m.Ti) + outer(0:m.Ti,theta)*sqrt(tau2) + (0:m.Ti)*mu
+    ##     supp <- max(0,si-m.Ci):min(si,m.Ti)
+    ##     logpmf.mat <- logpmf.part(supp) + outer(supp,theta)*sqrt(tau2) + supp*mu
+    ##     colmaxes <- apply(logpmf.mat,2,max)        
+    ##     logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
+    ##     exp(lognumer - logdenom)
+    ## }
+    integral.approx <- if(is.null(GH)) integrate(function(theta)pmf(theta)*dnorm(theta),-Inf,Inf)$val
+    else
+        sum(GH$w*pmf(GH$x))
+    return(log(integral.approx))
 }

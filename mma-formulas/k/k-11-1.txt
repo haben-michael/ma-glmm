@@ -1,0 +1,1 @@
+pmfSum10^3/pmfSum00^2 - (2*pmfSum10*pmfSum20)/pmfSum00 + pmfSum30

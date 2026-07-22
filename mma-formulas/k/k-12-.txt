@@ -1,0 +1,1 @@
+-((pmfSum01*pmfSum10)/pmfSum00) + pmfSum11

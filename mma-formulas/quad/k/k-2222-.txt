@@ -1,0 +1,2 @@
+(-6*gSum01^4)/gSum00^3 + (12*gSum01^2*gSum02)/gSum00^2 - 
+ (3*gSum02^2 + 4*gSum01*gSum03)/gSum00 + gSum04

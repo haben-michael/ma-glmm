@@ -1,0 +1,1 @@
+gSum01^3/gSum00^2 - (2*gSum01*gSum02)/gSum00 + gSum03

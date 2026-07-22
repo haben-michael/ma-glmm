@@ -1,0 +1,1 @@
+-(gSum10^2/gSum00) + gSum20

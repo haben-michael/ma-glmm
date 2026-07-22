@@ -1,0 +1,1 @@
+(2*gSum10^3)/gSum00^2 - (3*gSum10*gSum20)/gSum00 + gSum30

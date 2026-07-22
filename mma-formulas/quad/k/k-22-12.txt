@@ -1,0 +1,3 @@
+(-2*gSum01^3*gSum10 + 3*gSum00*gSum01^2*gSum11 + 
+  2*gSum00*gSum01*(gSum02*gSum10 - gSum00*gSum12) + 
+  gSum00^2*(-2*gSum02*gSum11 + gSum00*gSum13))/gSum00^3

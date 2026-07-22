@@ -1,0 +1,1 @@
+-(pmfSum10^2/pmfSum00) + pmfSum20

@@ -1,0 +1,3 @@
+(-(gSum01*(6*gSum10^3 - 6*gSum00*gSum10*gSum20 + gSum00^2*gSum30)) + 
+  gSum00*(6*gSum10^2*gSum11 - 3*gSum00*gSum10*gSum21 + 
+    gSum00*(-3*gSum11*gSum20 + gSum00*gSum31)))/gSum00^3

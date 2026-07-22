@@ -1,0 +1,3 @@
+(-4*pmfSum01^3*pmfSum10 + 6*pmfSum00*pmfSum01^2*pmfSum11 + 
+  3*pmfSum00*pmfSum01*(pmfSum02*pmfSum10 - pmfSum00*pmfSum12) + 
+  pmfSum00^2*(-3*pmfSum02*pmfSum11 + pmfSum00*pmfSum13))/pmfSum00^3

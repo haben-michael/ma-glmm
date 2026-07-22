@@ -1,0 +1,2 @@
+(E^(theta*Sqrt[beta[1]] + beta[2])*T)^x/
+ (E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*factorial[x])
