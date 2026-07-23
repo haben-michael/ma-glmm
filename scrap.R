@@ -1,0 +1,284 @@
+
+
+
+## DEBUGGING
+
+## check variance of mle's to see if crazy k.vals could be right. no, variances are about .2, something is wrong with k formulas
+
+
+## set.seed(1)
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+## n <- 10
+## ns <- 5:15
+## by.n <- sapply(ns, function(n) {
+## by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
+## cat('.')
+m.T <- rep(20,n)
+m.C <- rep(15,n)
+s <- sapply(1:n,function(i)sample(max(m.T[i],m.C[i]),1))
+## s <- rep(10,n)
+n <- 5
+stats <- replicate(round(n^2.3), {
+    theta <- rnorm(n)
+    odds <- exp(mu.true+sqrt(tau2.true)*theta)
+    x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
+    params <- cbind(m.T=m.T,m.C=m.C,s=s)
+    LR <- LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$mle.full
+})
+
+
+source('utils.R')
+mma.str <- inf.observed.str <- '(E^(x*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, s - x]*Binomial[mT, x]*
+  (x^2*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, -j + s]*
+       Binomial[mT, j], {j, 0, mT}]^2 + 
+   2*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j*Binomial[mC, -j + s]*
+       Binomial[mT, j], {j, 0, mT}]^2 - 
+   Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, -j + s]*Binomial[mT, j], 
+     {j, 0, mT}]*(2*x*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j*
+        Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}] + 
+     Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^2*Binomial[mC, -j + s]*
+       Binomial[mT, j], {j, 0, mT}])))/
+ Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, -j + s]*Binomial[mT, j], 
+   {j, 0, mT}]^3'
+mma.str <- gsub('Inactive[Sum]','Sum',mma.str,fixed=TRUE)
+mma.str <- gsub('mC','m.C',mma.str,fixed=TRUE)
+mma.str <- gsub('mT','m.T',mma.str,fixed=TRUE)
+mma.str <-  mma.to.R(mma.str,
+                     funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","Hypergeometric2F1"),
+                     rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",Hypergeometric2F1="gsl::hyperg_2F1"))
+finf <- 
+    str.to.fun(mma.str,
+               args = c('beta','theta','x','m.T','m.C','s'),
+               binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+x <- 5;m <- m.T <- 20; m.C <- 15; s <- 10;
+mu.true <- mu.null <- 0
+tau2.true <- tau2.null <- 1/2
+beta <- c(mu.null,tau2.null)
+GH <- fastGHQuad::gaussHermiteData(30)
+GH$x <- sqrt(2)*GH$x
+GH$w <- GH$w / sqrt(pi)
+names(GH) <- c('theta.grid','w')
+finf2 <- function(beta,x,m.T,m.C,s) sum(GH$w*sapply(GH$theta.grid,function(theta)finf(beta,theta,x,m.T,m.C,s)))
+## finf2(beta,x,m.T,m.C,s)
+pmf <- function(theta,x) { # numerically unsafe
+    numer <- choose(m.T,x)*choose(m.C,s-x)*exp((mu.null+sqrt(tau2.null)*theta)*x)
+    supp <- max(0,s-m.C):min(s,m.T)
+    denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.T,xj)*choose(m.C,s-xj)*exp((mu.null+sqrt(tau2.null)*thetaj)*xj) ) )
+    ## denom <- rowSums(  outer(theta,0:m.Ti,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+    numer / denom
+}
+pmf2 <- function(x)sum(GH$w*pmf(GH$theta.grid,x))
+supp <- max(0,s-m.C):min(s,m.T)
+sum(sapply(supp,function(x)finf2(beta,x,m.T,m.C,s)*pmf2(x)))
+
+
+
+
+
+
+## poisson-normal model
+
+
+
+## debugging--variances implied by k values seem off
+
+
+## expected score is 0 -- fine
+source('utils.R')
+mma.str <- '-(((E^(T*(theta*Sqrt[beta[1]] + beta[2])))^x*T*(E^(T*(theta*Sqrt[beta[1]] + beta[2])) - x))/
+  (E^E^(T*(theta*Sqrt[beta[1]] + beta[2]))*factorial[x]))'
+mma.str <-  mma.to.R(mma.str,
+                     funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","factorial"),
+                     rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",factorial="factorial"))
+fun <- 
+    str.to.fun(mma.str,
+               args = c('beta','theta','x','T'),
+               binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+GH <- fastGHQuad::gaussHermiteData(100)
+GH$x <- sqrt(2)*GH$x
+GH$w <- GH$w / sqrt(pi)
+names(GH) <- c('theta.grid','w')
+fun2 <- function(theta,x)fun(beta=c(1/2,0),theta=theta,x=x,T=1)
+mat <- outer(GH$theta.grid,0:50,fun2)
+sum(GH$w*mat)
+
+## information for mu and tau2
+source('utils.R')
+mma.str.0 <- '(E^(theta*Sqrt[beta[1]] + beta[2])*T)^x/(E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*factorial[x])'
+## mma.str.1 <- '((E^(theta*Sqrt[beta[1]] + beta[2])*T)^x*(-(E^(theta*Sqrt[beta[1]] + beta[2])*T) + x))/
+##  (E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*factorial[x])'
+## mma.str.2 <- '((E^(theta*Sqrt[beta[1]] + beta[2])*T)^x*(E^(2*(theta*Sqrt[beta[1]] + beta[2]))*T^2 + x^2 - 
+##    E^(theta*Sqrt[beta[1]] + beta[2])*T*(1 + 2*x)))/(E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*
+##   factorial[x])'
+mma.str.1 <- '-1/2*((E^(theta*Sqrt[beta[1]] + beta[2])*T)^x*theta*(E^(theta*Sqrt[beta[1]] + beta[2])*T - 
+    x))/(E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*Sqrt[beta[1]]*factorial[x])'
+mma.str.2 <- '((E^(theta*Sqrt[beta[1]] + beta[2])*T)^x*theta*(x*(-1 + theta*x*Sqrt[beta[1]]) - 
+   E^(theta*Sqrt[beta[1]] + beta[2])*T*(-1 + theta*(1 + 2*x)*Sqrt[beta[1]]) + 
+   E^(2*(theta*Sqrt[beta[1]] + beta[2]))*T^2*theta*Sqrt[beta[1]]))/
+ (4*E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*beta[1]^(3/2)*factorial[x])'
+fsums <- sapply(c('0'=mma.str.0,'1'=mma.str.1,'2'=mma.str.2), function(mma.str) {
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","factorial"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",factorial="factorial"))
+    fun <- 
+        str.to.fun(mma.str,
+                   args = c('beta','theta','x','T'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+    GH <- fastGHQuad::gaussHermiteData(100)
+    GH$x <- sqrt(2)*GH$x
+    GH$w <- GH$w / sqrt(pi)
+    names(GH) <- c('theta.grid','w')
+    fun2 <- function(theta,x)fun(beta=c(1/2,0),theta=theta,x=x,T=1)
+    mat <- outer(GH$theta.grid,0:50,fun2)
+    ## sum(GH$w*mat)
+    ## GH$w%*%mat
+    colSums(GH$w*mat)
+})
+sum((fsums[,'2'] * fsums[,'0'] - fsums[,'1']^2) / fsums[,'0'])
+## > [1] -0.7201051
+##  [1] -0.3897629
+
+## off diagonal
+source('utils.R')
+mma.str.0 <- '(E^(theta*Sqrt[beta[1]] + beta[2])*T)^x/(E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*factorial[x])'
+mma.str.1 <- '-1/2*((E^(theta*Sqrt[beta[1]] + beta[2])*T)^x*theta*(E^(theta*Sqrt[beta[1]] + beta[2])*T - 
+    x))/(E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*Sqrt[beta[1]]*factorial[x])'
+mma.str.2 <- '((E^(theta*Sqrt[beta[1]] + beta[2])*T)^x*(-(E^(theta*Sqrt[beta[1]] + beta[2])*T) + x))/
+ (E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*factorial[x])'
+mma.str.12 <- '((E^(theta*Sqrt[beta[1]] + beta[2])*T)^x*theta*(E^(2*(theta*Sqrt[beta[1]] + beta[2]))*T^2 + 
+   x^2 - E^(theta*Sqrt[beta[1]] + beta[2])*T*(1 + 2*x)))/
+ (2*E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*Sqrt[beta[1]]*factorial[x])'
+    fsums <- sapply(c('0'=mma.str.0,'1'=mma.str.1,'2'=mma.str.2,'12'=mma.str.12), function(mma.str) {
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","factorial"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",factorial="factorial"))
+    fun <- 
+        str.to.fun(mma.str,
+                   args = c('beta','theta','x','T'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+    GH <- fastGHQuad::gaussHermiteData(100)
+    GH$x <- sqrt(2)*GH$x
+    GH$w <- GH$w / sqrt(pi)
+    names(GH) <- c('theta.grid','w')
+    fun2 <- function(theta,x)fun(beta=c(1/2,0),theta=theta,x=x,T=1)
+    mat <- outer(GH$theta.grid,0:50,fun2)
+    ## sum(GH$w*mat)
+    ## GH$w%*%mat
+    colSums(GH$w*mat)
+})
+sum((fsums[,'12'] * fsums[,'0'] - fsums[,'1']*fsums[,'2']) / fsums[,'0'])
+## > [1] -0.7201051
+##  [1] -0.3897629
+
+
+
+
+
+## REFACTORED CODE
+
+
+loglik.unit.hyperg <- function(mu,tau2,xi,paramsi,GH=NULL) {
+    m.Ti <- paramsi[,'m.T']
+    m.Ci <- paramsi[,'m.C']
+    si <- paramsi[,'s']
+    ## pmf <- Vectorize(function(theta)BiasedUrn::dFNCHypergeo(xi,m.Ti,m.Ci,si,exp(mu+sqrt(tau2)*theta))) # slow
+    pmf <- function(theta) { # numerically unsafe
+        numer <- choose(m.Ti,xi)*choose(m.Ci,si-xi)*exp((mu+sqrt(tau2)*theta)*xi)
+        supp <- max(0,si-m.Ci):min(si,m.Ti)
+        denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+        ## denom <- rowSums(  outer(theta,0:m.Ti,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+        numer / denom
+    }
+    ## pmf <- function(theta) {
+    ##     ## logpmf.raw <- function(xi,theta)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1) + (mu+sqrt(tau2)*theta)*xi
+    ##     ## lognumer <- logpmf.raw(xi,theta)
+    ##     ## logpmf.mat <- outer(0:m.Ti,theta,logpmf.raw) # speed this up
+    ##     logpmf.part <- function(xi)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1)
+    ##     lognumer <- logpmf.part(xi)+ (mu+sqrt(tau2)*theta)*xi
+    ##     ## logpmf.mat <- logpmf.part(0:m.Ti) + outer(0:m.Ti,theta)*sqrt(tau2) + (0:m.Ti)*mu
+    ##     supp <- max(0,si-m.Ci):min(si,m.Ti)
+    ##     logpmf.mat <- logpmf.part(supp) + outer(supp,theta)*sqrt(tau2) + supp*mu
+    ##     colmaxes <- apply(logpmf.mat,2,max)        
+    ##     logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
+    ##     exp(lognumer - logdenom)
+    ## }
+    integral.approx <- if(is.null(GH)) integrate(function(theta)pmf(theta)*dnorm(theta),-Inf,Inf)$val
+    else
+        sum(GH$w*pmf(GH$x))
+    return(log(integral.approx))
+}
+
+
+
+loglik.unit <- function(mu,tau2,xi,paramsi,cond.pmf,GH=NULL) {
+    ## browser()
+    if(is.null(GH)) {
+        likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
+    } else {
+        likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+    }
+    return(log(likelihood))
+}
+## set.seed(1)
+## mu <- runif(1); tau2 <- rexp(1); paramsi <- c(T=10); xi <- sample(paramsi['T'],1)
+## GH <- fastGHQuad::gaussHermiteData(30)
+## GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+## loglik.unit(mu,tau2,xi,paramsi,cond.pmf.poisson,GH=GH)
+
+
+
+
+## ks.study <- function(m,pmf.derivs.fun.ma,ks.fun,GH=NULL) {
+##     if(is.null(GH)) {
+##         GH <- fastGHQuad::gaussHermiteData(40)
+##         GH$x <- sqrt(2)*GH$x
+##         GH$w <- GH$w / sqrt(pi)
+##         names(GH) <- c('theta.grid','w')
+##     }
+##     ## sum ma-level g's over theta, getting a vector g(x,m) with
+##     ## unit-level components
+##     pmf.derivs.unit <- lapply(pmf.derivs.fun.ma, function(pmf.deriv.unit) {
+##         ## pmf.deriv.unit <- Vectorize(pmf.deriv.unit,c('theta','x'))
+##         supp <- 0:50 #!!!!!!!!
+##         g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.unit(theta,x,T)) # these are globals!!!
+##         g.unit <- colSums(GH$w * g.mat)
+##     })
+##     ## apply ks.fun to unit-level g's to get unit-level k's, take sum
+##     ## weighted by binomial coefficient to get study-level k
+##     k.study <- sapply(seq_along(ks.fun), function(i) {
+##         k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+##         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+##         k.val <- sum( k.fun.unit, na.rm=TRUE) #!!!!
+##     })
+##     return(k.study)
+## }
+
+
+
+## ## read in pmf derivatives
+## source('utils.R')
+## mma.str.path <- './mma-formulas/pmf-hyperg/'
+## filelist <- dir(mma.str.path)
+## filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## ## file <- './mma-formulas/quad/g/g-10.txt'
+## pmf.derivs.fun <- lapply(filelist, function(file) {
+##     mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+##     ## mma.str <- gsub('Pi','pi',mma.str)
+##     mma.str <- gsub('Inactive[Sum]','Sum',mma.str,fixed=TRUE)
+##     mma.str <- gsub('mC','m.C',mma.str,fixed=TRUE)
+##     mma.str <- gsub('mT','m.T',mma.str,fixed=TRUE)
+##     mma.str <-  mma.to.R(mma.str,
+##                          funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","Hypergeometric2F1"),
+##                          rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",Hypergeometric2F1="gsl::hyperg_2F1"))
+##     g.deriv <- 
+##         str.to.fun(mma.str,
+##                    args = c('beta','theta','x','m.T','m.C','s'),
+##                    binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+## })
+## pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
+## names(pmf.derivs.fun) <- pmf.deriv.orders
+## pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,m.T,m.C,s)pmf.deriv.fun(beta,theta,x,m.T,m.C,s))
+## ## need to vectorize these generically
+## pmf.derivs.fun.ma <- lapply(pmf.derivs.fun.ma,function(pmf.deriv.fun.ma) Vectorize(pmf.deriv.fun.ma,c('theta','x')))
+

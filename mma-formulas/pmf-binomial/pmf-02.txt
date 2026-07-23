@@ -1,0 +1,5 @@
+Binomial[params["m"], x]*(1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]])^
+  (-x + params["m"])*LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^x*
+ (x^2 + LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^2*params["m"]*
+   (1 + params["m"]) - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]*
+   (params["m"] + 2*x*params["m"]))

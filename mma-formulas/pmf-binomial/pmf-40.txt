@@ -1,0 +1,16 @@
+(theta*Binomial[params["m"], x]*
+  (1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]])^(-x + params["m"])*
+  LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^x*
+  (x*(-15 + 15*theta*x*Sqrt[beta[1]] - 6*theta^2*x^2*beta[1] + 
+     theta^3*x^3*beta[1]^(3/2)) - (-15 + 15*theta*(1 + 2*x)*Sqrt[beta[1]] - 
+     6*theta^2*(1 + 3*x + 3*x^2)*beta[1] + theta^3*(1 + 4*x + 6*x^2 + 4*x^3)*
+      beta[1]^(3/2))*LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]*
+    params["m"] + theta*Sqrt[beta[1]]*(15 - 18*theta*(1 + x)*Sqrt[beta[1]] + 
+     theta^2*(7 + 12*x + 6*x^2)*beta[1])*
+    LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^2*params["m"]*
+    (1 + params["m"]) - 2*theta^2*(-3 + theta*(3 + 2*x)*Sqrt[beta[1]])*
+    beta[1]*LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^3*params["m"]*
+    (2 + 3*params["m"] + params["m"]^2) + theta^3*beta[1]^(3/2)*
+    LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^4*params["m"]*
+    (6 + 11*params["m"] + 6*params["m"]^2 + params["m"]^3)))/
+ (16*beta[1]^(7/2))

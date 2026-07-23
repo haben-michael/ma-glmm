@@ -1,98 +1,3 @@
-# mma.to.R <- function(x,
-#                      funs = c(
-#                        "Sqrt", "Log", "Exp",
-#                        "Sin", "Cos", "Tan",
-#                        "ArcSin", "ArcCos", "ArcTan",
-#                        "Power",
-#                        "LogisticSigmoid",
-#                        "Binomial"
-#                      ),
-#                      rename = c(
-#                        Sqrt = "sqrt",
-#                        Log = "log",
-#                        Exp = "exp",
-#                        Sin = "sin",
-#                        Cos = "cos",
-#                        Tan = "tan",
-#                        ArcSin = "asin",
-#                        ArcCos = "acos",
-#                        ArcTan = "atan",
-#                        LogisticSigmoid = "plogis",
-#                        Binomial = "choose"
-#                      )) {
-#   stopifnot(length(x) == 1)
-
-#   chars <- strsplit(x, "", fixed = TRUE)[[1]]
-#   n <- length(chars)
-
-#   is_ident_start <- function(z) grepl("[A-Za-z.$`]", z)
-#   is_ident_char  <- function(z) grepl("[A-Za-z0-9.$`]", z)
-#   is_space       <- function(z) grepl("\\s", z)
-
-#   parse_until <- function(i, close = NULL) {
-#     out <- character()
-
-#     while (i <= n) {
-#       ch <- chars[i]
-
-#       if (!is.null(close) && ch == close) {
-#         return(list(text = paste0(out, collapse = ""), i = i + 1))
-#       }
-
-#       if (is_ident_start(ch)) {
-#         start <- i
-#         i <- i + 1
-
-#         while (i <= n && is_ident_char(chars[i])) {
-#           i <- i + 1
-#         }
-
-#         head <- paste0(chars[start:(i - 1)], collapse = "")
-
-#         # Allow whitespace between symbol and bracket, though InputForm usually omits it.
-#         ws_start <- i
-#         while (i <= n && is_space(chars[i])) {
-#           i <- i + 1
-#         }
-#         ws <- if (i > ws_start) paste0(chars[ws_start:(i - 1)], collapse = "") else ""
-
-#         if (i <= n && chars[i] == "[") {
-#           if (head %in% funs) {
-#             new_head <- if (head %in% names(rename)) unname(rename[[head]]) else head
-#             inner <- parse_until(i + 1, close = "]")
-#             out <- c(out, new_head, "(", inner$text, ")")
-#             i <- inner$i
-#           } else {
-#             # Preserve indexing/application brackets, but still convert known functions inside.
-#             inner <- parse_until(i + 1, close = "]")
-#             out <- c(out, head, ws, "[", inner$text, "]")
-#             i <- inner$i
-#           }
-#         } else {
-#           out <- c(out, head, ws)
-#         }
-
-#       } else if (ch == "[") {
-#         # Unheaded bracket; preserve, but recurse inside.
-#         inner <- parse_until(i + 1, close = "]")
-#         out <- c(out, "[", inner$text, "]")
-#         i <- inner$i
-
-#       } else {
-#         out <- c(out, ch)
-#         i <- i + 1
-#       }
-#     }
-
-#     if (!is.null(close)) {
-#       stop("Unmatched bracket: expected closing ", close)
-#     }
-
-#     list(text = paste0(out, collapse = ""), i = i)
-#   }
-
-#   parse_until(1)$text
-# }
 
 
 mma.to.R <- function(
@@ -426,54 +331,6 @@ str.to.fun <- function(str, args, bindings = list(), parent = baseenv()) {
 
 
 
-## ## WRONG SIGN ON INFORMATION MATRIX
-## lawley <- function(p,m,beta,l.derivs) {
-##     n <- length(m)
-##     k.vals <- sapply(l.derivs, function(l.deriv) {
-##         ## browser()
-##         sapply(1:length(m), function(j) 
-##             sapply(1:(m[j]-1), function(k) {
-##                 ## browser()
-##                 integrate(function(theta)l.deriv(theta,m[j],k,beta)*dnorm(theta),-Inf,Inf)$val
-##             }) |> sum()
-##             ) |> sum()
-##     })
-##     idx.strings <- gsub('.txt','',names(k.vals),fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
-##     idx.strings <- lapply(idx.strings,function(x)if(length(x)==1)c(x,0)else x)
-##     k.df <- data.frame(inner=sapply(idx.strings,`[`,1),outer=sapply(idx.strings,`[`,2),k.val=k.vals)
-##     k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(inner,collapse='') & k.df$outer==paste(outer,collapse='')]
-##     inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
-##     inv.inf <- solve(inf)
-##     lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
-##         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
-##         inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
-##     })
-##     lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
-##         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
-##         inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
-##     })
-##     ## sum(l4)
-##     ## sum(l6)
-##     return( sum(lawley.4) - sum(lawley.6) )
-## }
-## lawley <- function(k.vals,k.p) {
-##     k.df <- data.frame(inner=sapply(orders.k,`[`,1),outer=sapply(orders.k,`[`,2),k.val=k.vals)
-##     ## print(k.df)
-##     k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]
-##     inf <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
-##     inv.inf <- solve(inf)
-##     lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
-##         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
-##         inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
-##     })
-##     lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
-##         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
-##         -inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
-##     })
-##     bias <- out <- sum(lawley.4) - sum(lawley.6)
-##     return(bias)
-## }
-
 
 
 lawley <- function(k.df,p) {
@@ -513,9 +370,32 @@ read.mma <- function(mma.str.path) {
 }
 
 
-LR.gaussian <- function(x,params,mu.null,loglik.unit,n.GH=30) {
-        GH <- fastGHQuad::gaussHermiteData(30)
+## LR.gaussian <- function(x,params,mu.null,loglik.unit,n.GH=30) {
+##         GH <- fastGHQuad::gaussHermiteData(30)
+##         GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+##         loglik <- function(mu,tau2,x,params,GH=NULL) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH=GH)))
+##         logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=c(-5,5),maximum=TRUE)$max
+##         tau2.mle.redu <- exp(logtau2.mle.redu)
+##         mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
+##         mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+##         LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
+##         return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR))
+## }
+
+## work with cond pmf, compute unit loglik inside function
+LR.gaussian <- function(x,params,mu.null,cond.pmf,n.GH=30) {
+        GH <- fastGHQuad::gaussHermiteData(n.GH)
         GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+        ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL)loglik.unit(mu,tau2,xi,paramsi,cond.pmf,GH)
+        loglik.unit <- function(mu,tau2,xi,paramsi,GH=GH) {
+            ## browser()
+            if(is.null(GH)) {
+                likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
+            } else {
+                likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+            }
+            return(log(likelihood))
+        }
         loglik <- function(mu,tau2,x,params,GH=NULL) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH=GH)))
         logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=c(-5,5),maximum=TRUE)$max
         tau2.mle.redu <- exp(logtau2.mle.redu)
@@ -525,32 +405,88 @@ LR.gaussian <- function(x,params,mu.null,loglik.unit,n.GH=30) {
         return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR))
 }
 
-loglik.unit.hyperg <- function(mu,tau2,xi,paramsi,GH=NULL) {
-    m.Ti <- paramsi['m.T']
-    m.Ci <- paramsi['m.C']
-    si <- paramsi['s']
-    pmf <- function(theta) { # numerically unsafe
-        numer <- choose(m.Ti,xi)*choose(m.Ci,si-xi)*exp((mu+sqrt(tau2)*theta)*xi)
-        supp <- max(0,si-m.Ci):min(si,m.Ti)
-        denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
-        ## denom <- rowSums(  outer(theta,0:m.Ti,function(thetaj,xj)choose(m.Ti,xj)*choose(m.Ci,si-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
-        numer / denom
+
+
+cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+    m.T <- params[,'m.T']; m.C <- params[,'m.C']; s <- params[,'s']
+    numer <- choose(m.T,x)*choose(m.C,s-x)*exp((mu+sqrt(tau2)*theta)*x)
+    supp <- max(0,s-m.C):min(s,m.T)
+    denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.T,xj)*choose(m.C,s-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+    numer / denom
+}
+## ## safer but slower:
+## cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+##     m.T <- params[,'m.T']; m.C <- params[,'m.C']; s <- params[,'s']
+##     logpmf.part <- function(xi)lgamma(m.T+1) - lgamma(xi+1) -lgamma(m.T-xi+1) + lgamma(m.C+1) - lgamma(s-xi+1) - lgamma(m.C-s+xi+1)
+##     lognumer <- logpmf.part(x)+ (mu+sqrt(tau2)*theta)*x
+##     ## logpmf.mat <- logpmf.part(0:m.T) + outer(0:m.T,theta)*sqrt(tau2) + (0:m.T)*mu
+##     supp <- max(0,s-m.C):min(s,m.T)
+##     logpmf.mat <- logpmf.part(supp) + outer(supp,theta)*sqrt(tau2) + supp*mu
+##     colmaxes <- apply(logpmf.mat,2,max)        
+##     logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
+##     exp(lognumer - logdenom)
+## }
+
+
+
+cond.pmf.poisson <- function(x,theta,mu,tau2,params) {
+    T <- params[,'T']
+    lambda <- T*exp(mu+sqrt(tau2)*theta)
+    dpois(x,lambda=lambda)
+}
+
+
+cond.pmf.binomial <- function(x,theta,mu,tau2,params) {
+    m <- params[,'m']
+    pr <- function(theta)plogis(mu+sqrt(tau2)*theta)
+    dbinom(x,size=m,prob=pr(theta))
+    ## integrand <- function(theta)pr(theta)^xi*(1-pr(theta))^(mi-xi)
+}
+
+
+cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params) {
+    T.t <- params[,'T.t']
+    T.c <- params[,'T.c']
+    s <- params[,'s']
+    pr <- function(theta)plogis(log(T.t/T.c) + mu+sqrt(tau2)*theta)
+    dbinom(x,size=s,prob=pr(theta))
+}
+dgp.binomial.irr <- function(n,mu,tau2,params) {
+    T.t <- params[,'T.t']
+    T.c <- params[,'T.c']
+    s <- params[,'s']
+    theta <- rnorm(n)
+    pr <- function(theta)plogis(log(T.t/T.c) + mu+sqrt(tau2)*theta)
+    rbinom(n,size=s,prob=pr(theta))
+}
+
+
+
+## k estimates for a single study
+## pmf.deriv.fun.ma should contain functions vectorized in theta and
+## x.
+ks.study <- function(pmf.derivs.fun.ma,ks.fun,params,support,GH=NULL) {
+    ## browser()
+    if(is.null(GH)) {
+        GH <- fastGHQuad::gaussHermiteData(50)
+        GH$x <- sqrt(2)*GH$x
+        GH$w <- GH$w / sqrt(pi)
+        names(GH) <- c('theta.grid','w')
     }
-    ## pmf <- function(theta) {
-    ##     ## logpmf.raw <- function(xi,theta)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1) + (mu+sqrt(tau2)*theta)*xi
-    ##     ## lognumer <- logpmf.raw(xi,theta)
-    ##     ## logpmf.mat <- outer(0:m.Ti,theta,logpmf.raw) # speed this up
-    ##     logpmf.part <- function(xi)lgamma(m.Ti+1) - lgamma(xi+1) -lgamma(m.Ti-xi+1) + lgamma(m.Ci+1) - lgamma(si-xi+1) - lgamma(m.Ci-si+xi+1)
-    ##     lognumer <- logpmf.part(xi)+ (mu+sqrt(tau2)*theta)*xi
-    ##     ## logpmf.mat <- logpmf.part(0:m.Ti) + outer(0:m.Ti,theta)*sqrt(tau2) + (0:m.Ti)*mu
-    ##     supp <- max(0,si-m.Ci):min(si,m.Ti)
-    ##     logpmf.mat <- logpmf.part(supp) + outer(supp,theta)*sqrt(tau2) + supp*mu
-    ##     colmaxes <- apply(logpmf.mat,2,max)        
-    ##     logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
-    ##     exp(lognumer - logdenom)
-    ## }
-    integral.approx <- if(is.null(GH)) integrate(function(theta)pmf(theta)*dnorm(theta),-Inf,Inf)$val
-    else
-        sum(GH$w*pmf(GH$x))
-    return(log(integral.approx))
+    ## sum ma-level g's over theta, getting a vector g(xi) with
+    ## unit-level components. 
+    pmf.derivs.unit <- lapply(pmf.derivs.fun.ma, function(pmf.deriv.fun.ma) {
+        ## supp <- max(0,s-m.C):min(s,m.T)
+        ## g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.fun.ma(theta,x,m,m.C,s)) # these are globals!!!
+        g.mat <- outer(X=GH$theta.grid,Y=support,function(theta,x)pmf.deriv.fun.ma(theta,x,params)) # these are globals!!!
+        g.unit <- colSums(GH$w * g.mat)
+    })
+    ## apply ks.fun to unit-level g's to get unit-level k's, take sum
+    ## weighted by binomial coefficient to get study-level k
+    k.study <- sapply(seq_along(ks.fun), function(i) {
+        k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+        k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+        k.val <- sum( k.fun.unit)
+    })
+    return(k.study)
 }

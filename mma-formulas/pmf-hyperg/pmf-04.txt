@@ -1,37 +1,56 @@
-(E^(x*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, s - x]*Binomial[mT, x]*
+(E^(x*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[params["m.C"], 
+   -x + params["s"]]*Binomial[params["m.T"], x]*
   (x^4*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*
-       Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}]^4 + 
+       Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+      {j, 0, params["m.T"]}]^4 + 
    24*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j*
-       Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}]^4 - 
+       Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+      {j, 0, params["m.T"]}]^4 - 
    12*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*
-      Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}]*
+      Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+     {j, 0, params["m.T"]}]*
     Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j*
-       Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}]^2*
+       Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+      {j, 0, params["m.T"]}]^2*
     (2*x*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j*
-        Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}] + 
+        Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+       {j, 0, params["m.T"]}] + 
      3*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^2*
-        Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}]) + 
-   2*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, -j + s]*
-       Binomial[mT, j], {j, 0, mT}]^2*
+        Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+       {j, 0, params["m.T"]}]) + 
+   2*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*
+       Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+      {j, 0, params["m.T"]}]^2*
     (6*x^2*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j*
-         Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}]^2 + 
+         Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], 
+          j], {j, 0, params["m.T"]}]^2 + 
      3*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^2*
-         Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}]^2 + 
+         Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], 
+          j], {j, 0, params["m.T"]}]^2 + 
      4*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j*
-        Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}]*
+        Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+       {j, 0, params["m.T"]}]*
       (3*x*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^2*
-          Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}] + 
-       Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^3*
-         Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}])) - 
-   Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, -j + s]*
-       Binomial[mT, j], {j, 0, mT}]^3*
+          Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], 
+           j], {j, 0, params["m.T"]}] + Inactive[Sum][
+        E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^3*Binomial[params["m.C"], 
+          -j + params["s"]]*Binomial[params["m.T"], j], 
+        {j, 0, params["m.T"]}])) - 
+   Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*
+       Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+      {j, 0, params["m.T"]}]^3*
     (4*x^3*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j*
-        Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}] + 
-     6*x^2*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^2*
-        Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}] + 
-     4*x*Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^3*
-        Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}] + 
-     Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^4*
-       Binomial[mC, -j + s]*Binomial[mT, j], {j, 0, mT}])))/
- Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[mC, -j + s]*
-    Binomial[mT, j], {j, 0, mT}]^5
+        Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+       {j, 0, params["m.T"]}] + 6*x^2*Inactive[Sum][
+       E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^2*Binomial[params["m.C"], 
+         -j + params["s"]]*Binomial[params["m.T"], j], 
+       {j, 0, params["m.T"]}] + 4*x*Inactive[Sum][
+       E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^3*Binomial[params["m.C"], 
+         -j + params["s"]]*Binomial[params["m.T"], j], 
+       {j, 0, params["m.T"]}] + Inactive[Sum][
+      E^(j*(theta*Sqrt[beta[1]] + beta[2]))*j^4*Binomial[params["m.C"], 
+        -j + params["s"]]*Binomial[params["m.T"], j], 
+      {j, 0, params["m.T"]}])))/
+ Inactive[Sum][E^(j*(theta*Sqrt[beta[1]] + beta[2]))*
+    Binomial[params["m.C"], -j + params["s"]]*Binomial[params["m.T"], j], 
+   {j, 0, params["m.T"]}]^5

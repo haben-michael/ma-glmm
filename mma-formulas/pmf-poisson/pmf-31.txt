@@ -1,12 +1,13 @@
-((E^(theta*Sqrt[beta[1]] + beta[2])*T)^x*theta*
-  (-(E^(3*(theta*Sqrt[beta[1]] + beta[2]))*T^3*theta*
-     (-3 + 2*theta*(3 + 2*x)*Sqrt[beta[1]])*Sqrt[beta[1]]) + 
-   E^(4*(theta*Sqrt[beta[1]] + beta[2]))*T^4*theta^2*beta[1] + 
-   x^2*(3 - 3*theta*x*Sqrt[beta[1]] + theta^2*x^2*beta[1]) + 
-   E^(2*(theta*Sqrt[beta[1]] + beta[2]))*T^2*
-    (3 - 9*theta*(1 + x)*Sqrt[beta[1]] + theta^2*(7 + 12*x + 6*x^2)*
-      beta[1]) - E^(theta*Sqrt[beta[1]] + beta[2])*T*
-    (3 - 3*theta*Sqrt[beta[1]] + theta^2*beta[1] + 4*theta^2*x^3*beta[1] + 
+(theta*(E^(theta*Sqrt[beta[1]] + beta[2])*params["T"])^x*
+  (x^2*(3 - 3*theta*x*Sqrt[beta[1]] + theta^2*x^2*beta[1]) - 
+   E^(theta*Sqrt[beta[1]] + beta[2])*(3 - 3*theta*Sqrt[beta[1]] + 
+     theta^2*beta[1] + 4*theta^2*x^3*beta[1] + 
      x*(6 - 9*theta*Sqrt[beta[1]] + 4*theta^2*beta[1]) + 
-     x^2*(-9*theta*Sqrt[beta[1]] + 6*theta^2*beta[1]))))/
- (8*E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*beta[1]^(5/2)*factorial[x])
+     x^2*(-9*theta*Sqrt[beta[1]] + 6*theta^2*beta[1]))*params["T"] + 
+   E^(2*(theta*Sqrt[beta[1]] + beta[2]))*(3 - 9*theta*(1 + x)*Sqrt[beta[1]] + 
+     theta^2*(7 + 12*x + 6*x^2)*beta[1])*params["T"]^2 - 
+   E^(3*(theta*Sqrt[beta[1]] + beta[2]))*theta*
+    (-3 + 2*theta*(3 + 2*x)*Sqrt[beta[1]])*Sqrt[beta[1]]*params["T"]^3 + 
+   E^(4*(theta*Sqrt[beta[1]] + beta[2]))*theta^2*beta[1]*params["T"]^4))/
+ (8*E^(E^(theta*Sqrt[beta[1]] + beta[2])*params["T"])*beta[1]^(5/2)*
+  factorial[x])

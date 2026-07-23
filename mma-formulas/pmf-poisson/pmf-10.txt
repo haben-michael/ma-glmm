@@ -1,3 +1,4 @@
--1/2*((E^(theta*Sqrt[beta[1]] + beta[2])*T)^x*theta*
-   (E^(theta*Sqrt[beta[1]] + beta[2])*T - x))/
-  (E^(E^(theta*Sqrt[beta[1]] + beta[2])*T)*Sqrt[beta[1]]*factorial[x])
+-1/2*(theta*(E^(theta*Sqrt[beta[1]] + beta[2])*params["T"])^x*
+   (-x + E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]))/
+  (E^(E^(theta*Sqrt[beta[1]] + beta[2])*params["T"])*Sqrt[beta[1]]*
+   factorial[x])

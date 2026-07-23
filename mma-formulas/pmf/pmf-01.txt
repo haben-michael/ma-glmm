@@ -1,4 +1,0 @@
-x*(1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]])^(1 + m - x)*
-  LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^x - 
- (m - x)*(1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]])^(m - x)*
-  LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^(1 + x)

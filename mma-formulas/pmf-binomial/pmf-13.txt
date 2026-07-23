@@ -1,0 +1,11 @@
+(theta*Binomial[params["m"], x]*
+  (1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]])^(-x + params["m"])*
+  LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^x*
+  (x^4 - (1 + 4*x + 6*x^2 + 4*x^3)*LogisticSigmoid[theta*Sqrt[beta[1]] + 
+      beta[2]]*params["m"] + (7 + 12*x + 6*x^2)*
+    LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^2*params["m"]*
+    (1 + params["m"]) - 2*(3 + 2*x)*
+    LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^3*params["m"]*
+    (2 + 3*params["m"] + params["m"]^2) + 
+   LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^4*params["m"]*
+    (6 + 11*params["m"] + 6*params["m"]^2 + params["m"]^3)))/(2*Sqrt[beta[1]])
