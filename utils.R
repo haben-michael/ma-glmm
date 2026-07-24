@@ -462,31 +462,73 @@ dgp.binomial.irr <- function(n,mu,tau2,params) {
 
 
 
-## k estimates for a single study
-## pmf.deriv.fun.ma should contain functions vectorized in theta and
-## x.
-ks.study <- function(pmf.derivs.fun.ma,ks.fun,params,support,GH=NULL) {
+## ## k estimates for a single study
+## ## pmf.deriv.fun.ma should contain functions vectorized in theta and
+## ## x.
+## ks.study <- function(pmf.derivs.fun.ma,ks.fun,params,support,GH=NULL) {
+##     ## browser()
+##     if(is.null(GH)) {
+##         GH <- fastGHQuad::gaussHermiteData(50)
+##         GH$x <- sqrt(2)*GH$x
+##         GH$w <- GH$w / sqrt(pi)
+##         names(GH) <- c('theta.grid','w')
+##     }
+##     ## sum ma-level g's over theta, getting a vector g(xi) with
+##     ## unit-level components. 
+##     pmf.derivs.unit <- lapply(pmf.derivs.fun.ma, function(pmf.deriv.fun.ma) {
+##         ## supp <- max(0,s-m.C):min(s,m.T)
+##         ## g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.fun.ma(theta,x,m,m.C,s)) # these are globals!!!
+##         g.mat <- outer(X=GH$theta.grid,Y=support,function(theta,x)pmf.deriv.fun.ma(theta,x,params)) # these are globals!!!
+##         g.unit <- colSums(GH$w * g.mat)
+##     })
+##     ## apply ks.fun to unit-level g's to get unit-level k's, take sum
+##     ## weighted by binomial coefficient to get study-level k
+##     k.study <- sapply(seq_along(ks.fun), function(i) {
+##         k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+##         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+##         k.val <- sum( k.fun.unit)
+##     })
+##     return(k.study)
+## }
+
+
+## allowing for theta-only parts of the pmf derivative to be passed
+## in. rework ks.fun to store order and args as attributes not list
+## elements.
+ks.study <- function(pmf.derivs.fun,ks.fun,theta.parts.fun=list(),params,supp.x,mu.null,tau2.null,GH=NULL) {
     ## browser()
+    beta <- c(tau2.null,mu.null)
     if(is.null(GH)) {
         GH <- fastGHQuad::gaussHermiteData(50)
         GH$x <- sqrt(2)*GH$x
         GH$w <- GH$w / sqrt(pi)
         names(GH) <- c('theta.grid','w')
     }
-    ## sum ma-level g's over theta, getting a vector g(xi) with
-    ## unit-level components. 
-    pmf.derivs.unit <- lapply(pmf.derivs.fun.ma, function(pmf.deriv.fun.ma) {
-        ## supp <- max(0,s-m.C):min(s,m.T)
-        ## g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.fun.ma(theta,x,m,m.C,s)) # these are globals!!!
-        g.mat <- outer(X=GH$theta.grid,Y=support,function(theta,x)pmf.deriv.fun.ma(theta,x,params)) # these are globals!!!
-        g.unit <- colSums(GH$w * g.mat)
+    theta.parts <- lapply(theta.parts.fun, function(f) {
+        theta.part.mat <- outer(GH$theta.grid,supp.x,function(theta,x)f(beta,theta,x,params))
+        rowSums(theta.part.mat)
     })
-    ## apply ks.fun to unit-level g's to get unit-level k's, take sum
-    ## weighted by binomial coefficient to get study-level k
-    k.study <- sapply(seq_along(ks.fun), function(i) {
-        k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+    pmf.derivs.unit <- lapply(pmf.derivs.fun, function(f) {
+        arg.list <- c(list(
+            theta = rep(GH$theta.grid,length(supp.x)),
+            x = rep(supp.x,each=length(GH$theta.grid))),
+            lapply(theta.parts[attr(f,'args')], function(v)rep(v,length(supp.x))),
+            beta=list(beta),
+            params=list(params)
+            )
+        pmf.deriv.unit <- do.call(f,arg.list)
+        dim(pmf.deriv.unit) <- c(length(GH$theta.grid),length(supp.x))
+        GH$w %*% pmf.deriv.unit
+    })
+    k.vals <- sapply(seq_along(ks.fun), function(i) {
+        k.fun <- ks.fun[[i]]
+        args <- attr(k.fun,'args')
         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
         k.val <- sum( k.fun.unit)
     })
-    return(k.study)
+    k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+    ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+    ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
+    return(ks.df)
 }
+

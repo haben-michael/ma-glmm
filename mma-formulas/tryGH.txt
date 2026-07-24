@@ -1,2 +1,0 @@
-(Binomial[m, x]*Log[Sum[(1 - u[j])^(m - x)*u[j]^x*w[j], {j, 1, K}]/Sqrt[Pi]]*
-  Sum[(1 - u[k])^(m - x)*u[k]^x*w[k], {k, 1, K}])/Sqrt[Pi]

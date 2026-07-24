@@ -7,13 +7,13 @@ tau2.true <- tau2.null <- 1/2
 ns <- 5:15
 ## bartlett.C <- 1.36433398617429 # hyperg
 ## bartlett.C <- 1.17164232232645 # poisson
-bartlett.C <- 1.25249895246997 # binomial-IRR
+bartlett.C <- 1.36297164231076 # binomial-IRR
 ## tic <- Sys.time()
 ## by.n <- sapply(ns, function(n) {
 ## repeat{
 by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
     cat('.')
-    s <- rep(10,n)
+    s <- rep(30,n)
     T.t <- rep(1,n)
     T.c <- rep(1.5,n)
     params <- cbind(s=s,T.t=T.t,T.c=T.c)
@@ -25,6 +25,8 @@ by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
     })
     ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
     ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
+    means <- rowMeans(stats-1)
+    c(ks=ks,means=means)
 })
 by.n <- simplify2array(by.n)
 ## print(Sys.time() - tic)

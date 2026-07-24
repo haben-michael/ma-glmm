@@ -1082,6 +1082,7 @@ ks.fun <- lapply(filelist, function(file) {
 })
 orders.k <- gsub('.txt','',filelist,fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
 orders.k <- lapply(orders.k,function(x)if(length(x)==1)c(x,0)else x)
+
 ks.fun <- lapply(seq_along(ks.fun), function(i)c(ks.fun[[i]],order=list(orders.k[[i]])))
 saveRDS(ks.fun,file='ks.fun.rds',compress=FALSE)
 
@@ -1638,35 +1639,9 @@ beta <- c(tau2.null,mu.null)
 ks.fun <- readRDS('ks.fun.rds')
 k.orders <- lapply(ks.fun,function(k.fun)k.fun$order)
 
-## ## read in pmf derivatives
-## source('utils.R')
-## mma.str.path <- './mma-formulas/pmf-hyperg/'
-## filelist <- dir(mma.str.path)
-## filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
-## ## file <- './mma-formulas/quad/g/g-10.txt'
-## pmf.derivs.fun <- lapply(filelist, function(file) {
-##     mma.str <-paste(readLines(file,warn=FALSE),collapse='')
-##     ## mma.str <- gsub('Pi','pi',mma.str)
-##     mma.str <- gsub('Inactive[Sum]','Sum',mma.str,fixed=TRUE)
-##     mma.str <- gsub('mC','m.C',mma.str,fixed=TRUE)
-##     mma.str <- gsub('mT','m.T',mma.str,fixed=TRUE)
-##     mma.str <-  mma.to.R(mma.str,
-##                          funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","Hypergeometric2F1"),
-##                          rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",Hypergeometric2F1="gsl::hyperg_2F1"))
-##     g.deriv <- 
-##         str.to.fun(mma.str,
-##                    args = c('beta','theta','x','m.T','m.C','s'),
-##                    binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
-## })
-## pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
-## names(pmf.derivs.fun) <- pmf.deriv.orders
-## pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,m.T,m.C,s)pmf.deriv.fun(beta,theta,x,m.T,m.C,s))
-## ## need to vectorize these generically
-## pmf.derivs.fun.ma <- lapply(pmf.derivs.fun.ma,function(pmf.deriv.fun.ma) Vectorize(pmf.deriv.fun.ma,c('theta','x')))
-
 ## read in pmf derivatives--using generic params
 source('utils.R')
-mma.str.path <- './mma-formulas/pmf-hyperg/'
+mma.str.path <- './mma-formulas/pmf-hypergOLD/'
 filelist <- dir(mma.str.path)
 filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
 ## file <- './mma-formulas/quad/g/g-10.txt'
@@ -1805,6 +1780,7 @@ pmf.derivs.fun <- lapply(filelist, function(file) {
 })
 pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
 names(pmf.derivs.fun) <- pmf.deriv.orders
+saveRDS(pmf.derivs.fun,file='pmf-derivs-fun-poisson.rds',compress=FALSE)
 pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,params)pmf.deriv.fun(beta,theta,x,params))
 
 T <- 1
@@ -1961,6 +1937,7 @@ pmf.derivs.fun <- lapply(filelist, function(file) {
 })
 pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
 names(pmf.derivs.fun) <- pmf.deriv.orders
+## saveRDS(pmf.derivs.fun,file='pmf-derivs-fun-binomial.rds',compress=FALSE)
 pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,params)pmf.deriv.fun(beta,theta,x,params))
 
 m <- 20
@@ -2008,6 +1985,7 @@ par(op)
 ## process  rate sim (IID data, using R with gauss-hermite)
 save.path <- './sim/260714/'
 save.path <- './sim/260722/'
+save.path <- './sim/260723/'
 ## png.file <- './figs/gaussian.png'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
@@ -2015,13 +1993,38 @@ print(length(filelist))
 by.sim <- sapply(filelist, function(file) {
     load(paste0(save.path,file))
     apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
+    ## apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
 })
 apply(by.sim,1,median)
 
 
 
 
-## 7. binomial--incidence ratio model
+## tracking mean(LR) as well
+## process  rate sim (IID data, using R with gauss-hermite)
+save.path <- './sim/260714/'
+save.path <- './sim/260722/'
+save.path <- './sim/260723/'
+## png.file <- './figs/gaussian.png'
+filelist <- dir(save.path)
+filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+print(length(filelist))
+by.sim <- lapply(filelist, function(file) {
+    load(paste0(save.path,file))
+    df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
+    do.call(rbind,df.lst)
+    ## apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
+    ## apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
+})
+long <- do.call(rbind,by.sim)
+long <- aggregate(val ~ ., median,data=long)
+stats <- split(long,long$stat)
+plot(val ~ n, ylim=c(0,max(val)),data=subset(long,subset=stat=='ks.LR',select=c(n,val)),type='l')
+lines(val ~ n, data=subset(long,subset=stat=='ks.LR.bartlett',select=c(n,val)),col=2)
+sapply(stats,function(df)coef(lm(log(abs(df$val))~log(df$n)))[2])
+
+
+## 7. binomial--incidence rate ratio model
 
 ## 7a. diagnostics
 ## check condpmf.poisson gives consistent mle's --fine
@@ -2081,9 +2084,10 @@ pmf.derivs.fun <- lapply(filelist, function(file) {
 })
 pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
 names(pmf.derivs.fun) <- pmf.deriv.orders
+## saveRDS(pmf.derivs.fun,file='pmf-derivs-fun-binomial-irr.rds',compress=FALSE)
 pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,params)pmf.deriv.fun(beta,theta,x,params))
 
-s <- 10
+s <- 30
 T.t <- 1
 T.c <- 1.5
 params <- c(s=s,T.t=T.t,T.c=T.c)
@@ -2092,7 +2096,8 @@ k.vals <- ks.study(pmf.derivs.fun.ma,ks.fun,params=params,support=support)
 k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
 bartlett.C <- lawley(k.df,2) - lawley(k.df,1)
 print(bartlett.C)
-## 1.25249895246997
+## 1.36297164231076
+
 
 
 
@@ -2122,3 +2127,266 @@ op <- par(mfrow=c(1,2))
 qqnorm(z.stats['mu',]); abline(0,1)
 qqnorm(z.stats['tau2',]); abline(0,1)
 par(op)
+
+
+
+
+
+## 8 speed up hypergeom calculations
+
+## 8a. separate calculation of normalizing constant and
+## derivatives. only depends on tehta, x is constant.
+
+source('utils.R')
+## read in theta-only components
+mma.str.path <- './mma-formulas/pmf-hyperg/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('theta-part-[[:digit:]][[:digit:]]\\.txt',filelist)])
+## file <- filelist[1]
+theta.parts.fun <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","factorial"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",factorial="factorial"))
+    theta.part <- 
+        str.to.fun(mma.str,
+                   args = c('beta','theta','x','params'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+})
+orders.theta.parts <- substr(filelist,nchar(filelist)-5,nchar(filelist)-4)
+names(theta.parts.fun) <- paste0('thetaPart',orders.theta.parts)
+## saveRDS(theta.parts.fun,file='theta-parts-fun-hyperg.rds',compress=FALSE)
+
+## read in pmf derivatives
+mma.str.path <- './mma-formulas/pmf-hyperg/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('pmf-[[:digit:]][[:digit:]]\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+## file <- filelist[1]
+pmf.derivs.fun <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","factorial"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",factorial="factorial"))
+    only.theta.args <- regmatches(mma.str,gregexpr('thetaPart[[:digit:]][[:digit:]]',mma.str))[[1]]
+    only.theta.args <- unique(only.theta.args)
+    g.deriv <- 
+        str.to.fun(mma.str,
+                   args = c('beta','params','theta','x',only.theta.args),
+                   ## args = c('idx','x','theta','beta','params'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt))
+    ## })
+})
+pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
+pmf.deriv.args <- sapply(pmf.derivs.fun,function(f) {
+    vars <- all.vars(body(f))
+    vars <- unique(vars[grep('thetaPart',vars)])
+    ## substr(vars,nchar(vars)-1,nchar(vars))
+})
+pmf.derivs.fun <- lapply(1:length(pmf.derivs.fun), function(i)structure(pmf.derivs.fun[[i]],args=unname(pmf.deriv.args[[i]])))
+names(pmf.derivs.fun) <- pmf.deriv.orders
+## saveRDS(pmf.derivs.fun,file='pmf-derivs-fun-hyperg.rds',compress=FALSE)
+
+
+## pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,params)pmf.deriv.fun(beta,theta,x,params))
+
+ks.fun <- readRDS('ks-fun.rds')
+
+
+
+beta <- c(1/2,0)
+m <- m.T <- 20; m.C <- 15; s <- 10;
+supp.x <- max(0,s-m.C):min(s,m.T)
+params <- c(m.T=m.T,m.C=m.C,s=s)
+n.GH <- 30
+## with(list(theta=GH$theta.grid),
+## f(1:n,1:n,GH$theta.grid,beta,params)
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    GH$x <- sqrt(2)*GH$x
+    GH$w <- GH$w / sqrt(pi)
+    names(GH) <- c('theta.grid','w')
+
+## theta <- GH$theta.grid[1]
+## odds <- exp(beta[2]+sqrt(beta[1])*theta)
+## x <- supp.x[1]
+## BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)
+
+
+## f <- theta.parts[[1]]
+theta.parts <- lapply(theta.parts.fun, function(f) {
+    theta.part.mat <- outer(GH$theta.grid,supp.x,function(theta,x)f(beta,theta,x,params))
+    rowSums(theta.part.mat)
+})
+
+## f <- pmf.derivs.fun[[1]]
+pmf.derivs.unit <- lapply(pmf.derivs.fun, function(f) {
+    arg.list <- c(list(
+        theta = rep(GH$theta.grid,length(supp.x)),
+        x = rep(supp.x,each=length(GH$theta.grid))),
+        lapply(theta.parts[attr(f,'args')], function(v)rep(v,length(supp.x))),
+        beta=list(beta),
+        params=list(params)
+        )
+    theta.part.vals <- do.call(f,arg.list)
+    dim(theta.part.vals) <- c(length(GH$theta.grid),length(supp.x))
+    GH$w %*% theta.part.vals
+})
+
+
+k.orders <- lapply(ks.fun,function(k.fun)k.fun$order)
+k.study <- sapply(seq_along(ks.fun), function(i) {
+    k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+    k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+    k.val <- sum( k.fun.unit)
+})
+k.vals <- k.study
+k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+bartlett.C <- lawley(k.df,2) - lawley(k.df,1)
+print(bartlett.C)
+
+
+
+
+
+## 8b. encapsulate new verusion of study-level ks function, allowing for
+## theta-only parts of the pmf derivative to be passed in. rework
+## ks.fun to store order and args as attributes not list elements.
+
+
+## k's: this is for all models
+mma.str.path <- './mma-formulas/k/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+ks.fun <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    matches.idx <- gregexpr("pmfSum[[:digit:]][[:digit:]]", mma.str)
+    variables <- regmatches(mma.str, matches.idx)[[1]] |> unique()
+    fun.str <- sprintf(
+        "function(%s) { %s }", 
+        paste(variables, collapse = ", "), 
+        mma.str
+    )
+    k.fun <- l.deriv.fun <- eval(parse(text = fun.str))
+    structure(k.fun,args=variables)
+    ## list(fun=k.fun,args=variables)
+})
+k.orders <- gsub('.txt','',filelist,fixed=TRUE) |> sub(pattern='.*k-',replace='') |> strsplit(split='-')
+k.orders <- sapply(k.orders,function(x)if(length(x)==1)c(x,0)else x)
+## ks.fun <- lapply(seq_along(ks.fun), function(i)c(ks.fun[[i]],order=list(k.orders[[i]])))
+ks.fun <- sapply(seq_along(ks.fun), function(i)c(structure(ks.fun[[i]],order=k.orders[,i])))
+saveRDS(ks.fun,file='ks-fun.rds',compress=FALSE)
+
+
+ks.fun <- readRDS('ks-fun.rds')
+
+ks.study <- function(pmf.derivs.fun,ks.fun,theta.parts.fun=list(),params,supp.x,GH=NULL) {
+    ## browser()
+    if(is.null(GH)) {
+        GH <- fastGHQuad::gaussHermiteData(50)
+        GH$x <- sqrt(2)*GH$x
+        GH$w <- GH$w / sqrt(pi)
+        names(GH) <- c('theta.grid','w')
+    }
+    theta.parts <- lapply(theta.parts.fun, function(f) {
+        theta.part.mat <- outer(GH$theta.grid,supp.x,function(theta,x)f(beta,theta,x,params))
+        rowSums(theta.part.mat)
+    })
+    pmf.derivs.unit <- lapply(pmf.derivs.fun, function(f) {
+        arg.list <- c(list(
+            theta = rep(GH$theta.grid,length(supp.x)),
+            x = rep(supp.x,each=length(GH$theta.grid))),
+            lapply(theta.parts[attr(f,'args')], function(v)rep(v,length(supp.x))),
+            beta=list(beta),
+            params=list(params)
+            )
+        pmf.deriv.unit <- do.call(f,arg.list)
+        dim(pmf.deriv.unit) <- c(length(GH$theta.grid),length(supp.x))
+        GH$w %*% pmf.deriv.unit
+    })
+    k.vals <- sapply(seq_along(ks.fun), function(i) {
+        k.fun <- ks.fun[[i]]
+        args <- attr(k.fun,'args')
+        k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+        k.val <- sum( k.fun.unit)
+    })
+    k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+    ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+    ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
+    return(ks.df)
+}
+
+
+
+## 8c. using saved formulas, run through all models
+
+## 8c-1 hypergeometric
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+mu.null <- 0
+tau2.null <- 1/2
+
+theta.parts.fun <- readRDS('theta-parts-fun-hyperg.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-hyperg.rds')
+m <- m.T <- 20; m.C <- 15; s <- 10;
+supp.x <- max(0,s-m.C):min(s,m.T)
+params <- c(m.T=m.T,m.C=m.C,s=s)
+
+ks.df <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,theta.parts=theta.parts.fun,params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null)
+bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
+dput(bartlett.C)
+## 1.36433398617969
+
+
+## 8c-2 binomial
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+mu.null <- 0
+tau2.null <- 1/2
+
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial.rds')
+m <- 20
+supp.x <- 0:20
+params <- c(m=m)
+ks.df <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,theta.parts=list(),params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null)
+bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
+dput(bartlett.C)
+## 1.32617146423958
+
+
+## 8c-3 binomial-IRR 
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+mu.null <- 0
+tau2.null <- 1/2
+
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-irr.rds')
+s <- 30
+T.t <- 1
+T.c <- 1.5
+params <- c(s=s,T.t=T.t,T.c=T.c)
+supp.x <- 0:s
+
+ks.df <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,theta.parts=list(),params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null)
+bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
+print(bartlett.C)
+## 1.36297164231076
+
+
+
+## 8c-4 poisson
+source('utils.R')
+mu.null <- 0
+tau2.null <- 1/2
+ks.fun <- readRDS('ks-fun.rds')
+
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
+T <- 1
+supp.x <- 0:50
+params <- c(T=T)
+
+ks.df <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,theta.parts=list(),params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null)
+bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
+dput(bartlett.C)
+## 1.17164232232642
+

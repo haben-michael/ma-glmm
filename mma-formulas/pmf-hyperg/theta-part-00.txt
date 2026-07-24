@@ -1,0 +1,2 @@
+E^(x*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[params["m.C"], 
+  -x + params["s"]]*Binomial[params["m.T"], x]

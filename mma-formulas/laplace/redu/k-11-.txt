@@ -1,3 +1,0 @@
-(Binomial[m, x]*(beta[1] - 2*beta[2]^2 + 4*beta[2]*Log[x/(m - x)] - 
-   2*Log[x/(m - x)]^2)*(1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]])^
-   (m - x)*LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^x)/(2*beta[1]^3)
