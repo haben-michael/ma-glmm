@@ -1,4 +1,7 @@
+TODO
 
+1. x to y
+2. move supp.x into params in ks.study
 
 
 ## DEBUGGING
@@ -282,3 +285,164 @@ loglik.unit <- function(mu,tau2,xi,paramsi,cond.pmf,GH=NULL) {
 ## ## need to vectorize these generically
 ## pmf.derivs.fun.ma <- lapply(pmf.derivs.fun.ma,function(pmf.deriv.fun.ma) Vectorize(pmf.deriv.fun.ma,c('theta','x')))
 
+
+
+
+
+DEBUG
+
+
+
+## checking poisson model numerical issues
+## 8c-4 poisson
+source('utils.R')
+mu.null <- 0
+tau2.null <- 1/2
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
+T <- 50
+supp.x <- 0:1e2
+params <- c(T=T)
+## ks.df <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null)
+## bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
+## dput(bartlett.C)
+beta <- c(tau2.null,mu.null)
+## if(is.null(GH)) {
+    GH <- fastGHQuad::gaussHermiteData(50)
+    GH$x <- sqrt(2)*GH$x
+    GH$w <- GH$w / sqrt(pi)
+    names(GH) <- c('theta.grid','w')
+## }
+
+pmf.deriv.fun <- pmf.derivs.fun[[1]]
+pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
+    ## supp <- max(0,s-m.C):min(s,m.T)
+    ## g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.fun.ma(theta,x,m,m.C,s)) # these are globals!!!
+    g.mat <- outer(X=GH$theta.grid,Y=supp.x,function(theta,x)pmf.deriv.fun(beta=beta,theta=theta,x=x,params=params)) 
+    g.unit <- colSums(GH$w * g.mat)
+})
+max(sapply(pmf.derivs.unit,function(v)max(v)))
+min(sapply(pmf.derivs.unit,function(v)min(v)))
+
+
+(E^(theta * sqrt(beta[1]) + beta[2]) * params["T"])^x/(E^(E^(theta * 
+    sqrt(beta[1]) + beta[2]) * params["T"]) * factorial(x))
+
+
+
+
+## read in pmf derivatives
+source('utils.R')
+mu.null <- 0
+tau2.null <- 1/2
+ks.fun <- readRDS('ks-fun.rds')
+
+mma.str.path <- './mma-formulas/pmf-poisson/'
+filelist <- dir(mma.str.path)
+filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+## file <- './mma-formulas/quad/g/g-10.txt'
+pmf.derivs.fun <- lapply(filelist, function(file) {
+    mma.str <-paste(readLines(file,warn=FALSE),collapse='')
+    ## mma.str <- gsub('Pi','pi',mma.str)
+    ## mma.str <- gsub('Inactive[Sum]','Sum',mma.str,fixed=TRUE)
+    ## mma.str <- gsub('mC','m.C',mma.str,fixed=TRUE)
+    ## mma.str <- gsub('mT','m.T',mma.str,fixed=TRUE)
+    mma.str <-  mma.to.R(mma.str,
+                         funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial","factorial","dpois"),
+                         rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose",factorial="factorial",dpois="dpois"))
+    g.deriv <- 
+        str.to.fun(mma.str,
+                   args = c('beta','theta','x','params'),
+                   binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt,dpois=dpois))
+})
+pmf.deriv.orders <- paste0('pmfSum',substr(filelist,nchar(filelist)-5,nchar(filelist)-4))
+names(pmf.derivs.fun) <- pmf.deriv.orders
+## saveRDS(pmf.derivs.fun,file='pmf-derivs-fun-poisson.rds',compress=FALSE)
+## pmf.derivs.fun.ma <- lapply(pmf.derivs.fun,function(pmf.deriv.fun)function(theta,x,params)pmf.deriv.fun(beta,theta,x,params))
+
+
+
+## pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
+T <- 1
+supp.x <- 0:2e2
+params <- c(T=T)
+
+ks.df <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null)
+bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
+dput(bartlett.C)
+
+
+
+
+## check z-stats with new poisson using recurrence 
+source('utils.R')
+mu.null <- -4
+tau2.null <- .2
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
+T <- 1e3
+supp.x <- 0:1e3
+params <- c(T=T)
+ks.df <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null,n.GH=1e2)
+k.22 <- ks.df[ks.df[,'inner']=='22'  & ks.df[,'outer']=='0','k.val']
+k.11 <- ks.df[ks.df[,'inner']=='11'  & ks.df[,'outer']=='0','k.val']
+k.12 <- ks.df[ks.df[,'inner']=='12'  & ks.df[,'outer']=='0','k.val']
+print(k.22); print(k.11)
+bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
+dput(bartlett.C)
+
+
+n <- 5e1
+inf <- -matrix(c(k.11,k.12,k.12,k.22),nrow=2)
+vcov.hat <- solve(inf)
+## T <- rep(1,n)
+z.stats <- replicate(1e2, {
+    theta <- rnorm(n)
+    ## T <- 4 + rexp(n)
+    lambda <- T*exp(mu.null+sqrt(tau2.null)*theta)
+    x <- rpois(n,lambda)
+    params <- cbind(T=rep(T,n))
+    mles <- LR.gaussian(x,params,mu.null,cond.pmf.poisson,n.GH=100)$mle.full
+    (rev(mles)-c(tau2.null,mu.null)) / sqrt(diag(vcov.hat)/n)
+})
+op <- par(mfrow=c(1,2))
+qqnorm(z.stats['mu',]); abline(0,1)
+qqnorm(z.stats['tau2',]); abline(0,1)
+par(op)
+
+
+
+n <- 5
+stats <- replicate(5e2, {
+    theta <- rnorm(n)
+    ## T <- 4 + rexp(n)
+    lambda <- T*exp(mu.null+sqrt(tau2.null)*theta)
+    x <- rpois(n,lambda)
+    params <- cbind(T=rep(T,n))
+    LR <- LR.gaussian(x,params,mu.null,cond.pmf.poisson,n.GH=1e2)$LR
+    ## LR <- LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$LR
+    LR.bartlett <- LR / (1+bartlett.C/n)
+    c(LR=LR,LR.bartlett=LR.bartlett)
+})
+rowMeans(stats-1)
+## hist(stats['LR',],xlim=c(0,2))
+## abline(v=1,col=2)
+## abline(v=mean(stats['LR',]),col=3)
+## abline(v=mean(stats['LR.bartlett',]),col=3,lty=2)
+
+
+
+DATA ENTRY
+
+## niel.weise <- data.frame(
+##   study = 1:18,
+##   Y0    = c(3, 3, 9, 7, 6, 4, 3, 2, 19, 2, 7, 1, 5, 11, 0, 1, 3, 1),
+##   n0    = c(117, 35, 195, 136, 157, 139, 177, 39, 103, 122, 64, 58, 175, 180, 105, 262, 362, 69),
+##   Y1    = c(0, 1, 2, 0, 5, 1, 1, 1, 1, 1, 0, 0, 3, 6, 0, 0, 1, 4),
+##   n1    = c(116, 44, 208, 130, 151, 98, 174, 74, 97, 113, 66, 70, 188, 187, 118, 252, 345, 64)
+## )
+## write.table(niel.weise,'niel-weise.txt')
+
+## mu.null <- with(niel.weise,qlogis(mean(Y0/n0)))
+## source('utils.R')
+## LR.gaussian(x=niel.weise$Y0,params=cbind(m=niel.weise$n0),mu.null=0,cond.pmf=cond.pmf.binomial.prop,n.GH=50)

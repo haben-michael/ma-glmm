@@ -1,0 +1,64 @@
+\documentclass[12pt]{article}
+\usepackage{amsthm,amssymb,amsmath}
+\usepackage{bm,bbm}
+% \usepackage{mathrsfs}
+\usepackage{mathtools,etoolbox,xcolor}
+% \usepackage{mathtools}
+\usepackage{enumitem}
+\usepackage[margin=1in]{geometry}
+\usepackage{authblk}
+\usepackage{natbib}
+% \usepackage[style=authoryear, natbib=true, backend=biber]{biblatex}
+\usepackage{booktabs,siunitx}
+% \usepackage{multirow}
+\usepackage{caption,subcaption}
+% \usepackage{xr}
+\usepackage{tikz}
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{conjecture}{Conjecture}
+\renewcommand{\P}{\mathbbm{P}}
+\newcommand{\E}{\mathbbm{E}}
+\newcommand{\var}{\text{Var}}
+\newcommand{\corr}{\text{corr}}
+\newcommand{\munull}{\mu_{0}}
+\newcommand{\tausqnull}{\tau^2_{0}}
+\newcommand{\taunull}{\tau_0}
+\newcommand{\tausqhat}{\hat\tau^2}
+\newcommand{\mumle}{\hat\mu_{MLE}}
+\newcommand{\tausqmle}{\hat\tau^2_{MLE}}
+\newcommand{\tausqmlered}{\hat\tau^2_{MLE,R}}
+\newcommand{\mustar}{\mu_\ast}
+\newcommand{\tausqstar}{\tau^2_\ast}
+\newcommand{\comment}[2][red]{%
+ \iftoggle{commenttoggle}{%
+  {\normalsize{\color{#1}{#2}}\normalsize}%
+ }{%
+ }%
+}
+\graphicspath{{./figs/}} 
+\newtoggle{commenttoggle}
+\togglefalse{commenttoggle}
+\mathtoolsset{showonlyrefs,showmanualtags}
+
+\title{Bartlett adjustment for random effects meta-analysis of event outcomes with small samples}
+% \date{}
+\author[1]{Haben Michael}
+\affil[1]{University of Massachusetts, Amherst, MA (hmichael@math.umass.edu)}
+\date{}                   
+\begin{document}
+\maketitle
+
+Abstract. ...
+\textsc{Keywords: Meta-analysis, Bartlett correction, Generalized linear mixed models}
+
+\bibliographystyle{chicago}
+\bibliography{../ma-equivalence/ma-equivalence.bib}
+% \printbibliography
+
+\end{document}
+
+

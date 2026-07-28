@@ -1,4 +1,4 @@
--1/2*(theta*(E^(theta*Sqrt[beta[1]] + beta[2])*params["T"])^x*
-   (-x + E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]))/
-  (E^(E^(theta*Sqrt[beta[1]] + beta[2])*params["T"])*Sqrt[beta[1]]*
-   factorial[x])
+(E^(theta*Sqrt[beta[1]] + beta[2])*theta*
+  (dpois[-1 + x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]] - 
+   dpois[x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]])*params["T"])/
+ (2*Sqrt[beta[1]])

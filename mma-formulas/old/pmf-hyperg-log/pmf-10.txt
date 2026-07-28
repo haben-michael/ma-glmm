@@ -1,0 +1,4 @@
+x*(theta*Sqrt[beta[1]] + beta[2]) - Log[2] - 2*Log[thetaPart00] + 
+ Log[theta*thetaPart00*x - 2*thetaPart10*Sqrt[beta[1]]] - Log[beta[1]]/2 + 
+ Log[Binomial[params["m.C"], -x + params["s"]]] + 
+ Log[Binomial[params["m.T"], x]]

@@ -407,13 +407,6 @@ LR.gaussian <- function(x,params,mu.null,cond.pmf,n.GH=30) {
 
 
 
-cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
-    m.T <- params[,'m.T']; m.C <- params[,'m.C']; s <- params[,'s']
-    numer <- choose(m.T,x)*choose(m.C,s-x)*exp((mu+sqrt(tau2)*theta)*x)
-    supp <- max(0,s-m.C):min(s,m.T)
-    denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.T,xj)*choose(m.C,s-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
-    numer / denom
-}
 ## ## safer but slower:
 ## cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
 ##     m.T <- params[,'m.T']; m.C <- params[,'m.C']; s <- params[,'s']
@@ -426,6 +419,22 @@ cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
 ##     logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
 ##     exp(lognumer - logdenom)
 ## }
+cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+    m.T <- params[,'m.T']; m.C <- params[,'m.C']; s <- params[,'s']
+    numer <- choose(m.T,x)*choose(m.C,s-x)*exp((mu+sqrt(tau2)*theta)*x)
+    supp <- max(0,s-m.C):min(s,m.T)
+    denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.T,xj)*choose(m.C,s-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+    numer / denom
+}
+dgp.hyperg <- function(n,mu,tau2,params) {
+    m.T <- params[,'m.T']
+    m.C <- params[,'m.C']
+    s <- params[,'s']
+    theta <- rnorm(n)
+    odds <- exp(mu+sqrt(tau2)*theta)
+    x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
+}
+
 
 
 
@@ -436,12 +445,19 @@ cond.pmf.poisson <- function(x,theta,mu,tau2,params) {
 }
 
 
-cond.pmf.binomial <- function(x,theta,mu,tau2,params) {
+cond.pmf.binomial.prop <- function(x,theta,mu,tau2,params) {
     m <- params[,'m']
     pr <- function(theta)plogis(mu+sqrt(tau2)*theta)
     dbinom(x,size=m,prob=pr(theta))
     ## integrand <- function(theta)pr(theta)^xi*(1-pr(theta))^(mi-xi)
 }
+dgp.binomial.prop <- function(n,mu,tau2,params) {
+    m <- params[,'m']
+    theta <- rnorm(n)
+    pr <- function(theta)plogis( mu+sqrt(tau2)*theta)
+    rbinom(n,size=m,prob=pr(theta))
+}
+
 
 
 cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params) {
@@ -492,39 +508,73 @@ dgp.binomial.irr <- function(n,mu,tau2,params) {
 ## }
 
 
-## allowing for theta-only parts of the pmf derivative to be passed
-## in. rework ks.fun to store order and args as attributes not list
+## ## allowing for theta-only parts of the pmf derivative to be passed
+## ## in. rework ks.fun to store order and args as attributes not list
+## ## elements.
+## ## update: this approach was abandoned in favor of better formulas (using recurrences)
+## ks.study <- function(pmf.derivs.fun,ks.fun,theta.parts.fun=list(),params,supp.x,mu.null,tau2.null,GH=NULL) {
+##     ## browser()
+##     beta <- c(tau2.null,mu.null)
+##     if(is.null(GH)) {
+##         GH <- fastGHQuad::gaussHermiteData(50)
+##         GH$x <- sqrt(2)*GH$x
+##         GH$w <- GH$w / sqrt(pi)
+##         names(GH) <- c('theta.grid','w')
+##     }
+##     theta.parts <- lapply(theta.parts.fun, function(f) {
+##         theta.part.mat <- outer(GH$theta.grid,supp.x,function(theta,x)f(beta,theta,x,params))
+##         rowSums(theta.part.mat)
+##     })
+##     pmf.derivs.unit <- lapply(pmf.derivs.fun, function(f) {
+##         arg.list <- c(list(
+##             theta = rep(GH$theta.grid,length(supp.x)),
+##             x = rep(supp.x,each=length(GH$theta.grid))),
+##             lapply(theta.parts[attr(f,'args')], function(v)rep(v,length(supp.x))),
+##             beta=list(beta),
+##             params=list(params)
+##             )
+##         pmf.deriv.unit <- do.call(f,arg.list)
+##         dim(pmf.deriv.unit) <- c(length(GH$theta.grid),length(supp.x))
+##         GH$w %*% pmf.deriv.unit
+##     })
+##     k.vals <- sapply(seq_along(ks.fun), function(i) {
+##         k.fun <- ks.fun[[i]]
+##         args <- attr(k.fun,'args')
+##         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+##         k.val <- sum( k.fun.unit )
+##     })
+##     k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+##     ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+##     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
+##     return(ks.df)
+## }
+
+
+##  rework ks.fun to store order and args as attributes not list
 ## elements.
-ks.study <- function(pmf.derivs.fun,ks.fun,theta.parts.fun=list(),params,supp.x,mu.null,tau2.null,GH=NULL) {
+ks.study <- function(pmf.derivs.fun,ks.fun,params,supp.x,mu.null,tau2.null,n.GH=50) {
     ## browser()
     beta <- c(tau2.null,mu.null)
-    if(is.null(GH)) {
-        GH <- fastGHQuad::gaussHermiteData(50)
-        GH$x <- sqrt(2)*GH$x
-        GH$w <- GH$w / sqrt(pi)
-        names(GH) <- c('theta.grid','w')
-    }
-    theta.parts <- lapply(theta.parts.fun, function(f) {
-        theta.part.mat <- outer(GH$theta.grid,supp.x,function(theta,x)f(beta,theta,x,params))
-        rowSums(theta.part.mat)
-    })
-    pmf.derivs.unit <- lapply(pmf.derivs.fun, function(f) {
-        arg.list <- c(list(
-            theta = rep(GH$theta.grid,length(supp.x)),
-            x = rep(supp.x,each=length(GH$theta.grid))),
-            lapply(theta.parts[attr(f,'args')], function(v)rep(v,length(supp.x))),
-            beta=list(beta),
-            params=list(params)
-            )
-        pmf.deriv.unit <- do.call(f,arg.list)
-        dim(pmf.deriv.unit) <- c(length(GH$theta.grid),length(supp.x))
-        GH$w %*% pmf.deriv.unit
+    ## if(is.null(GH)) {
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    GH$x <- sqrt(2)*GH$x
+    GH$w <- GH$w / sqrt(pi)
+    names(GH) <- c('theta.grid','w')
+    ## }
+    pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
+    ## browser()
+        ## supp <- max(0,s-m.C):min(s,m.T)
+        ## g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.fun.ma(theta,x,m,m.C,s)) # these are globals!!!
+        ## g.mat <- outer(X=GH$theta.grid,Y=supp.x,function(theta,x)pmf.deriv.fun(beta=beta,theta=theta,x=x,params=params)) 
+        ## g.unit <- colSums(GH$w * g.mat)
+        units.mat <- sapply(GH$theta,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
+        colSums(GH$w * t(units.mat))
     })
     k.vals <- sapply(seq_along(ks.fun), function(i) {
         k.fun <- ks.fun[[i]]
         args <- attr(k.fun,'args')
         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
-        k.val <- sum( k.fun.unit)
+        k.val <- sum( k.fun.unit )
     })
     k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
     ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
@@ -532,3 +582,30 @@ ks.study <- function(pmf.derivs.fun,ks.fun,theta.parts.fun=list(),params,supp.x,
     return(ks.df)
 }
 
+
+ks.study0 <- function(pmf.derivs.fun,ks.fun,params,beta,GH=50) {
+    ## browser()
+    ## beta <- c(tau2.null,mu.null)
+    ## if(is.null(GH)) {
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    GH$x <- sqrt(2)*GH$x
+    GH$w <- GH$w / sqrt(pi)
+    names(GH) <- c('theta.grid','w')
+    ## }
+    pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
+        ## browser()
+        supp.x <-  params['x.min']:params['x.max']
+        units.mat <- sapply(GH$theta,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
+        colSums(GH$w * t(units.mat))
+    })
+    k.vals <- sapply(seq_along(ks.fun), function(i) {
+        k.fun <- ks.fun[[i]]
+        args <- attr(k.fun,'args')
+        k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+        k.val <- sum( k.fun.unit )
+    })
+    k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+    ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+    ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
+    return(ks.df)
+}

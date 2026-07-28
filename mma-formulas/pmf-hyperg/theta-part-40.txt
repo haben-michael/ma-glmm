@@ -1,4 +1,0 @@
-(E^(x*(theta*Sqrt[beta[1]] + beta[2]))*theta*x*
-  (-15 + 15*theta*x*Sqrt[beta[1]] - 6*theta^2*x^2*beta[1] + 
-   theta^3*x^3*beta[1]^(3/2))*Binomial[params["m.C"], -x + params["s"]]*
-  Binomial[params["m.T"], x])/(16*beta[1]^(7/2))

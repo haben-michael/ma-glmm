@@ -1,5 +1,2 @@
-Binomial[params["s"], x]*
- (1 - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-     Log[params["T.t"]/params["T.c"]]])^(-x + params["s"])*
- LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-    Log[params["T.t"]/params["T.c"]]]^x
+pmf[x, params, LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
+   Log[params["T.t"]/params["T.c"]]]]

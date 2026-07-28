@@ -1,9 +1,18 @@
--1/4*(theta*(E^(theta*Sqrt[beta[1]] + beta[2])*params["T"])^x*
-   (x^2 - theta*x^3*Sqrt[beta[1]] + E^(theta*Sqrt[beta[1]] + beta[2])*
-     (-1 + x*(-2 + 3*theta*Sqrt[beta[1]]) + theta*Sqrt[beta[1]] + 
-      3*theta*x^2*Sqrt[beta[1]])*params["T"] - 
-    E^(2*(theta*Sqrt[beta[1]] + beta[2]))*
-     (-1 + 3*theta*(1 + x)*Sqrt[beta[1]])*params["T"]^2 + 
-    E^(3*(theta*Sqrt[beta[1]] + beta[2]))*theta*Sqrt[beta[1]]*params["T"]^3))/
-  (E^(E^(theta*Sqrt[beta[1]] + beta[2])*params["T"])*beta[1]^(3/2)*
-   factorial[x])
+(E^(theta*Sqrt[beta[1]] + beta[2])*theta*params["T"]*
+  ((-1 + theta*Sqrt[beta[1]])*
+    (dpois[-1 + x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]] - 
+     dpois[x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]]) + 
+   E^(theta*Sqrt[beta[1]] + beta[2])*(-1 + theta*Sqrt[beta[1]])*
+    (dpois[-2 + x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]] - 
+     2*dpois[-1 + x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]] + 
+     dpois[x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]])*params["T"] + 
+   2*E^(theta*Sqrt[beta[1]] + beta[2])*theta*Sqrt[beta[1]]*
+    (dpois[-2 + x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]] - 
+     2*dpois[-1 + x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]] + 
+     dpois[x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]])*params["T"] + 
+   E^(2*(theta*Sqrt[beta[1]] + beta[2]))*theta*Sqrt[beta[1]]*
+    (dpois[-3 + x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]] - 
+     3*dpois[-2 + x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]] + 
+     3*dpois[-1 + x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]] - 
+     dpois[x, E^(theta*Sqrt[beta[1]] + beta[2])*params["T"]])*params["T"]^2))/
+ (4*beta[1]^(3/2))

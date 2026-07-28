@@ -1,0 +1,1 @@
+pmf[x, params, LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]]

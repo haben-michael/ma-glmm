@@ -9,9 +9,9 @@ ns <- 5:15
 ## bartlett.C <- 1.17164232232645 # poisson
 bartlett.C <- 1.36297164231076 # binomial-IRR
 ## tic <- Sys.time()
-## by.n <- sapply(ns, function(n) {
+by.n <- sapply(ns, function(n) {
 ## repeat{
-by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
+## by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
     cat('.')
     s <- rep(30,n)
     T.t <- rep(1,n)

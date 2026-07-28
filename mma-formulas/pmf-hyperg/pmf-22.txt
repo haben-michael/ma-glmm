@@ -1,22 +1,26 @@
-(E^(x*(theta*Sqrt[beta[1]] + beta[2]))*
-  (theta*thetaPart00^4*x^3*(-1 + theta*x*Sqrt[beta[1]]) + 
-   96*thetaPart01^2*thetaPart10^2*beta[1]^(3/2) - 
-   thetaPart00^3*(-(theta*thetaPart02*x) - 2*theta*thetaPart01*x^2 + 
-     theta^2*thetaPart02*x^2*Sqrt[beta[1]] + 2*theta^2*thetaPart01*x^3*
-      Sqrt[beta[1]] + 4*theta*thetaPart12*x*beta[1] + 
-     8*theta*thetaPart11*x^2*beta[1] + 4*theta*thetaPart10*x^3*beta[1] + 
-     4*thetaPart22*beta[1]^(3/2) + 8*thetaPart21*x*beta[1]^(3/2) + 
-     4*thetaPart20*x^2*beta[1]^(3/2)) - 24*thetaPart00*
-    (thetaPart01*thetaPart10*(theta*thetaPart01*x + 
-       4*thetaPart11*Sqrt[beta[1]])*beta[1] + thetaPart01^2*thetaPart20*
-      beta[1]^(3/2) + thetaPart10^2*(thetaPart02 + 2*thetaPart01*x)*
-      beta[1]^(3/2)) + 2*thetaPart00^2*(-(theta*thetaPart01^2*x) + 
-     theta^2*thetaPart01^2*x^2*Sqrt[beta[1]] + 8*theta*thetaPart01*
-      thetaPart11*x*beta[1] + 4*thetaPart10*(theta*thetaPart02*x + 
-       2*theta*thetaPart01*x^2 + 2*thetaPart12*Sqrt[beta[1]] + 
-       4*thetaPart11*x*Sqrt[beta[1]])*beta[1] + 8*thetaPart11^2*
-      beta[1]^(3/2) + 8*thetaPart01*thetaPart21*beta[1]^(3/2) + 
-     4*thetaPart10^2*x^2*beta[1]^(3/2) + 4*thetaPart20*
-      (thetaPart02 + 2*thetaPart01*x)*beta[1]^(3/2)))*
-  Binomial[params["m.C"], -x + params["s"]]*Binomial[params["m.T"], x])/
- (4*thetaPart00^5*beta[1]^(3/2))
+(theta*(-x^3 + theta*x^4*Sqrt[beta[1]] - 
+   6*(-1 + 2*theta*(3 + 2*x)*Sqrt[beta[1]])*
+    factMoment[1, params, E^(theta*Sqrt[beta[1]] + beta[2])]^3 + 
+   24*theta*Sqrt[beta[1]]*factMoment[1, params, 
+      E^(theta*Sqrt[beta[1]] + beta[2])]^4 + 
+   (3 + 3*x - 7*theta*Sqrt[beta[1]] - 12*theta*x*Sqrt[beta[1]] - 
+     6*theta*x^2*Sqrt[beta[1]])*factMoment[2, params, 
+     E^(theta*Sqrt[beta[1]] + beta[2])] + 6*theta*Sqrt[beta[1]]*
+    factMoment[2, params, E^(theta*Sqrt[beta[1]] + beta[2])]^2 + 
+   2*factMoment[1, params, E^(theta*Sqrt[beta[1]] + beta[2])]^2*
+    (-3 - 3*x + 7*theta*Sqrt[beta[1]] + 12*theta*x*Sqrt[beta[1]] + 
+     6*theta*x^2*Sqrt[beta[1]] - 18*theta*Sqrt[beta[1]]*
+      factMoment[2, params, E^(theta*Sqrt[beta[1]] + beta[2])]) + 
+   factMoment[3, params, E^(theta*Sqrt[beta[1]] + beta[2])] - 
+   6*theta*Sqrt[beta[1]]*factMoment[3, params, 
+     E^(theta*Sqrt[beta[1]] + beta[2])] - 4*theta*x*Sqrt[beta[1]]*
+    factMoment[3, params, E^(theta*Sqrt[beta[1]] + beta[2])] + 
+   factMoment[1, params, E^(theta*Sqrt[beta[1]] + beta[2])]*
+    (1 + 3*x + 3*x^2 - theta*Sqrt[beta[1]] - 4*theta*x*Sqrt[beta[1]] - 
+     6*theta*x^2*Sqrt[beta[1]] - 4*theta*x^3*Sqrt[beta[1]] + 
+     6*(-1 + 2*theta*(3 + 2*x)*Sqrt[beta[1]])*factMoment[2, params, 
+       E^(theta*Sqrt[beta[1]] + beta[2])] + 8*theta*Sqrt[beta[1]]*
+      factMoment[3, params, E^(theta*Sqrt[beta[1]] + beta[2])]) - 
+   theta*Sqrt[beta[1]]*factMoment[4, params, 
+     E^(theta*Sqrt[beta[1]] + beta[2])])*
+  pmf[x, params, E^(theta*Sqrt[beta[1]] + beta[2])])/(4*beta[1]^(3/2))

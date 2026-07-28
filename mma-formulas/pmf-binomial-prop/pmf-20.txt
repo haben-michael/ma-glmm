@@ -1,0 +1,6 @@
+(theta*(x*(-1 + theta*x*Sqrt[beta[1]]) + theta*Sqrt[beta[1]]*
+    LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]^2*params["m"]*
+    (1 + params["m"]) + LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]*
+    (params["m"] - theta*(1 + 2*x)*Sqrt[beta[1]]*params["m"]))*
+  pmf[x, params, LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2]]])/
+ (4*beta[1]^(3/2))

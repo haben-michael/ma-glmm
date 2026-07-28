@@ -1,2 +1,1 @@
-(E^(x*(theta*Sqrt[beta[1]] + beta[2]))*Binomial[params["m.C"], 
-   -x + params["s"]]*Binomial[params["m.T"], x])/thetaPart00
+pmf[x, params, E^(theta*Sqrt[beta[1]] + beta[2])]

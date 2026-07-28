@@ -1,4 +1,4 @@
-(E^(x*(theta*Sqrt[beta[1]] + beta[2]))*(2*thetaPart01^2 + thetaPart00^2*x^2 - 
-   thetaPart00*(thetaPart02 + 2*thetaPart01*x))*
-  Binomial[params["m.C"], -x + params["s"]]*Binomial[params["m.T"], x])/
- thetaPart00^3
+(x^2 - (1 + 2*x)*factMoment[1, params, E^(theta*Sqrt[beta[1]] + beta[2])] + 
+  2*factMoment[1, params, E^(theta*Sqrt[beta[1]] + beta[2])]^2 - 
+  factMoment[2, params, E^(theta*Sqrt[beta[1]] + beta[2])])*
+ pmf[x, params, E^(theta*Sqrt[beta[1]] + beta[2])]
