@@ -1265,51 +1265,6 @@ summary(times)
 
 ## re-parameterize the sinh-ainh family
 
-rsas <- function(n,eps,delta) {
-    z <- rnorm(n)
-    sinh((asinh(z)+eps)/delta)
-}
-dsas <- function(x,eps,delta) {
-    S2 <- sinh(delta*asinh(x)-eps)^2
-    delta * sqrt( (1+S2) / (2*pi*(1+x^2)) ) * exp(-S2/2)
-}
-## curve(dsas(x,-1,.1),-4,4)
-moment <- function(k,eps,delta)
-    integrate(function(x)x^k*dsas(x,eps,delta),-Inf,Inf)$val
-## moment(1,0,1)
-## skew <- function(eps,delta) moment(3,eps
-## eps <- .3; delta <- 1
-## m <- sapply(1:4, function(k)moment(k,eps,delta))
-## var <- m[2]-m[1]^2
-sas.skew <- function(eps,delta,m) {
-    var <- m[2]-m[1]^2
-    skew.unstand <- m[3] - 3*m[2]*m[1] + 3*m[1]*m[1]^2 - m[1]^3
-    skew.unstand / var^(3/2)
-}
-sas.kurt <- function(eps,delta,m) {
-    var <- m[2]-m[1]^2
-    kurt.unstand <- m[4] - 4*m[3]*m[1] + 6*m[2]*m[1]^2 - 4*m[1]*m[1]^3 + m[1]^4
-    kurt.unstand / var - 3
-}
-## target.skew <- 0
-## target.kurt <- .5
-sas.invert.params <- function(target.skew,target.kurt) {
-    obj <- function(par) {
-        eps <- par[1]; delta <- exp(par[2])
-        m <- sapply(1:4, function(k)moment(k,eps,delta))
-        var <- m[2]-m[1]^2
-        (sas.skew(eps,delta,m) - target.skew)^2 + (sas.kurt(eps,delta,m) - target.kurt)^2
-    }
-    argmin <- optim(par=c(0,0),fn=obj)$par
-    return( c(argmin[1],exp(argmin[2])) )
-}
-sas.invert.params(0,0)
-
-
-
-
-
-
 ## 3e. make code generic to allow for other models
 
 
@@ -2598,35 +2553,6 @@ print(bartlett.C)
 
 
 
-## process  rate sim (IID data, using R with gauss-hermite)
-save.path <- './sim/260714/'
-save.path <- './sim/260722/' #poisson
-## save.path <- './sim/260723/'
-save.path <- './sim/260724/'
-save.path <- './sim/260728/'
-## png.file <- './figs/gaussian.png'
-filelist <- dir(save.path)
-filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
-print(length(filelist))
-by.sim <- lapply(filelist, function(file) {
-    load(paste0(save.path,file))
-    df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
-    do.call(rbind,df.lst)
-    ## apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
-    ## apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
-})
-long <- do.call(rbind,by.sim)
-long <- aggregate(val ~ ., median,data=long)
-stats <- split(long,long$stat)
-plot(val ~ n, ylim=c(0,max(val)),data=subset(long,subset=stat=='ks.LR',select=c(n,val)),type='l')
-lines(val ~ n, data=subset(long,subset=stat=='ks.LR.bartlett',select=c(n,val)),col=2)
-## plot(val ~ n, ylim=c(0,max(val)),data=subset(long,subset=stat=='means.LR',select=c(n,val)),type='l')
-## lines(abs(val) ~ n, data=subset(long,subset=stat=='means.LR.bartlett',select=c(n,val)),col=2)
-sapply(stats,function(df)coef(lm(log(abs(df$val))~log(df$n)))[2])
-
-
-
-
 
 
 ## INID data
@@ -2638,40 +2564,245 @@ ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
 niel.weise <- read.table('niel-weise.txt')
 
-set.seed(2)
-n <- 10
-ms <- sample(niel.weise$n0,n,replace=TRUE)
-## ms <- rep(round(median(ms)),n)
-ks <- lapply(ms, function(m) {
-    supp.x <- 0:m
-    params <- c(m=m)
-    ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null,n.GH=1e3)    
-})
-k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
-ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
-bartlett.C <- lawley(ks.df.ma,2) - lawley(ks.df.ma,1)
-dput(bartlett.C)
+## set.seed(2)
+## n <- 10
+## ms <- sample(niel.weise$n0,n,replace=TRUE)
+## ## ms <- rep(round(median(ms)),n)
+## ks <- lapply(ms, function(m) {
+##     supp.x <- 0:m
+##     params <- c(m=m)
+##     ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null,n.GH=1e3)    
+## })
+## k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
+## ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
+## bartlett.C <- lawley(ks.df.ma,2) - lawley(ks.df.ma,1)
+## dput(bartlett.C)
+
+
+## hyperg--buggy. when odds get very large biasedurn routine acts up.
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-hyperg.rds')
+niel.weise <- read.table('niel-weise.txt')
+niel.weise <- niel.weise[-15,] # get rid of uninformative study
+x <- niel.weise$Y1
+s <- with(niel.weise, Y0+Y1)
+m.T <- niel.weise$n1
+m.C <- niel.weise$n0
+supp.x <- max(0,s-m.C):min(s,m.T)
+params <- cbind(m.T=m.T,m.C=m.C,s=s,x.min=pmax(0,s-m.C),x.max=pmin(s,m.T))
+fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.hyperg,n.GH=1e2)
+CIs <- confint.LR(fit,grid=list(offset=2,size=10),tau2.interval=c(0,10))
+plogis(CIs)
+
+params=c(m.T = 345, m.C = 362, s = 4, x.min = 0, x.max = 4);mu=-3.01863845860975;tau2= 3.9122241122493139897642;n.GH=1e2
+
+ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=c(m.T = 345, m.C = 362, s = 4, x.min = 0, x.max = 4),mu=-3.01863845860975,tau2= 3.9122241122493139897642,n.GH=50)
+
+odds <- 9.450665e+14
+m.T <- 345; m.C <- 362; s <- 4
+x <- c(0L, 1L, 2L, 0L, 5L, 1L, 1L, 1L, 1L, 1L, 0L, 0L, 3L, 6L, 0L, 
+BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)        
+BiasedUrn::dFNCHypergeo(x[1],m1=m.T,m2=m.C,n=s,odds=odds)        
+
+## poisson
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
+stijnen.vi <- read.table('stijnen-table-VI.txt')
+x <- stijnen.vi$Y0
+T <- stijnen.vi$T0/1000
+params <- cbind(T=T,x.min=0,x.max=3e3)
+fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=2e2)
+## print(fit$mle.full) #matches stijnen and metafor
+## require(metafor) 
+## fit <- rma.glmm(measure="IRLN", xi=Y0, ti=T0/1000, data=stijnen.vi, method="ML")
+## summary(fit)
+start <- Sys.time()
+CIs <- confint.LR(fit,grid=list(offset=2.5,size=20),logtau2.bounds=c(-5,5))
+print(Sys.time() - start)
 
 ## encapsulate
-## bartlett.ma <- function(params,ks.fun,pmf.derivs.fun) {   
-##     ks <- lapply(1:nrow(params), function(i) {
-##         supp.x <- params[i,'x.min']:params[i,'x.max']
-##         ks.df.study <- ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu.null=mu.null,tau2.null=tau2.null) 
+source('utils.R')
+## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
+##     ## browser()
+##     GH <- fastGHQuad::gaussHermiteData(n.GH)
+##     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+##     ## names(GH) <- c('theta.grid','w')
+##     x <- fit$x
+##     params <- fit$params
+##     cond.pmf <- fit$cond.pmf
+##     mu.mle.full <- fit$mle.full['mu']; tau2.mle.full <- fit$mle.full['tau2'];
+##     loglik <- fit$loglik.fun
+##     loglik.profile <- function(mu) {
+##         logtau2.mle.profile <- optimize(function(logtau2)loglik(mu,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+##         tau2.mle.profile <- exp(logtau2.mle.profile)
+##         return(tau2.mle.profile)
+##     }
+##     mu.profile.grid <- seq(mu.mle.full-grid$offset*sqrt(tau2.mle.full),mu.mle.full+grid$offset*sqrt(tau2.mle.full),len=grid$size)
+##     tau2.profile.grid <- sapply(mu.profile.grid,function(mu)loglik.profile(mu))
+##     ## add support for parallelization
+##     profiled <- sapply(seq_along(mu.profile.grid),function(i) {
+##         cat('.')
+##         LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.profile.grid[i],tau2.profile.grid[i],x,params,GH))
+##         ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
+##         bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+##         inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
+##             information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
+##             c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
+##         })
+##         return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,inf.stats))
 ##     })
-##     k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
-##     ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
-##     bartlett.C <- lawley(ks.df.ma,2) - lawley(ks.df.ma,1)
-##     return(bartlett.C)
+##     ## browser()
+##     plot(mu.profile.grid,profiled['LR',],ylim=range(profiled[c('LR','LR.bartlett'),]),type='o')
+##     lines(mu.profile.grid,profiled['LR.bartlett',],lty=2,type='o')
+##     q <- qchisq(1-alpha,df=1)
+##     abline(h=q)
+##     CIs <- apply( profiled[c('LR','LR.bartlett'),] - q, 1, function(vals) {
+##         left.idx <- which(diff(sign(vals))!=0)
+##         stopifnot(length(left.idx)==2)
+##         stopifnot(left.idx[2]<length(vals))
+##         right.idx <- left.idx+1 
+##         left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
+##         right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
+##         left.wt*mu.profile.grid[left.idx] + right.wt*mu.profile.grid[right.idx]
+##     } )
+##     return(CIs)
 ## }
-## params <- cbind(m=ms,x.min=0,x.max=ms)
-## bartlett.ma(params,ks.fun,pmf.derivs.fun)
-
-ks.ma <- function(params,ks.fun,pmf.derivs.fun,beta,n.GH=50) {   
-    ks <- lapply(1:nrow(params), function(i) {
-        supp.x <- params[i,'x.min']:params[i,'x.max']
-        ks.df.study <- ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],beta,n.GH=n.GH) 
+profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$logtau2.bounds,n.GH=LR.fit$n.GH) {
+    ## browser()
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+    ## names(GH)[which(names(GH)=='x')] <- 'theta.grid'
+    x <- LR.fit$x
+    params <- LR.fit$params
+    cond.pmf <- LR.fit$cond.pmf
+    mu.mle.full <- LR.fit$mle.full['mu']; tau2.mle.full <- LR.fit$mle.full['tau2'];
+    loglik <- LR.fit$loglik.fun
+    loglik.profile <- function(mu) {
+        logtau2.mle.profile <- optimize(function(logtau2)loglik(mu,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+        tau2.mle.profile <- exp(logtau2.mle.profile)
+        return(tau2.mle.profile)
+    }
+    mu.profile.grid <- seq(mu.mle.full-grid$offset*sqrt(tau2.mle.full),mu.mle.full+grid$offset*sqrt(tau2.mle.full),len=grid$size)
+    tau2.profile.grid <- sapply(mu.profile.grid,function(mu)loglik.profile(mu))
+    ## add support for parallelization here
+    profiled.stats <- lapply(seq_along(mu.profile.grid),function(i) {
+        cat('.')
+        LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.profile.grid[i],tau2.profile.grid[i],x,params,GH))
+        ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
+        bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+        ## inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
+        ## information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
+        ## c(det=det(information),min.eigen=min(abs(eigen(information)$val)))   
+        ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,inf.stats))
+        ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile)))
+        return(list(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),ks=ks.profile))
     })
-    k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
-    ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
-    return(ks.df.ma)
+    return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid))
 }
+    ## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
+confint.LR <- function(profile.fit,alpha=.05,plot=TRUE) {
+    ## browser()
+    profiled.stats <- profile.fit$profile
+    LR.profile <- sapply(profiled.stats,function(x)x$LR)
+    LR.bartlett.profile <- sapply(profiled.stats,function(x)x$LR.bartlett)
+    mu.grid <- profile.fit$mu.grid
+    tau2.grid <- profile.fit$tau2.grid
+    q <- qchisq(1-alpha,df=1)
+    if(plot) {
+        plot(mu.grid,LR.profile,ylim=range(c(LR.profile,LR.bartlett.profile)),type='o')
+        lines(mu.grid,LR.bartlett.profile,lty=2,type='o')
+        abline(h=q)
+    }
+    CIs <- apply( rbind(LR=LR.profile,LR.bartlett=LR.bartlett.profile) - q, 1, function(vals) {        
+        left.idx <- which(diff(sign(vals))!=0)
+        ## print(vals)
+        ## print(left.idx)
+        stopifnot(length(left.idx)==2)
+        stopifnot(left.idx[2]<length(vals))
+        stopifnot(vals[left.idx[2]]<0)
+        right.idx <- left.idx+1 
+        left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
+        right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
+        left.wt*mu.grid[left.idx] + right.wt*mu.grid[right.idx]
+    } )
+    return(CIs)
+}
+
+
+## binomial-prop.  !!ugly curve for large n.GH [update: needed to
+## increase n.GH. for small n.GH the curve looks fine but the
+## information is unstable. once k terms stabilize the bartlett curve and CIs are essentially the same as the uncorrected LR's].
+ks.fun <- readRDS('ks-fun.rds')
+niel.weise <- read.table('niel-weise.txt')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+x <- niel.weise$Y0
+ms <- niel.weise$n0
+params <- cbind(m=ms,x.min=0,x.max=ms)
+## fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.prop,logtau2.bounds=c(-5,5),n.GH=750)
+## ## maxval <- -Inf
+## start <- Sys.time()
+## CIs <- confint.LR(fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
+## print(CIs)
+## print(Sys.time() - start)
+## plogis(CIs)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.prop,logtau2.bounds=c(-5,5),n.GH=50)
+start <- Sys.time()
+profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
+print(Sys.time() - start)
+CIs <- confint.LR(profile.fit,alpha=.05)
+
+
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+niel.weise <- read.table('niel-weise.txt')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+x <- niel.weise$Y0
+ms <- niel.weise$n0
+params <- cbind(m=ms,x.min=0,x.max=ms)
+n.GH <- 1e2
+dets <- sapply(seq(50,1e3,by=50), function(n.GH) {
+    pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+    mu <- -2.07341681000221
+    tau2 <- 3.13080589105322
+    ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
+    bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+    inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
+        information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
+        c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
+    })
+    inf.stats['det']
+})
+print(dets)
+
+
+ks.fun <- readRDS('ks-fun.rds')
+stijnen.v <- read.table('stijnen-table-V.txt')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+x <- stijnen.v$TP
+ms <- stijnen.v$n1
+params <- cbind(m=ms,x.min=0,x.max=ms)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.prop,logtau2.bounds=c(-5,5),n.GH=1e2)
+start <- Sys.time()
+profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
+print(Sys.time() - start)
+CIs <- confint.LR(profile.fit,alpha=.05)
+print(CIs)
+plogis(CIs)
+
+
+
+n.GH <- 1e2
+dets <- sapply(seq(50,1e3,by=50), function(n.GH) {
+    pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+    mu <- -2.07341681000221
+    tau2 <- 3.13080589105322
+    ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
+    bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+    inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
+        information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
+        c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
+    })
+    inf.stats['det']
+})
+print(dets)

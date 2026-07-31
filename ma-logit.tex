@@ -55,6 +55,96 @@
 Abstract. ...
 \textsc{Keywords: Meta-analysis, Bartlett correction, Generalized linear mixed models}
 
+
+1. introduction: (skip generic metaanalysis material). since stijnen
+2010, glmm have become the preferred model for random effects
+meta-analysis based on count data. cochran etc have recommended
+... . cite elsewhere for advantages over inverse variance model. while
+it avoids the normal approximation, inference is still based on a chi
+squared asymptotic expansion. therefore as before in the IV case the
+many smaller meta-analyses that are carried out are suspect. bartlett
+correction is a way to improve the efficiency of inference. when
+assumptions are met, allows rate of convergence to jump from 1/n to
+1/n2. the key assumption in this setting is the gaussianity of the
+random effect.
+
+relevant literature. 1. bartlett corrections applied to glms. what
+about glmms like this? 2. hanada paper. main difficulty is
+computational. with careful design we argue that these difficulties
+can be overcome and consumer hardware is sufficient for practical use.
+
+paper outline. in methods, give stifjnen's glmm approach as
+background, then describe algo. next look at sims, focusing on
+robustness. for data analysis walk through the 4 stijnen analyses.
+
+
+2. background.
+
+2a. notation for events, trials. 4 types of analyses: single arm and
+two arm trials, proportions and incidence/rates.
+
+2a-1 single arm, proportion: binomial-prop
+2a-2 two arm, proportion: hyperg
+2a-3 single arm, incidence: poisson
+2a-4 two arm, incidence rate ratio: binomial-irr
+
+in all cases the likelihood has the form: int condpmf * phi. condpmf = , parameters= (used loosely--need to distinguish from mu/tau2).
+
+give LR test.
+
+2b. bartlett correction
+
+bartlett correction. write out expansion of likelihood. odd powers of root n vanish. identify c as the 1/n term. so dividing by 1+c then removes the mean bias to order 1/n,
+\begin{align}
+E(...) =.
+\end{align}
+the obesrvation of ((lawley? or bartlett)) is that this mean bias
+reduction in fact removes the 1/n bias from ((ref LR expansion)) as
+well, i.e., the chi squared approximation. in the normal course with a well-specified model the resulting asymptotic rate is 1/n2. may be used with profile curve to obtain CIs and p-vals. ((cite to sim/data analysis.))
+
+background: lawley formulas. k terms.
+
+an important exception to the ``normal course''  is lattice data such as considered here. expansion ((lr expansion)) may not be justified. literature unclear. bartlett corrections for discrete glm's have been developed.
+
+
+
+2c. proposed method.
+
+to compute the lawley formulas for ((ref likelihood)) we approximate the integral by a sum. since all the likelihoods involve integrating against a gaussian, gauss-hermite approximation is a natural choice, replacing the integral ((ref)) with a weighted sum
+the weights are ... . ((how much detail to give here, maybe just leave it as a sum approximation.)) let r denot eth emultivector, the derivative of the log likelihood wrt to r is
+\begin{align}
+\end{align}
+and its expectation
+\begin{align}
+\end{align}
+may be approximated by another quadrature
+\begin{align}
+\end{align}
+expression ((...)) approximates k terms of the form ((inner only)). k terms of the form ((inner and outer)) may be approximated by 
+\begin{align}
+\end{align}
+where as before s is a multivector of indices.
+
+2d. further implementation details.
+
+chain rule: differentiate wrt pmf sums. get 35 k terms in terms of pmfsums (give an example or two).
+
+differentiate pmfs using recurrences in terms usual pmfs to allow fast, stable routines to be used.
+
+some specific issues: support for poisson. speed issues with hyperg.
+
+
+3. simulation
+
+goals: robustness/gaussianity check. discreteness issue.
+
+4. data analysis.
+
+4a. proportions
+
+4b. incidence
+
+
 \bibliographystyle{chicago}
 \bibliography{../ma-equivalence/ma-equivalence.bib}
 % \printbibliography

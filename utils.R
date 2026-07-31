@@ -1,4 +1,49 @@
 
+## re-parameterize the sinh-arcsinh family
+
+rsas <- function(n,eps,delta) {
+    z <- rnorm(n)
+    sinh((asinh(z)+eps)/delta)
+}
+
+dsas <- function(x,eps,delta) {
+    S2 <- sinh(delta*asinh(x)-eps)^2
+    delta * sqrt( (1+S2) / (2*pi*(1+x^2)) ) * exp(-S2/2)
+}
+
+sas.moment <- function(k,eps,delta) {
+    integrate(function(x) x^k * dsas(x,eps,delta), -Inf, Inf)$val
+}
+
+sas.skew <- function(m) {
+    var <- m[2] - m[1]^2
+    skew.unstand <- m[3] - 3*m[2]*m[1] + 3*m[1]*m[1]^2 - m[1]^3
+    skew.unstand / var^(3/2)
+}
+
+sas.kurt <- function(m) {
+    var <- m[2] - m[1]^2
+    kurt.unstand <- m[4] - 4*m[3]*m[1] + 6*m[2]*m[1]^2 - 4*m[1]*m[1]^3 + m[1]^4
+    
+    kurt.unstand / (var^2) - 3 
+}
+
+sas.invert.params <- function(target.skew, target.kurt) {
+    obj <- function(par) {
+        eps <- par[1] 
+        delta <- exp(par[2])
+        m <- sapply(1:4, function(k) sas.moment(k, eps, delta))
+        (sas.skew(m) - target.skew)^2 + (sas.kurt(m) - target.kurt)^2
+    }
+    
+    argmin <- optim(par=c(0,0), fn=obj)$par
+    return( c(eps=argmin[1], delta=exp(argmin[2])) )
+}
+
+
+
+
+
 
 mma.to.R <- function(
     x,
@@ -333,77 +378,6 @@ str.to.fun <- function(str, args, bindings = list(), parent = baseenv()) {
 
 
 
-lawley <- function(k.df,p) {
-    ## k.df <- data.frame(inner=sapply(orders.k,`[`,1),outer=sapply(orders.k,`[`,2),k.val=k.vals)
-    ## print(k.df)
-    k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]
-    information <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
-    inv.inf <- solve(information)
-    lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
-        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
-        inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
-    })
-    lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
-        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
-        -inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
-    })
-    bias <- out <- sum(lawley.4) - sum(lawley.6)
-    return(bias)
-}
-
-read.mma <- function(mma.str.path) {
-    filelist <- dir(mma.str.path)
-    filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
-    mma.strings <- sapply(filelist,function(file)paste(readLines(file,warn=FALSE),collapse=''))
-    mma.strings <- sapply(mma.strings,
-                          function(mma.str) mma.to.R(mma.str,
-                                                     funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
-                                                     rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
-                                                     )
-                          )
-    l.derivs <- sapply(mma.strings,function(mma.str) 
-        str.to.fun(
-            gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
-            args = c('theta','m','x','beta'),
-            binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt)
-        ))
-}
-
-
-## LR.gaussian <- function(x,params,mu.null,loglik.unit,n.GH=30) {
-##         GH <- fastGHQuad::gaussHermiteData(30)
-##         GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
-##         loglik <- function(mu,tau2,x,params,GH=NULL) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH=GH)))
-##         logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=c(-5,5),maximum=TRUE)$max
-##         tau2.mle.redu <- exp(logtau2.mle.redu)
-##         mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
-##         mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
-##         LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
-##         return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR))
-## }
-
-## work with cond pmf, compute unit loglik inside function
-LR.gaussian <- function(x,params,mu.null,cond.pmf,n.GH=30) {
-        GH <- fastGHQuad::gaussHermiteData(n.GH)
-        GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
-        ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL)loglik.unit(mu,tau2,xi,paramsi,cond.pmf,GH)
-        loglik.unit <- function(mu,tau2,xi,paramsi,GH=GH) {
-            ## browser()
-            if(is.null(GH)) {
-                likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
-            } else {
-                likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
-            }
-            return(log(likelihood))
-        }
-        loglik <- function(mu,tau2,x,params,GH=NULL) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH=GH)))
-        logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=c(-5,5),maximum=TRUE)$max
-        tau2.mle.redu <- exp(logtau2.mle.redu)
-        mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
-        mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
-        LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
-        return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR))
-}
 
 
 
@@ -419,13 +393,28 @@ LR.gaussian <- function(x,params,mu.null,cond.pmf,n.GH=30) {
 ##     logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
 ##     exp(lognumer - logdenom)
 ## }
-cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
-    m.T <- params[,'m.T']; m.C <- params[,'m.C']; s <- params[,'s']
-    numer <- choose(m.T,x)*choose(m.C,s-x)*exp((mu+sqrt(tau2)*theta)*x)
-    supp <- max(0,s-m.C):min(s,m.T)
-    denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.T,xj)*choose(m.C,s-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
-    numer / denom
+.cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+    ## x <- 0; theta <-  -18.95964; mu <- 0; tau2 <- 0.3071743;params <- c(m.T=116,m.C=117,s=3,x.min=0,x.max=3)
+        m.T <- params[,'m.T']
+        m.C <- params[,'m.C']
+        s <- params[,'s']
+    odds <- exp(mu+sqrt(tau2)*theta)
+    ## print(x);print(s);print(params)
+    ## browser()
+        BiasedUrn::dFNCHypergeo(x=x,m1=m.T,m2=m.C,n=s,odds=odds)            
 }
+cond.pmf.hyperg <-  Vectorize(.cond.pmf.hyperg,vectorize.args=c("x","theta"))
+## cond.pmf.hyperg <- function(x,theta,mu,tau2,params)  <- sapply(theta, function(thetai) _cond.pmf.hyperg(x,thetai,mu,tau2,params)
+
+## cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+##     m.T <- params[,'m.T']
+##     m.C <- params[,'m.C']
+##     s <- params[,'s']
+##     numer <- choose(m.T,x)*choose(m.C,s-x)*exp((mu+sqrt(tau2)*theta)*x)
+##     supp <- max(0,s-m.C):min(s,m.T)
+##     denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.T,xj)*choose(m.C,s-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
+##     numer / denom
+## }
 dgp.hyperg <- function(n,mu,tau2,params) {
     m.T <- params[,'m.T']
     m.C <- params[,'m.C']
@@ -451,9 +440,9 @@ cond.pmf.binomial.prop <- function(x,theta,mu,tau2,params) {
     dbinom(x,size=m,prob=pr(theta))
     ## integrand <- function(theta)pr(theta)^xi*(1-pr(theta))^(mi-xi)
 }
-dgp.binomial.prop <- function(n,mu,tau2,params) {
+dgp.binomial.prop <- function(n,mu,tau2,params,re.distr=rnorm) {
     m <- params[,'m']
-    theta <- rnorm(n)
+    theta <- re.distr(n)
     pr <- function(theta)plogis( mu+sqrt(tau2)*theta)
     rbinom(n,size=m,prob=pr(theta))
 }
@@ -477,77 +466,6 @@ dgp.binomial.irr <- function(n,mu,tau2,params) {
 }
 
 
-
-## ## k estimates for a single study
-## ## pmf.deriv.fun.ma should contain functions vectorized in theta and
-## ## x.
-## ks.study <- function(pmf.derivs.fun.ma,ks.fun,params,support,GH=NULL) {
-##     ## browser()
-##     if(is.null(GH)) {
-##         GH <- fastGHQuad::gaussHermiteData(50)
-##         GH$x <- sqrt(2)*GH$x
-##         GH$w <- GH$w / sqrt(pi)
-##         names(GH) <- c('theta.grid','w')
-##     }
-##     ## sum ma-level g's over theta, getting a vector g(xi) with
-##     ## unit-level components. 
-##     pmf.derivs.unit <- lapply(pmf.derivs.fun.ma, function(pmf.deriv.fun.ma) {
-##         ## supp <- max(0,s-m.C):min(s,m.T)
-##         ## g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.fun.ma(theta,x,m,m.C,s)) # these are globals!!!
-##         g.mat <- outer(X=GH$theta.grid,Y=support,function(theta,x)pmf.deriv.fun.ma(theta,x,params)) # these are globals!!!
-##         g.unit <- colSums(GH$w * g.mat)
-##     })
-##     ## apply ks.fun to unit-level g's to get unit-level k's, take sum
-##     ## weighted by binomial coefficient to get study-level k
-##     k.study <- sapply(seq_along(ks.fun), function(i) {
-##         k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
-##         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
-##         k.val <- sum( k.fun.unit)
-##     })
-##     return(k.study)
-## }
-
-
-## ## allowing for theta-only parts of the pmf derivative to be passed
-## ## in. rework ks.fun to store order and args as attributes not list
-## ## elements.
-## ## update: this approach was abandoned in favor of better formulas (using recurrences)
-## ks.study <- function(pmf.derivs.fun,ks.fun,theta.parts.fun=list(),params,supp.x,mu.null,tau2.null,GH=NULL) {
-##     ## browser()
-##     beta <- c(tau2.null,mu.null)
-##     if(is.null(GH)) {
-##         GH <- fastGHQuad::gaussHermiteData(50)
-##         GH$x <- sqrt(2)*GH$x
-##         GH$w <- GH$w / sqrt(pi)
-##         names(GH) <- c('theta.grid','w')
-##     }
-##     theta.parts <- lapply(theta.parts.fun, function(f) {
-##         theta.part.mat <- outer(GH$theta.grid,supp.x,function(theta,x)f(beta,theta,x,params))
-##         rowSums(theta.part.mat)
-##     })
-##     pmf.derivs.unit <- lapply(pmf.derivs.fun, function(f) {
-##         arg.list <- c(list(
-##             theta = rep(GH$theta.grid,length(supp.x)),
-##             x = rep(supp.x,each=length(GH$theta.grid))),
-##             lapply(theta.parts[attr(f,'args')], function(v)rep(v,length(supp.x))),
-##             beta=list(beta),
-##             params=list(params)
-##             )
-##         pmf.deriv.unit <- do.call(f,arg.list)
-##         dim(pmf.deriv.unit) <- c(length(GH$theta.grid),length(supp.x))
-##         GH$w %*% pmf.deriv.unit
-##     })
-##     k.vals <- sapply(seq_along(ks.fun), function(i) {
-##         k.fun <- ks.fun[[i]]
-##         args <- attr(k.fun,'args')
-##         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
-##         k.val <- sum( k.fun.unit )
-##     })
-##     k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
-##     ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
-##     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
-##     return(ks.df)
-## }
 
 
 ##  rework ks.fun to store order and args as attributes not list
@@ -583,9 +501,9 @@ ks.study <- function(pmf.derivs.fun,ks.fun,params,supp.x,mu.null,tau2.null,n.GH=
 }
 
 
-ks.study0 <- function(pmf.derivs.fun,ks.fun,params,beta,GH=50) {
+ks.study0 <- function(pmf.derivs.fun,ks.fun,params,mu,tau2,n.GH=50) {
     ## browser()
-    ## beta <- c(tau2.null,mu.null)
+    beta <- c(tau2,mu)
     ## if(is.null(GH)) {
     GH <- fastGHQuad::gaussHermiteData(n.GH)
     GH$x <- sqrt(2)*GH$x
@@ -595,9 +513,11 @@ ks.study0 <- function(pmf.derivs.fun,ks.fun,params,beta,GH=50) {
     pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
         ## browser()
         supp.x <-  params['x.min']:params['x.max']
-        units.mat <- sapply(GH$theta,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
+        units.mat <- sapply(GH$theta.grid,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
         colSums(GH$w * t(units.mat))
     })
+    ## print(range(unlist(pmf.derivs.unit)))
+    ## if(max(abs(unlist(pmf.derivs.unit))) > maxval) maxval <<- max(abs(unlist(pmf.derivs.unit)))
     k.vals <- sapply(seq_along(ks.fun), function(i) {
         k.fun <- ks.fun[[i]]
         args <- attr(k.fun,'args')
@@ -609,3 +529,67 @@ ks.study0 <- function(pmf.derivs.fun,ks.fun,params,beta,GH=50) {
     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
     return(ks.df)
 }
+
+
+ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50) {
+    ## browser()
+    ks <- lapply(1:nrow(params), function(i) {
+        ## if(i==16)browser()
+        supp.x <- params[i,'x.min']:params[i,'x.max']
+        ks.df.study <- ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH) 
+    })
+    k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
+    ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
+    return(ks.df.ma)
+}
+
+
+lawley <- function(k.df,p) {
+    ## k.df <- data.frame(inner=sapply(orders.k,`[`,1),outer=sapply(orders.k,`[`,2),k.val=k.vals)
+    ## print(k.df)
+    k <- function(inner,outer=0)k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]
+    information <- -matrix(apply(expand.grid(1:p,1:p),1,k),nrow=p)
+    inv.inf <- solve(information)
+    lawley.4 <- apply(do.call(expand.grid,rep(list(1:p),4)), 1, function(idx.str) {
+        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]
+        inv.inf[r,s] * inv.inf[t,u] * (1/4*k(c(r,s,t,u)) - k(c(r,s,t),u) + k(c(r,t),c(s,u)))
+    })
+    lawley.6 <- apply(do.call(expand.grid,rep(list(1:p),6)), 1, function(idx.str) {
+        r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
+        -inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
+    })
+    bias <- out <- sum(lawley.4) - sum(lawley.6)
+    return(bias)
+}
+
+
+## work with cond pmf, compute unit loglik inside function
+LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-5,5),n.GH=50) {
+    ## browser()
+        GH <- fastGHQuad::gaussHermiteData(n.GH)
+        GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+        ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL)loglik.unit(mu,tau2,xi,paramsi,cond.pmf,GH)
+        ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=GH) {
+        ##     ## browser()
+        ##     if(is.null(GH)) {
+        ##         likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
+        ##     } else {
+        ##         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+        ##     }
+        ##     return(log(likelihood))
+        ## }
+        loglik.unit <- function(mu,tau2,xi,paramsi,GH) {
+            ## browser()
+            ## print(xi); print(paramsi); print(mu);print(tau2)
+            likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+            return(log(likelihood))
+        }
+        loglik <- function(mu,tau2,x,params,GH) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
+        logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+        tau2.mle.redu <- exp(logtau2.mle.redu)
+        mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
+        mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+        LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
+        return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR, loglik.fun=loglik, x=x, params=params, cond.pmf=cond.pmf,logtau2.bounds=logtau2.bounds, n.GH=n.GH))
+}
+

@@ -2,7 +2,7 @@ TODO
 
 1. x to y
 2. move supp.x into params in ks.study
-
+3. rename GH$x to GH$theta.grid
 
 ## DEBUGGING
 
@@ -446,3 +446,303 @@ DATA ENTRY
 ## mu.null <- with(niel.weise,qlogis(mean(Y0/n0)))
 ## source('utils.R')
 ## LR.gaussian(x=niel.weise$Y0,params=cbind(m=niel.weise$n0),mu.null=0,cond.pmf=cond.pmf.binomial.prop,n.GH=50)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+OLD VERSIONS OF UTILS
+
+
+## ## k estimates for a single study
+## ## pmf.deriv.fun.ma should contain functions vectorized in theta and
+## ## x.
+## ks.study <- function(pmf.derivs.fun.ma,ks.fun,params,support,GH=NULL) {
+##     ## browser()
+##     if(is.null(GH)) {
+##         GH <- fastGHQuad::gaussHermiteData(50)
+##         GH$x <- sqrt(2)*GH$x
+##         GH$w <- GH$w / sqrt(pi)
+##         names(GH) <- c('theta.grid','w')
+##     }
+##     ## sum ma-level g's over theta, getting a vector g(xi) with
+##     ## unit-level components. 
+##     pmf.derivs.unit <- lapply(pmf.derivs.fun.ma, function(pmf.deriv.fun.ma) {
+##         ## supp <- max(0,s-m.C):min(s,m.T)
+##         ## g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.fun.ma(theta,x,m,m.C,s)) # these are globals!!!
+##         g.mat <- outer(X=GH$theta.grid,Y=support,function(theta,x)pmf.deriv.fun.ma(theta,x,params)) # these are globals!!!
+##         g.unit <- colSums(GH$w * g.mat)
+##     })
+##     ## apply ks.fun to unit-level g's to get unit-level k's, take sum
+##     ## weighted by binomial coefficient to get study-level k
+##     k.study <- sapply(seq_along(ks.fun), function(i) {
+##         k.fun <- ks.fun[[i]]$fun; args <- ks.fun[[i]]$args
+##         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+##         k.val <- sum( k.fun.unit)
+##     })
+##     return(k.study)
+## }
+
+
+## ## allowing for theta-only parts of the pmf derivative to be passed
+## ## in. rework ks.fun to store order and args as attributes not list
+## ## elements.
+## ## update: this approach was abandoned in favor of better formulas (using recurrences)
+## ks.study <- function(pmf.derivs.fun,ks.fun,theta.parts.fun=list(),params,supp.x,mu.null,tau2.null,GH=NULL) {
+##     ## browser()
+##     beta <- c(tau2.null,mu.null)
+##     if(is.null(GH)) {
+##         GH <- fastGHQuad::gaussHermiteData(50)
+##         GH$x <- sqrt(2)*GH$x
+##         GH$w <- GH$w / sqrt(pi)
+##         names(GH) <- c('theta.grid','w')
+##     }
+##     theta.parts <- lapply(theta.parts.fun, function(f) {
+##         theta.part.mat <- outer(GH$theta.grid,supp.x,function(theta,x)f(beta,theta,x,params))
+##         rowSums(theta.part.mat)
+##     })
+##     pmf.derivs.unit <- lapply(pmf.derivs.fun, function(f) {
+##         arg.list <- c(list(
+##             theta = rep(GH$theta.grid,length(supp.x)),
+##             x = rep(supp.x,each=length(GH$theta.grid))),
+##             lapply(theta.parts[attr(f,'args')], function(v)rep(v,length(supp.x))),
+##             beta=list(beta),
+##             params=list(params)
+##             )
+##         pmf.deriv.unit <- do.call(f,arg.list)
+##         dim(pmf.deriv.unit) <- c(length(GH$theta.grid),length(supp.x))
+##         GH$w %*% pmf.deriv.unit
+##     })
+##     k.vals <- sapply(seq_along(ks.fun), function(i) {
+##         k.fun <- ks.fun[[i]]
+##         args <- attr(k.fun,'args')
+##         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+##         k.val <- sum( k.fun.unit )
+##     })
+##     k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+##     ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+##     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
+##     return(ks.df)
+## }
+
+
+
+
+## LR.gaussian <- function(x,params,mu.null,loglik.unit,n.GH=30) {
+##         GH <- fastGHQuad::gaussHermiteData(30)
+##         GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+##         loglik <- function(mu,tau2,x,params,GH=NULL) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH=GH)))
+##         logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=c(-5,5),maximum=TRUE)$max
+##         tau2.mle.redu <- exp(logtau2.mle.redu)
+##         mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
+##         mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+##         LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
+##         return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR))
+## }
+
+
+
+read.mma <- function(mma.str.path) {
+    filelist <- dir(mma.str.path)
+    filelist <- paste0(mma.str.path,filelist[grep('\\.txt',filelist)])
+    mma.strings <- sapply(filelist,function(file)paste(readLines(file,warn=FALSE),collapse=''))
+    mma.strings <- sapply(mma.strings,
+                          function(mma.str) mma.to.R(mma.str,
+                                                     funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                                                     rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
+                                                     )
+                          )
+    l.derivs <- sapply(mma.strings,function(mma.str) 
+        str.to.fun(
+            gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
+            args = c('theta','m','x','beta'),
+            binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt)
+        ))
+}
+
+
+## bartlett.ma <- function(params,ks.fun,pmf.derivs.fun) {   
+##     ks <- lapply(1:nrow(params), function(i) {
+##         supp.x <- params[i,'x.min']:params[i,'x.max']
+##         ks.df.study <- ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu.null=mu.null,tau2.null=tau2.null) 
+##     })
+##     k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
+##     ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
+##     bartlett.C <- lawley(ks.df.ma,2) - lawley(ks.df.ma,1)
+##     return(bartlett.C)
+## }
+## params <- cbind(m=ms,x.min=0,x.max=ms)
+## bartlett.ma(params,ks.fun,pmf.derivs.fun)
+
+
+DATA INPUT
+
+stijnen.vi <- data.frame(
+  Study = 1:9,
+  Y1    = c(7, 8, 3, 6, 1, 1, 17, 3, 2),
+  T1    = c(1491, 1638, 11484, 1446, 370, 786, 6840, 1156, 400),
+  Y0    = c(11, 8, 14, 10, 1, 8, 15, 7, 3),
+  T0    = c(1988, 1460, 10962, 1502, 482, 913, 6840, 1015, 440)
+)
+write.table(stijnen.vi,file='stijnen-table-VI.txt')
+
+
+stijnen.v <- data.frame(
+  Study = 1:9,
+  TP    = c(33, 18, 20, 19, 44, 18, 27, 21, 18), 
+  FN    = c(6, 6, 13, 0, 6, 3, 1, 0, 1),        
+  n1    = c(39, 24, 33, 19, 50, 21, 28, 21, 19),
+  FP    = c(5, 5, 0, 0, 10, 1, 4, 1, 1),        
+  TN    = c(35, 10, 41, 19, 19, 9, 21, 9, 20),  
+  n0    = c(40, 15, 41, 19, 29, 10, 25, 10, 21) 
+)
+write.table(stijnen.v,'stijnen-table-V.txt')
+
+# Set common aliases matching metafor / Stijnen notation:
+patwardhan$Y1 <- patwardhan$TP
+patwardhan$Y0 <- patwardhan$FP
+
+
+DEBUGGING POISSON PROFILE CURVE. TURNED OUT TO BE SUPPORT WAS TOO SMALL.
+
+
+
+## DEBUG poisson profile curve
+
+mu.profile.grid <- c(-0.00568896507345706, 0.142381275751646, 0.29045151657675, 
+0.438521757401854, 0.586591998226957, 0.734662239052061, 0.882732479877164, 
+1.03080272070227, 1.17887296152737, 1.32694320235247, 1.47501344317758, 
+1.62308368400268, 1.77115392482779, 1.91922416565289, 2.06729440647799, 
+2.2153646473031, 2.3634348881282, 2.5115051289533, 2.65957536977841, 
+2.80764561060351)
+tau2.profile.grid <- c(2.21979442867967, 1.83679414375062, 1.49530794326639, 1.19533471755522, 
+0.937228775807105, 0.721860409344911, 0.550900164135041, 0.426702350193188, 
+0.35027845740803, 0.318161608378137, 0.323695752454098, 0.362844322995967, 
+0.436759149727103, 0.550102939816622, 0.708036309331584, 0.914124795209754, 
+1.16984934544558, 1.47523767910086, 1.82951835731162, 2.23187739094619
+)
+profiled <- structure(c(14.8282746287728, 24.2936658242837, -0.389623832976634, 
+13.2675692313222, 15.3711496791249, -0.136852512122726, 11.6042182066143, 
+10.6318553540892, 0.0914574944956418, 9.83624770688184, 8.48649822050813, 
+0.159046694090144, 7.97129439960355, 6.76599015170296, 0.178141590643201, 
+6.03768728773074, 5.07126341622608, 0.190568659559761, 4.10503351404002, 
+3.41814193193251, 0.200954669462529, 2.31434699559714, 1.91602623426263, 
+0.207888991398807, 0.893917549215097, 0.736038133511206, 0.214498962099614, 
+0.102565723520634, 0.0836795411244916, 0.225696533971726, 0.101855068301511, 
+0.082637565721863, 0.232551653860775, 0.879553036469375, 0.718139954535075, 
+0.224765494406726, 2.279127093215, 1.88199067076217, 0.211019336398731, 
+4.07869640896404, 3.3711148911328, 0.209895402761985, 6.06710073471795, 
+4.90367131723742, 0.237256810706468, 8.08886704619978, 6.23327479903051, 
+0.297691391282458, 10.0516405259884, 7.39458068497647, 0.359325288911952, 
+11.9111865464143, -33.901329567223, -1.35134865500763, 13.6524715472944, 
+-0.984661176643724, -14.8651465815172, 15.2756241959227, 0.0515842738410368, 
+295.129480139556), dim = c(3L, 20L), dimnames = list(c("LR", 
+                                                       "LR.bartlett", "bartlett.C"), NULL))
+source('utils.R')
+ks.ma0 <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50) {
+    ## browser()
+    ks <- lapply(1:nrow(params), function(i) {
+        ## if(i==16)browser()
+        supp.x <- params[i,'x.min']:params[i,'x.max']
+        ks.df.study <- ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH) 
+    })
+    return(ks)
+}
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
+stijnen.vi <- read.table('stijnen-table-VI.txt')
+x <- stijnen.vi$Y0
+T <- stijnen.vi$T0/1000
+params <- cbind(T=T,x.min=0,x.max=1000)
+mu <- mu.profile.grid[20];tau2=tau2.profile.grid[20]
+ks <- ks.ma0(params,ks.fun,pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=200)
+k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
+ks.profile <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
+bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+print(bartlett.C.profile)
+print(summary(ks.profile$k.val))
+
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
+mu <- 2.80764561060351
+tau2 <- 2.23187739094619
+n.GH <- 50
+params <- c(T = 1.988, x.min = 0, x.max = 1e3)
+lawley.terms <- sapply(seq(20,3e2,by=20),function(n.GH) {
+    cat('.')
+    ks.df <- ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params,mu,tau2,n.GH)
+    ## c(lawley(ks.df,2),lawley(ks.df,1))
+    lawley(ks.df,2)
+})
+lawley.terms
+
+beta <- c(tau2,mu)
+## if(is.null(GH)) {
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+GH$x <- sqrt(2)*GH$x
+GH$w <- GH$w / sqrt(pi)
+names(GH) <- c('theta.grid','w')
+## }
+pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
+    ## browser()
+    supp.x <-  params['x.min']:params['x.max']
+    units.mat <- sapply(GH$theta.grid,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
+    colSums(GH$w * t(units.mat))
+})
+## print(range(unlist(pmf.derivs.unit)))
+## if(max(abs(unlist(pmf.derivs.unit))) > maxval) maxval <<- max(abs(unlist(pmf.derivs.unit)))
+k.vals <- sapply(seq_along(ks.fun), function(i) {
+    k.fun <- ks.fun[[i]]
+    args <- attr(k.fun,'args')
+    k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+    k.val <- sum( k.fun.unit )
+})
+k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
+## a <- pmf.derivs.unit[['pmfSum00']]
+
+
+
+
+n.GHs <- seq(20,2e2)
+by.n.GH <- sapply(
+beta <- c(tau2,mu)
+## if(is.null(GH)) {
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+GH$x <- sqrt(2)*GH$x
+GH$w <- GH$w / sqrt(pi)
+names(GH) <- c('theta.grid','w')
+## }
+pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
+    ## browser()
+    supp.x <-  params['x.min']:params['x.max']
+    units.mat <- sapply(GH$theta.grid,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
+    colSums(GH$w * t(units.mat))
+})
+## print(range(unlist(pmf.derivs.unit)))
+## if(max(abs(unlist(pmf.derivs.unit))) > maxval) maxval <<- max(abs(unlist(pmf.derivs.unit)))
+k.vals <- sapply(seq_along(ks.fun), function(i) {
+    k.fun <- ks.fun[[i]]
+    args <- attr(k.fun,'args')
+    k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+    k.val <- sum( k.fun.unit )
+})
+k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
+## a <- pmf.derivs.unit[['pmfSum00']]
+
+
+
+
