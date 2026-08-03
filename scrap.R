@@ -746,3 +746,113 @@ ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
 
 
 
+REFACTORED
+
+## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
+##     ## browser()
+##     GH <- fastGHQuad::gaussHermiteData(n.GH)
+##     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+##     ## names(GH) <- c('theta.grid','w')
+##     x <- fit$x
+##     params <- fit$params
+##     cond.pmf <- fit$cond.pmf
+##     mu.mle.full <- fit$mle.full['mu']; tau2.mle.full <- fit$mle.full['tau2'];
+##     loglik <- fit$loglik.fun
+##     loglik.profile <- function(mu) {
+##         logtau2.mle.profile <- optimize(function(logtau2)loglik(mu,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+##         tau2.mle.profile <- exp(logtau2.mle.profile)
+##         return(tau2.mle.profile)
+##     }
+##     mu.profile.grid <- seq(mu.mle.full-grid$offset*sqrt(tau2.mle.full),mu.mle.full+grid$offset*sqrt(tau2.mle.full),len=grid$size)
+##     tau2.profile.grid <- sapply(mu.profile.grid,function(mu)loglik.profile(mu))
+##     ## add support for parallelization
+##     profiled <- sapply(seq_along(mu.profile.grid),function(i) {
+##         cat('.')
+##         LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.profile.grid[i],tau2.profile.grid[i],x,params,GH))
+##         ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
+##         bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+##         inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
+##             information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
+##             c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
+##         })
+##         return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,inf.stats))
+##     })
+##     ## browser()
+##     plot(mu.profile.grid,profiled['LR',],ylim=range(profiled[c('LR','LR.bartlett'),]),type='o')
+##     lines(mu.profile.grid,profiled['LR.bartlett',],lty=2,type='o')
+##     q <- qchisq(1-alpha,df=1)
+##     abline(h=q)
+##     CIs <- apply( profiled[c('LR','LR.bartlett'),] - q, 1, function(vals) {
+##         left.idx <- which(diff(sign(vals))!=0)
+##         stopifnot(length(left.idx)==2)
+##         stopifnot(left.idx[2]<length(vals))
+##         right.idx <- left.idx+1 
+##         left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
+##         right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
+##         left.wt*mu.profile.grid[left.idx] + right.wt*mu.profile.grid[right.idx]
+##     } )
+##     return(CIs)
+## }
+
+
+
+
+DEBUGGING BINOMIAL-PROP FIT TO NEIL-WEISE. N.GH WASNT HIGH ENOUGH, DETECTING USING INFORMATION MATRIX WHICH ONLY STABILIZED FOR N.GH \APPROX 750
+
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+niel.weise <- read.table('niel-weise.txt')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+x <- niel.weise$Y0
+ms <- niel.weise$n0
+params <- cbind(m=ms,x.min=0,x.max=ms)
+n.GH <- 1e2
+dets <- sapply(seq(50,1e3,by=50), function(n.GH) {
+    pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+    mu <- -2.07341681000221
+    tau2 <- 3.13080589105322
+    ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
+    bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+    inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
+        information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
+        c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
+    })
+    inf.stats['det']
+})
+print(dets)
+
+
+
+
+SUPERSEDED
+
+
+
+diagnostics <- sapply(profile.fit$ks.profile,function(k.df) {
+    k=function(inner,outer=0)k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]
+    information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
+    c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
+})
+diagnostics
+lines(profile.fit$mu.grid,diagnostics['det',])
+lines(profile.fit$mu.grid,profile.fit$profile['bartlett.C',])
+
+
+
+
+
+
+n.GH <- 1e2
+dets <- sapply(seq(50,1e3,by=50), function(n.GH) {
+    pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+    mu <- -2.07341681000221
+    tau2 <- 3.13080589105322
+    ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
+    bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+    inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
+        information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
+        c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
+    })
+    inf.stats['det']
+})
+print(dets)

@@ -25,7 +25,7 @@ by.n <- sapply(ns, function(n) {
     ks <- lapply(ms, function(m) {
         supp.x <- 0:m
         params <- c(m=m)
-        ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null,n.GH=3e2)    
+        ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null,n.GH=1e2)    
     })
     k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
     ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)

@@ -110,7 +110,8 @@ matrix(subdf$rate,nrow=length(unique(subdf$skew)))
 ## skew and kurt separately instead of cartesian product
 
 ## process  rate sim (IID data, using R with gauss-hermite)
-save.path <- './sim/robustness/'
+## save.path <- './sim/robustness/'
+save.path <- './sim/robustness/poisson/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -123,7 +124,6 @@ by.sim <- lapply(filelist, function(file) {
     ## rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
     ## data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
 })
-
 long <- do.call(rbind,by.sim)
 long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
 long <- aggregate(val ~ ., median,data=long)

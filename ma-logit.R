@@ -2604,70 +2604,8 @@ x <- c(0L, 1L, 2L, 0L, 5L, 1L, 1L, 1L, 1L, 1L, 0L, 0L, 3L, 6L, 0L,
 BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)        
 BiasedUrn::dFNCHypergeo(x[1],m1=m.T,m2=m.C,n=s,odds=odds)        
 
-## poisson
-source('utils.R')
-ks.fun <- readRDS('ks-fun.rds')
-pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
-stijnen.vi <- read.table('stijnen-table-VI.txt')
-x <- stijnen.vi$Y0
-T <- stijnen.vi$T0/1000
-params <- cbind(T=T,x.min=0,x.max=3e3)
-fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=2e2)
-## print(fit$mle.full) #matches stijnen and metafor
-## require(metafor) 
-## fit <- rma.glmm(measure="IRLN", xi=Y0, ti=T0/1000, data=stijnen.vi, method="ML")
-## summary(fit)
-start <- Sys.time()
-CIs <- confint.LR(fit,grid=list(offset=2.5,size=20),logtau2.bounds=c(-5,5))
-print(Sys.time() - start)
-
 ## encapsulate
 source('utils.R')
-## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
-##     ## browser()
-##     GH <- fastGHQuad::gaussHermiteData(n.GH)
-##     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
-##     ## names(GH) <- c('theta.grid','w')
-##     x <- fit$x
-##     params <- fit$params
-##     cond.pmf <- fit$cond.pmf
-##     mu.mle.full <- fit$mle.full['mu']; tau2.mle.full <- fit$mle.full['tau2'];
-##     loglik <- fit$loglik.fun
-##     loglik.profile <- function(mu) {
-##         logtau2.mle.profile <- optimize(function(logtau2)loglik(mu,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
-##         tau2.mle.profile <- exp(logtau2.mle.profile)
-##         return(tau2.mle.profile)
-##     }
-##     mu.profile.grid <- seq(mu.mle.full-grid$offset*sqrt(tau2.mle.full),mu.mle.full+grid$offset*sqrt(tau2.mle.full),len=grid$size)
-##     tau2.profile.grid <- sapply(mu.profile.grid,function(mu)loglik.profile(mu))
-##     ## add support for parallelization
-##     profiled <- sapply(seq_along(mu.profile.grid),function(i) {
-##         cat('.')
-##         LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.profile.grid[i],tau2.profile.grid[i],x,params,GH))
-##         ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
-##         bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
-##         inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
-##             information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
-##             c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
-##         })
-##         return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,inf.stats))
-##     })
-##     ## browser()
-##     plot(mu.profile.grid,profiled['LR',],ylim=range(profiled[c('LR','LR.bartlett'),]),type='o')
-##     lines(mu.profile.grid,profiled['LR.bartlett',],lty=2,type='o')
-##     q <- qchisq(1-alpha,df=1)
-##     abline(h=q)
-##     CIs <- apply( profiled[c('LR','LR.bartlett'),] - q, 1, function(vals) {
-##         left.idx <- which(diff(sign(vals))!=0)
-##         stopifnot(length(left.idx)==2)
-##         stopifnot(left.idx[2]<length(vals))
-##         right.idx <- left.idx+1 
-##         left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
-##         right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
-##         left.wt*mu.profile.grid[left.idx] + right.wt*mu.profile.grid[right.idx]
-##     } )
-##     return(CIs)
-## }
 profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$logtau2.bounds,n.GH=LR.fit$n.GH) {
     ## browser()
     GH <- fastGHQuad::gaussHermiteData(n.GH)
@@ -2696,25 +2634,28 @@ profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$log
         ## c(det=det(information),min.eigen=min(abs(eigen(information)$val)))   
         ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,inf.stats))
         ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile)))
-        return(list(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),ks=ks.profile))
+        return(list(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,ks=ks.profile))
     })
-    return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid))
+    ks.profile <- lapply(profiled.stats,`[[`,'ks')
+    profiled.stats <- lapply(profiled.stats,`[[<-`,'ks',NULL) |> sapply(unlist)
+    return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid,ks.profile=ks.profile))
 }
-    ## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
+## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
 confint.LR <- function(profile.fit,alpha=.05,plot=TRUE) {
     ## browser()
-    profiled.stats <- profile.fit$profile
-    LR.profile <- sapply(profiled.stats,function(x)x$LR)
-    LR.bartlett.profile <- sapply(profiled.stats,function(x)x$LR.bartlett)
+    ## profiled.stats <- profile.fit$profile
+    ## LR.profile <- sapply(profiled.stats,function(x)x$LR)
+    ## LR.bartlett.profile <- sapply(profiled.stats,function(x)x$LR.bartlett)
+    profile <- profile.fit$profile
     mu.grid <- profile.fit$mu.grid
     tau2.grid <- profile.fit$tau2.grid
     q <- qchisq(1-alpha,df=1)
     if(plot) {
-        plot(mu.grid,LR.profile,ylim=range(c(LR.profile,LR.bartlett.profile)),type='o')
-        lines(mu.grid,LR.bartlett.profile,lty=2,type='o')
+        plot(mu.grid,profile['LR',],ylim=range(profile[c('LR','LR.bartlett'),]),type='o')
+        lines(mu.grid,profile['LR.bartlett',],lty=2,type='o')
         abline(h=q)
     }
-    CIs <- apply( rbind(LR=LR.profile,LR.bartlett=LR.bartlett.profile) - q, 1, function(vals) {        
+    CIs <- apply(profile[c('LR','LR.bartlett'),] - q, 1, function(vals) {        
         left.idx <- which(diff(sign(vals))!=0)
         ## print(vals)
         ## print(left.idx)
@@ -2739,41 +2680,29 @@ pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
 x <- niel.weise$Y0
 ms <- niel.weise$n0
 params <- cbind(m=ms,x.min=0,x.max=ms)
-## fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.prop,logtau2.bounds=c(-5,5),n.GH=750)
-## ## maxval <- -Inf
-## start <- Sys.time()
-## CIs <- confint.LR(fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
-## print(CIs)
-## print(Sys.time() - start)
-## plogis(CIs)
-LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.prop,logtau2.bounds=c(-5,5),n.GH=50)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.prop,logtau2.bounds=c(-5,5),n.GH=150)
 start <- Sys.time()
 profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
 print(Sys.time() - start)
 CIs <- confint.LR(profile.fit,alpha=.05)
+print(CIs)
+plogis(CIs)
 
-
-source('utils.R')
-ks.fun <- readRDS('ks-fun.rds')
-niel.weise <- read.table('niel-weise.txt')
-pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
-x <- niel.weise$Y0
-ms <- niel.weise$n0
-params <- cbind(m=ms,x.min=0,x.max=ms)
-n.GH <- 1e2
-dets <- sapply(seq(50,1e3,by=50), function(n.GH) {
-    pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
-    mu <- -2.07341681000221
-    tau2 <- 3.13080589105322
-    ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
-    bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
-    inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
-        information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
-        c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
-    })
-    inf.stats['det']
+## diagnostic for n.GH
+n.GHs <- seq(50,4e2,by=50)
+cond.pmf <- cond.pmf.poisson
+by.n.GH <- lapply(n.GHs,function(n.GH) {
+    LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf,logtau2.bounds=c(-5,5),n.GH=n.GH)
+    profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
+    profile.fit$profile
 })
-print(dets)
+
+stats <- sapply(by.n.GH,function(m)m['LR.bartlett',])    
+col <- cm.colors(ncol(stats))
+matplot(profile.fit$mu.grid,stats,type='l',lty=1,col=col,log='y')
+legend('topleft',lty=1,col=col,legend=n.GHs)
+abline(h=log(qchisq(1-.05,df=1)))
+## abline(v=CIs[,'LR.bartlett'])
 
 
 ks.fun <- readRDS('ks-fun.rds')
@@ -2792,17 +2721,25 @@ plogis(CIs)
 
 
 
-n.GH <- 1e2
-dets <- sapply(seq(50,1e3,by=50), function(n.GH) {
-    pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
-    mu <- -2.07341681000221
-    tau2 <- 3.13080589105322
-    ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
-    bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
-    inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
-        information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
-        c(det=det(information),min.eigen=min(abs(eigen(information)$val)))
-    })
-    inf.stats['det']
-})
-print(dets)
+## poisson
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
+stijnen.vi <- read.table('stijnen-table-VI.txt')
+x <- stijnen.vi$Y0
+T <- stijnen.vi$T0/1000
+params <- cbind(T=T,x.min=0,x.max=3e3)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=50)
+## print(fit$mle.full) #matches stijnen and metafor
+## require(metafor) 
+## fit <- rma.glmm(measure="IRLN", xi=Y0, ti=T0/1000, data=stijnen.vi, method="ML")
+## summary(fit)
+start <- Sys.time()
+profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
+print(Sys.time() - start)
+CIs <- confint.LR(profile.fit,alpha=.05)
+print(CIs)
+plogis(CIs)
+
+
+
