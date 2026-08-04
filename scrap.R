@@ -3,6 +3,7 @@ TODO
 1. x to y
 2. move supp.x into params in ks.study
 3. rename GH$x to GH$theta.grid
+4. T.t vs T.T variable name incosnistencyx
 
 ## DEBUGGING
 
@@ -856,3 +857,71 @@ dets <- sapply(seq(50,1e3,by=50), function(n.GH) {
     inf.stats['det']
 })
 print(dets)
+
+
+MOVED TO UTILS.R
+
+profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$logtau2.bounds,n.GH=LR.fit$n.GH) {
+    ## browser()
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+    ## names(GH)[which(names(GH)=='x')] <- 'theta.grid'
+    x <- LR.fit$x
+    params <- LR.fit$params
+    cond.pmf <- LR.fit$cond.pmf
+    mu.mle.full <- LR.fit$mle.full['mu']; tau2.mle.full <- LR.fit$mle.full['tau2'];
+    loglik <- LR.fit$loglik.fun
+    loglik.profile <- function(mu) {
+        logtau2.mle.profile <- optimize(function(logtau2)loglik(mu,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+        tau2.mle.profile <- exp(logtau2.mle.profile)
+        return(tau2.mle.profile)
+    }
+    mu.profile.grid <- seq(mu.mle.full-grid$offset*sqrt(tau2.mle.full),mu.mle.full+grid$offset*sqrt(tau2.mle.full),len=grid$size)
+    tau2.profile.grid <- sapply(mu.profile.grid,function(mu)loglik.profile(mu))
+    ## add support for parallelization here
+    profiled.stats <- lapply(seq_along(mu.profile.grid),function(i) {
+        cat('.')
+        LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.profile.grid[i],tau2.profile.grid[i],x,params,GH))
+        ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
+        bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+        ## inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
+        ## information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
+        ## c(det=det(information),min.eigen=min(abs(eigen(information)$val)))   
+        ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,inf.stats))
+        ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile)))
+        return(list(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,ks=ks.profile))
+    })
+    ks.profile <- lapply(profiled.stats,`[[`,'ks')
+    profiled.stats <- lapply(profiled.stats,`[[<-`,'ks',NULL) |> sapply(unlist)
+    return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid,ks.profile=ks.profile))
+}
+## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
+confint.LR <- function(profile.fit,alpha=.05,plot=TRUE) {
+    ## browser()
+    ## profiled.stats <- profile.fit$profile
+    ## LR.profile <- sapply(profiled.stats,function(x)x$LR)
+    ## LR.bartlett.profile <- sapply(profiled.stats,function(x)x$LR.bartlett)
+    profile <- profile.fit$profile
+    mu.grid <- profile.fit$mu.grid
+    tau2.grid <- profile.fit$tau2.grid
+    q <- qchisq(1-alpha,df=1)
+    if(plot) {
+        plot(mu.grid,profile['LR',],ylim=range(profile[c('LR','LR.bartlett'),]),type='o')
+        lines(mu.grid,profile['LR.bartlett',],lty=2,type='o')
+        abline(h=q)
+    }
+    CIs <- apply(profile[c('LR','LR.bartlett'),] - q, 1, function(vals) {        
+        left.idx <- which(diff(sign(vals))!=0)
+        ## print(vals)
+        ## print(left.idx)
+        stopifnot(length(left.idx)==2)
+        stopifnot(left.idx[2]<length(vals))
+        stopifnot(vals[left.idx[2]]<0)
+        right.idx <- left.idx+1 
+        left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
+        right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
+        left.wt*mu.grid[left.idx] + right.wt*mu.grid[right.idx]
+    } )
+    return(CIs)
+}
+

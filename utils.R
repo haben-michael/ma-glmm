@@ -477,40 +477,40 @@ dgp.binomial.irr <- function(n,mu,tau2,params) {
 
 
 
-##  rework ks.fun to store order and args as attributes not list
-## elements.
-ks.study <- function(pmf.derivs.fun,ks.fun,params,supp.x,mu.null,tau2.null,n.GH=50) {
-    ## browser()
-    beta <- c(tau2.null,mu.null)
-    ## if(is.null(GH)) {
-    GH <- fastGHQuad::gaussHermiteData(n.GH)
-    GH$x <- sqrt(2)*GH$x
-    GH$w <- GH$w / sqrt(pi)
-    names(GH) <- c('theta.grid','w')
-    ## }
-    pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
-    ## browser()
-        ## supp <- max(0,s-m.C):min(s,m.T)
-        ## g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.fun.ma(theta,x,m,m.C,s)) # these are globals!!!
-        ## g.mat <- outer(X=GH$theta.grid,Y=supp.x,function(theta,x)pmf.deriv.fun(beta=beta,theta=theta,x=x,params=params)) 
-        ## g.unit <- colSums(GH$w * g.mat)
-        units.mat <- sapply(GH$theta,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
-        colSums(GH$w * t(units.mat))
-    })
-    k.vals <- sapply(seq_along(ks.fun), function(i) {
-        k.fun <- ks.fun[[i]]
-        args <- attr(k.fun,'args')
-        k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
-        k.val <- sum( k.fun.unit )
-    })
-    k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
-    ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
-    ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
-    return(ks.df)
-}
+## ##  rework ks.fun to store order and args as attributes not list
+## ## elements.
+## ks.study <- function(pmf.derivs.fun,ks.fun,params,supp.x,mu.null,tau2.null,n.GH=50) {
+##     ## browser()
+##     beta <- c(tau2.null,mu.null)
+##     ## if(is.null(GH)) {
+##     GH <- fastGHQuad::gaussHermiteData(n.GH)
+##     GH$x <- sqrt(2)*GH$x
+##     GH$w <- GH$w / sqrt(pi)
+##     names(GH) <- c('theta.grid','w')
+##     ## }
+##     pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
+##     ## browser()
+##         ## supp <- max(0,s-m.C):min(s,m.T)
+##         ## g.mat <- outer(X=GH$theta.grid,Y=supp,function(theta,x)pmf.deriv.fun.ma(theta,x,m,m.C,s)) # these are globals!!!
+##         ## g.mat <- outer(X=GH$theta.grid,Y=supp.x,function(theta,x)pmf.deriv.fun(beta=beta,theta=theta,x=x,params=params)) 
+##         ## g.unit <- colSums(GH$w * g.mat)
+##         units.mat <- sapply(GH$theta,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
+##         colSums(GH$w * t(units.mat))
+##     })
+##     k.vals <- sapply(seq_along(ks.fun), function(i) {
+##         k.fun <- ks.fun[[i]]
+##         args <- attr(k.fun,'args')
+##         k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
+##         k.val <- sum( k.fun.unit )
+##     })
+##     k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+##     ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
+##     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
+##     return(ks.df)
+## }
 
 
-ks.study0 <- function(pmf.derivs.fun,ks.fun,params,mu,tau2,n.GH=50) {
+ks.study <- function(pmf.derivs.fun,ks.fun,params,mu,tau2,n.GH=50) {
     ## browser()
     beta <- c(tau2,mu)
     ## if(is.null(GH)) {
@@ -525,18 +525,23 @@ ks.study0 <- function(pmf.derivs.fun,ks.fun,params,mu,tau2,n.GH=50) {
         units.mat <- sapply(GH$theta.grid,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
         colSums(GH$w * t(units.mat))
     })
-    ## print(range(unlist(pmf.derivs.unit)))
-    ## if(max(abs(unlist(pmf.derivs.unit))) > maxval) maxval <<- max(abs(unlist(pmf.derivs.unit)))
     k.vals <- sapply(seq_along(ks.fun), function(i) {
         k.fun <- ks.fun[[i]]
         args <- attr(k.fun,'args')
-        k.fun.unit <- do.call(k.fun, pmf.derivs.unit[args])
-        k.val <- sum( k.fun.unit )
+        k.unit <- do.call(k.fun, pmf.derivs.unit[args])
+        k.val <- sum( k.unit )
     })
+    ks.unit <- sapply(seq_along(ks.fun), function(i) {
+        k.fun <- ks.fun[[i]]
+        args <- attr(k.fun,'args')
+        k.unit <- do.call(k.fun, pmf.derivs.unit[args])
+        ## k.val <- sum( k.unit )
+    })
+    k.vals <- colSums(ks.unit) 
     k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
-    ## k.df <- data.frame(inner=sapply(k.orders,`[`,1),outer=sapply(k.orders,`[`,2),k.val=k.vals)
     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
-    return(ks.df)
+    out <- list(ks.df=ks.df, ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit)
+    return(out)
 }
 
 
@@ -545,7 +550,7 @@ ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50) {
     ks <- lapply(1:nrow(params), function(i) {
         ## if(i==16)browser()
         supp.x <- params[i,'x.min']:params[i,'x.max']
-        ks.df.study <- ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH) 
+        ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH)$ks.df
     })
     k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
     ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)

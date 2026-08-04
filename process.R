@@ -152,3 +152,26 @@ with(subset(df,kurt==0 & stat=='ks.LR.bartlett'),  lines(rate ~ skew,col=2))
 df <- df[order(df$skew,df$kurt),]
 with(subset(df,skew==0 & stat=='ks.LR'),  plot(rate ~ kurt,type='l',ylim=range(df$rate)))
 with(subset(df,skew==0 & stat=='ks.LR.bartlett'),  lines(rate ~ kurt,col=2))
+
+
+
+
+## compute rates, then aggregate
+## process  rate sim (IID data, using R with gauss-hermite)
+## save.path <- './sim/robustness/'
+save.path <- './sim/robustness/poisson/'
+filelist <- dir(save.path)
+filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+print(length(filelist))
+by.sim <- lapply(filelist, function(file) {
+    load(paste0(save.path,file))
+    ## df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
+    ## df <- do.call(rbind,df.lst)
+    ## df <- cbind(df,skew=skew,kurt=kurt)
+    rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
+    data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
+})
+long <- do.call(rbind,by.sim)
+long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
+rownames(long) <- NULL
+long.agg <- aggregate(rate ~ ., median,data=long)

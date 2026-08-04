@@ -2604,72 +2604,6 @@ x <- c(0L, 1L, 2L, 0L, 5L, 1L, 1L, 1L, 1L, 1L, 0L, 0L, 3L, 6L, 0L,
 BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)        
 BiasedUrn::dFNCHypergeo(x[1],m1=m.T,m2=m.C,n=s,odds=odds)        
 
-## encapsulate
-source('utils.R')
-profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$logtau2.bounds,n.GH=LR.fit$n.GH) {
-    ## browser()
-    GH <- fastGHQuad::gaussHermiteData(n.GH)
-    GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
-    ## names(GH)[which(names(GH)=='x')] <- 'theta.grid'
-    x <- LR.fit$x
-    params <- LR.fit$params
-    cond.pmf <- LR.fit$cond.pmf
-    mu.mle.full <- LR.fit$mle.full['mu']; tau2.mle.full <- LR.fit$mle.full['tau2'];
-    loglik <- LR.fit$loglik.fun
-    loglik.profile <- function(mu) {
-        logtau2.mle.profile <- optimize(function(logtau2)loglik(mu,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
-        tau2.mle.profile <- exp(logtau2.mle.profile)
-        return(tau2.mle.profile)
-    }
-    mu.profile.grid <- seq(mu.mle.full-grid$offset*sqrt(tau2.mle.full),mu.mle.full+grid$offset*sqrt(tau2.mle.full),len=grid$size)
-    tau2.profile.grid <- sapply(mu.profile.grid,function(mu)loglik.profile(mu))
-    ## add support for parallelization here
-    profiled.stats <- lapply(seq_along(mu.profile.grid),function(i) {
-        cat('.')
-        LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.profile.grid[i],tau2.profile.grid[i],x,params,GH))
-        ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
-        bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
-        ## inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
-        ## information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
-        ## c(det=det(information),min.eigen=min(abs(eigen(information)$val)))   
-        ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,inf.stats))
-        ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile)))
-        return(list(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,ks=ks.profile))
-    })
-    ks.profile <- lapply(profiled.stats,`[[`,'ks')
-    profiled.stats <- lapply(profiled.stats,`[[<-`,'ks',NULL) |> sapply(unlist)
-    return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid,ks.profile=ks.profile))
-}
-## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
-confint.LR <- function(profile.fit,alpha=.05,plot=TRUE) {
-    ## browser()
-    ## profiled.stats <- profile.fit$profile
-    ## LR.profile <- sapply(profiled.stats,function(x)x$LR)
-    ## LR.bartlett.profile <- sapply(profiled.stats,function(x)x$LR.bartlett)
-    profile <- profile.fit$profile
-    mu.grid <- profile.fit$mu.grid
-    tau2.grid <- profile.fit$tau2.grid
-    q <- qchisq(1-alpha,df=1)
-    if(plot) {
-        plot(mu.grid,profile['LR',],ylim=range(profile[c('LR','LR.bartlett'),]),type='o')
-        lines(mu.grid,profile['LR.bartlett',],lty=2,type='o')
-        abline(h=q)
-    }
-    CIs <- apply(profile[c('LR','LR.bartlett'),] - q, 1, function(vals) {        
-        left.idx <- which(diff(sign(vals))!=0)
-        ## print(vals)
-        ## print(left.idx)
-        stopifnot(length(left.idx)==2)
-        stopifnot(left.idx[2]<length(vals))
-        stopifnot(vals[left.idx[2]]<0)
-        right.idx <- left.idx+1 
-        left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
-        right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
-        left.wt*mu.grid[left.idx] + right.wt*mu.grid[right.idx]
-    } )
-    return(CIs)
-}
-
 
 ## binomial-prop.  !!ugly curve for large n.GH [update: needed to
 ## increase n.GH. for small n.GH the curve looks fine but the
@@ -2704,7 +2638,8 @@ legend('topleft',lty=1,col=col,legend=n.GHs)
 abline(h=log(qchisq(1-.05,df=1)))
 ## abline(v=CIs[,'LR.bartlett'])
 
-
+## patwardhan data
+source('utils.R')
 ks.fun <- readRDS('ks-fun.rds')
 stijnen.v <- read.table('stijnen-table-V.txt')
 pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
@@ -2721,25 +2656,114 @@ plogis(CIs)
 
 
 
-## poisson
+## poisson data analysis
 source('utils.R')
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
 stijnen.vi <- read.table('stijnen-table-VI.txt')
-x <- stijnen.vi$Y0
-T <- stijnen.vi$T0/1000
-params <- cbind(T=T,x.min=0,x.max=3e3)
-LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=50)
+x <- stijnen.vi$Y1
+T <- stijnen.vi$T1/1000
+params <- cbind(T=T,x.min=0,x.max=5e3)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=500)
 ## print(fit$mle.full) #matches stijnen and metafor
 ## require(metafor) 
 ## fit <- rma.glmm(measure="IRLN", xi=Y0, ti=T0/1000, data=stijnen.vi, method="ML")
 ## summary(fit)
 start <- Sys.time()
-profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
+profile.fit <- profile.LR(LR.fit,grid=list(offset=3.5,size=10),logtau2.bounds=c(-5,5))
 print(Sys.time() - start)
 CIs <- confint.LR(profile.fit,alpha=.05)
 print(CIs)
 plogis(CIs)
 
+## problem area for poisson data analysis
+
+mu <- mean(profile.fit$mu.grid[17:18])
+## [1] 2.022873
+tau2 <- mean(profile.fit$tau2.grid[17:18])
+## [1] 0.6578561
 
 
+n.GH <- 1e2
+n.GHs <- seq(500,550,by=50)
+by.n.GH <- lapply(n.GHs, function(n.GH) {
+    cat('.')
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+    ## names(GH)[which(names(GH)=='x')] <- 'theta.grid'
+    x <- LR.fit$x
+    params <- LR.fit$params
+    params[,'x.max'] <- rep(1e3,nrow(params))
+    cond.pmf <- LR.fit$cond.pmf
+    mu.mle.full <- LR.fit$mle.full['mu']; tau2.mle.full <- LR.fit$mle.full['tau2'];
+    loglik <- LR.fit$loglik.fun
+    loglik.profile <- function(mu) {
+        logtau2.mle.profile <- optimize(function(logtau2)loglik(mu,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+        tau2.mle.profile <- exp(logtau2.mle.profile)
+        return(tau2.mle.profile)
+    }
+    LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu,tau2,x,params,GH))
+    ks.df <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
+    ## bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+})
+
+
+
+n.GH <- 1e2
+by.n.max <- lapply(seq(100,1e3,by=100), function(x.max) {
+    cat('.')
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+    ## names(GH)[which(names(GH)=='x')] <- 'theta.grid'
+    x <- LR.fit$x
+    params <- LR.fit$params
+    params[,'x.max'] <- rep(x.max,nrow(params))
+    cond.pmf <- LR.fit$cond.pmf
+    mu.mle.full <- LR.fit$mle.full['mu']; tau2.mle.full <- LR.fit$mle.full['tau2'];
+    loglik <- LR.fit$loglik.fun
+    loglik.profile <- function(mu) {
+        logtau2.mle.profile <- optimize(function(logtau2)loglik(mu,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+        tau2.mle.profile <- exp(logtau2.mle.profile)
+        return(tau2.mle.profile)
+    }
+    LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu,tau2,x,params,GH))
+    ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
+    ## bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+})
+
+ks.study0(pmf.derivs.fun,ks.fun,params=params[5,],mu,tau2,n.GH)
+
+pmf.derivs <- apply(params,1,function(paramsi) {
+    cat('.')
+    pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
+        ## browser()
+        supp.x <-  paramsi['x.min']:paramsi['x.max']
+        units.mat <- sapply(GH$theta.grid,function(thetai)pmf.deriv.fun(beta=beta,params=paramsi,theta=thetai,x=supp.x))
+        colSums(GH$w * t(units.mat))
+    })
+})
+
+
+
+## binomial-IRR
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-irr.rds')
+stijnen.6 <- read.table('stijnen-table-VI.txt')
+x <- x.T <- stijnen.6$Y1
+x.C <- stijnen.6$Y0
+T.t <- stijnen.6$T1/1000
+T.c <- stijnen.6$T0/1000
+s <- x.C+x.T
+params <- cbind(T.t=T.t,T.c=T.c,s=s,x.min=0,x.max=s)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.irr,logtau2.bounds=c(-5,5),n.GH=100)
+## print(fit$mle.full) #matches stijnen and metafor
+## require(metafor) 
+## fit <- rma.glmm(measure="IRLN", xi=Y0, ti=T0/1000, data=stijnen.vi, method="ML")
+## summary(fit)
+start <- Sys.time()
+profile.fit <- profile.LR(LR.fit,grid=list(offset=3.5,size=10),logtau2.bounds=c(-5,5))
+print(Sys.time() - start)
+CIs <- confint.LR(profile.fit,alpha=.05)
+print(CIs)
+plogis(CIs)
