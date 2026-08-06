@@ -465,11 +465,11 @@ cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params) {
     pr <- function(theta)plogis(log(T.t/T.c) + mu+sqrt(tau2)*theta)
     dbinom(x,size=s,prob=pr(theta))
 }
-dgp.binomial.irr <- function(n,mu,tau2,params) {
+dgp.binomial.irr <- function(n,mu,tau2,params,re.distr=rnorm) {
     T.t <- params[,'T.t']
     T.c <- params[,'T.c']
     s <- params[,'s']
-    theta <- rnorm(n)
+    theta <- re.distr(n)
     pr <- function(theta)plogis(log(T.t/T.c) + mu+sqrt(tau2)*theta)
     rbinom(n,size=s,prob=pr(theta))
 }
@@ -557,6 +557,20 @@ ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50) {
     return(ks.df.ma)
 }
 
+## with debugging info
+ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50) {
+    ## browser()
+    ks.study.fits <- lapply(1:nrow(params), function(i) {
+        ## if(i==16)browser()
+        supp.x <- params[i,'x.min']:params[i,'x.max']
+        ks.study.fit <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH)
+    })
+    ## k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
+    k.vals.ma <- sapply(ks.study.fits,function(fit)fit$ks.df$k.val) |> rowSums()
+    ks.df.ma <- data.frame(inner=ks.study.fits[[1]]$ks.df$inner, outer=ks.study.fits[[1]]$ks.df$outer,k.val=k.vals.ma)
+    return(list(ks.df.ma=ks.df.ma,ks.study.fits=ks.study.fits))
+}
+
 
 lawley <- function(k.df,p) {
     ## k.df <- data.frame(inner=sapply(orders.k,`[`,1),outer=sapply(orders.k,`[`,2),k.val=k.vals)
@@ -625,21 +639,32 @@ profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$log
     mu.profile.grid <- seq(mu.mle.full-grid$offset*sqrt(tau2.mle.full),mu.mle.full+grid$offset*sqrt(tau2.mle.full),len=grid$size)
     tau2.profile.grid <- sapply(mu.profile.grid,function(mu)loglik.profile(mu))
     ## add support for parallelization here
+    ## profiled.stats <- lapply(seq_along(mu.profile.grid),function(i) {
+    ##     cat('.')
+    ##     LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.profile.grid[i],tau2.profile.grid[i],x,params,GH))
+    ##     ## ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
+    ##     ks.fit.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
+    ##     ks.profile <- ks.fit.profile$ks.df.ma
+    ##     bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
+    ##     return(list(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,ks=ks.profile,ks.fit=ks.fit.profile))
+    ## })
+    ## ks.profile <- lapply(profiled.stats,`[[`,'ks')
+    ## profiled.stats <- lapply(profiled.stats,`[[<-`,'ks',NULL) |> sapply(unlist)
+    ## return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid,ks.profile=ks.profile))
     profiled.stats <- lapply(seq_along(mu.profile.grid),function(i) {
         cat('.')
         LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.profile.grid[i],tau2.profile.grid[i],x,params,GH))
-        ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
-        bartlett.C.profile <- lawley(ks.profile,2) - lawley(ks.profile,1)
-        ## inf.stats <- with(list(k=function(inner,outer=0){k.df <- ks.profile; k.df$k.val[k.df$inner==paste(sort(inner),collapse='') & k.df$outer==paste(sort(outer),collapse='')]}),{
-        ## information <- -matrix(apply(expand.grid(1:2,1:2),1,k),nrow=2)
-        ## c(det=det(information),min.eigen=min(abs(eigen(information)$val)))   
-        ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,inf.stats))
-        ## return(c(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile)))
-        return(list(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,ks=ks.profile))
+        ## ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
+        ks.fit.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
+        ks.df.ma.profile <- ks.fit.profile$ks.df.ma
+        ## browser()
+        bartlett.C.profile <- lawley(ks.df.ma.profile,2) - lawley(ks.df.ma.profile,1)
+        return(list(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,ks.fit=ks.fit.profile))
     })
-    ks.profile <- lapply(profiled.stats,`[[`,'ks')
-    profiled.stats <- lapply(profiled.stats,`[[<-`,'ks',NULL) |> sapply(unlist)
-    return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid,ks.profile=ks.profile))
+    ks.fit.profile <- lapply(profiled.stats,function(lst)lst$ks.fit.profile)
+    ks.df.ma.profile <- lapply(ks.fit.profile,function(lst)lst$ks.df.ma)
+    profiled.stats <- lapply(profiled.stats,`[[<-`,'ks.fit',NULL) |> sapply(unlist)
+    return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid,ks.fit.profile=ks.fit.profile,ks.df.ma=ks.df.ma.profile))
 }
 ## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
 confint.LR <- function(profile.fit,alpha=.05,plot=TRUE) {

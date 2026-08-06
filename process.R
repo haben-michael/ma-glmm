@@ -49,7 +49,9 @@ df <- long
 subset(long,stat=='ks.LR'|stat=='ks.LR.bartlett')
 subset(long,stat=='ks.LR')
 
-## compute median stats, then take rates. looks much smoother this way.
+## compute median stats, then take rates. looks much smoother this
+## way. but doesnt make sense a priori--k-s rates across different
+## designs are being averaged/median'd.
 save.path <- './sim/robustness/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
@@ -112,6 +114,7 @@ matrix(subdf$rate,nrow=length(unique(subdf$skew)))
 ## process  rate sim (IID data, using R with gauss-hermite)
 ## save.path <- './sim/robustness/'
 save.path <- './sim/robustness/poisson/'
+save.path <- './sim/robustness/binomial-irr/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -160,6 +163,7 @@ with(subset(df,skew==0 & stat=='ks.LR.bartlett'),  lines(rate ~ kurt,col=2))
 ## process  rate sim (IID data, using R with gauss-hermite)
 ## save.path <- './sim/robustness/'
 save.path <- './sim/robustness/poisson/'
+save.path <- './sim/robustness/binomial-irr/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -175,3 +179,7 @@ long <- do.call(rbind,by.sim)
 long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
 rownames(long) <- NULL
 long.agg <- aggregate(rate ~ ., median,data=long)
+long.agg <- subset(long.agg,subset=stat=='ks.LR' | stat=='ks.LR.bartlett')
+
+plot(rate~skew, data=subset(long.agg,stat=='ks.LR'&kurt==0),type='l',ylim=range(long.agg$rate))
+lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)

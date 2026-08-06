@@ -219,13 +219,13 @@ pairs <- replicate(1e2, {
     try1 <- exp(-n*r(theta0))*g(theta0)*sqrt(2*pi)/sqrt(n)/sqrt(d2r(theta0))
     try2 <- try1/g(theta0) * (g(theta0)+1/n*(   d2g(theta0)/2/d2r(theta0) - d3r(theta0)*d1g(theta0)/2/d2r(theta0)^2 - d4r(theta0)*g(theta0)/8/d2r(theta0)^2 + 5*d3r(theta0)^2*g(theta0)/12/d2r(theta0)^3   )  )
     true <- integrate(function(theta)plogis(mu+theta)^e*(1-plogis(mu+theta))^(n-e)*dnorm(theta/sqrt(tau2))/sqrt(tau2),-20,20)$val
-##     true <- true <- integrate(
-##     function(theta)
-##         plogis(mu + sqrt(tau2) * theta)^e *
-##         (1 - plogis(mu + sqrt(tau2) * theta))^(n - e) *
-##         dnorm(theta),
-##     -20, 20
-## )$val
+    ##     true <- true <- integrate(
+    ##     function(theta)
+    ##         plogis(mu + sqrt(tau2) * theta)^e *
+    ##         (1 - plogis(mu + sqrt(tau2) * theta))^(n - e) *
+    ##         dnorm(theta),
+    ##     -20, 20
+    ## )$val
     log(c(try1=try1,try2=try2,true=true))
 })
 ## plot(pairs[1,],pairs[2,],pairs[3,])
@@ -296,14 +296,14 @@ beta <- c(tau2.null,mu.null)
 mma.str <- paste(readLines('mma-formulas/try.txt',warn=FALSE),collapse='')
 mma.str
 mma.str <- mma.to.R(
-  mma.str,
-  funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
-  rename = c(
-    Sqrt = "sqrt",
-    Log = "log",
-    LogisticSigmoid = "plogis",
-    Binomial = "choose"
-  )
+    mma.str,
+    funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+    rename = c(
+        Sqrt = "sqrt",
+        Log = "log",
+        LogisticSigmoid = "plogis",
+        Binomial = "choose"
+    )
 )
 ## j <- 2
 ## k <- 3
@@ -312,8 +312,8 @@ E <- exp(1)
 ## l.term.str <- eval(parse(text=mma.str))
 ## mma.str <- gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str)
 l.term.fun <- make.fun(
-  gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
-  args = c('theta','m','k')
+    gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
+    args = c('theta','m','k')
 )
 sapply(1:n, function(j) 
     sapply(1:(m[j]-1), function(k) {
@@ -340,9 +340,9 @@ k <- sapply(idx.strings, function(idx.str) {
     mma.str <- paste(readLines(paste0('mma-formulas/k-unit-',idx.str,'.txt'),warn=FALSE),collapse='')
     ## mma.str
     mma.str <- mma.to.R(mma.str,
-        funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
-        rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
-    )
+                        funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
+                        rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
+                        )
     E <- exp(1)
     l.deriv <- make.fun(
         gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
@@ -423,14 +423,14 @@ n <- 20
 mu.null <- 1
 tau2.null <- 2
 for(i in 1:10) {
-m <- rpois(n,lambda=20)
-theta <- rnorm(n)
-e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
-rm(theta)
-rma0 <- metafor::rma.glmm(measure='PLO',xi=e,ni=m,data=data.frame(study = 1:n, e=e, m=m))
-mle <- structure(unname(c(rma0$beta,rma0$tau2)),names=c('mu','tau2'))
-mle
-print(c(rma0$se,se.laplace(e,m,mle)[2]))
+    m <- rpois(n,lambda=20)
+    theta <- rnorm(n)
+    e <- rbinom(n,m,plogis(mu.null+sqrt(tau2.null)*theta))
+    rm(theta)
+    rma0 <- metafor::rma.glmm(measure='PLO',xi=e,ni=m,data=data.frame(study = 1:n, e=e, m=m))
+    mle <- structure(unname(c(rma0$beta,rma0$tau2)),names=c('mu','tau2'))
+    mle
+    print(c(rma0$se,se.laplace(e,m,mle)[2]))
 }
 
 
@@ -676,7 +676,7 @@ coef(lm(log(LR.bartlett)~log(n),data=long))[2]
 
 ## python check
 source('utils.R')
-# require(lme4)
+                                        # require(lme4)
 n <- 10
 m <- rep(20,n)
 p <- 1
@@ -806,7 +806,7 @@ k.strings <- lapply(c(full='./mma-formulas/quad/full/', redu='./mma-formulas/qua
                                                                 funs = c("Sqrt", "Log", "LogisticSigmoid", "Binomial"),
                                                                 rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose")
                                                                 ))
-    })
+})
 eps.redu <- lawley(k.strings=k.strings[['redu']],p=1,m=m,mu.null=0,tau2.hat=1/2)
 eps.full <- lawley(k.strings=k.strings[['full']],p=2,m=m,mu.null=0,tau2.hat=1/2)
 print(Sys.time()-tic)
@@ -825,7 +825,7 @@ mu.true <- mu.null <- 0
 tau2.true <- tau2.null <- 1/2
 ns <- 10:20
 by.n <- parallel::mclapply(ns,mc.cores=4,FUN=function(n) {
-## by.n <- sapply(ns, function(n) {
+    ## by.n <- sapply(ns, function(n) {
     cat('.')
     m <- rep(20,n)
     stats <- replicate(n^3, {
@@ -942,9 +942,9 @@ mma.str <-  mma.to.R(mma.str,
                      rename = c(Sqrt = "sqrt",Log = "log",LogisticSigmoid = "plogis",Binomial = "choose"))
 l.deriv <- 
     str.to.fun(
-            gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
-            args = c('theta','m','x','beta'),
-            binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt)
+        gsub(pattern=c('m\\[j\\]'),replacement=c('m'),mma.str),
+        args = c('theta','m','x','beta'),
+        binding=list(E=exp(1),plogis=plogis,log=log,sqrt=sqrt)
     )
 m <- 20
 ## x <- 7
@@ -1124,7 +1124,7 @@ pmf.derivs.fun <- lapply(filelist, function(file) {
     pmf <- function(x,params,prob) {
         m <- params['m']
         dbinom(x=x,size=m,prob=prob)
-        }
+    }
     ## factMoment <- function(k,params,odds) {
     ##     ## print(params)
     ##     m.T <- params['m.T']
@@ -1677,7 +1677,7 @@ pmf.derivs.fun <- lapply(filelist, function(file) {
         m.C <- params['m.C']
         s <- params['s']
         BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)        
-        }
+    }
     factMoment <- function(k,params,odds) {
         ## print(params)
         m.T <- params['m.T']
@@ -1720,30 +1720,30 @@ bartlett.C <- 1.36433398617429
 tic <- Sys.time()
 ## by.n <- sapply(ns, function(n) {
 repeat{
-by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
-    cat('.')
-    m.T <- rep(20,n)
-    m.C <- rep(15,n)
-    s <- rep(10,n)
-    ## s <- rep(10,n)
-    stats <- replicate(round(n^2.3), {
-        theta <- rnorm(n)
-        odds <- exp(mu.true+sqrt(tau2.true)*theta)
-        x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
-        params <- cbind(m.T=m.T,m.C=m.C,s=s)
-        LR <- LR.gaussian(x,params,mu.null,cond.pmf.hyperg)$LR
-        ## LR <- LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$LR
-        LR.bartlett <- LR / (1+bartlett.C/n)
-        c(LR=LR,LR.bartlett=LR.bartlett)
+    by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
+        cat('.')
+        m.T <- rep(20,n)
+        m.C <- rep(15,n)
+        s <- rep(10,n)
+        ## s <- rep(10,n)
+        stats <- replicate(round(n^2.3), {
+            theta <- rnorm(n)
+            odds <- exp(mu.true+sqrt(tau2.true)*theta)
+            x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
+            params <- cbind(m.T=m.T,m.C=m.C,s=s)
+            LR <- LR.gaussian(x,params,mu.null,cond.pmf.hyperg)$LR
+            ## LR <- LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$LR
+            LR.bartlett <- LR / (1+bartlett.C/n)
+            c(LR=LR,LR.bartlett=LR.bartlett)
+        })
+        ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
+        ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
     })
-    ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
-    ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
-})
-by.n <- simplify2array(by.n)
-print(Sys.time() - tic)
-plot(ns,by.n['LR',],type='l',ylim=range(by.n))
-lines(ns,by.n['LR.bartlett',],col=2)
-apply(by.n,1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
+    by.n <- simplify2array(by.n)
+    print(Sys.time() - tic)
+    plot(ns,by.n['LR',],type='l',ylim=range(by.n))
+    lines(ns,by.n['LR.bartlett',],col=2)
+    apply(by.n,1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
 }
 
 
@@ -1891,36 +1891,36 @@ bartlett.C <- 1.17164232232645 # poisson
 tic <- Sys.time()
 ## by.n <- sapply(ns, function(n) {
 repeat{
-by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
-    cat('.')
-    ## m.T <- rep(20,n)
-    ## m.C <- rep(15,n)
-    ## s <- rep(10,n)
-    ## s <- rep(10,n)
-    T <- rep(1,n)
-    stats <- replicate(round(n^2.3), {
-        theta <- rnorm(n)
-        ## T <- 4 + rexp(n)
-        lambda <- T*exp(mu.null+sqrt(tau2.null)*theta)
-        x <- rpois(n,lambda)
-        params <- cbind(T=T)
-        ## theta <- rnorm(n)
-        ## odds <- exp(mu.true+sqrt(tau2.true)*theta)
-        ## x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
-        ## params <- cbind(m.T=m.T,m.C=m.C,s=s)
-        LR <- LR.gaussian(x,params,mu.null,cond.pmf.poisson)$LR
-        ## LR <- LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$LR
-        LR.bartlett <- LR / (1+bartlett.C/n)
-        c(LR=LR,LR.bartlett=LR.bartlett)
+    by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
+        cat('.')
+        ## m.T <- rep(20,n)
+        ## m.C <- rep(15,n)
+        ## s <- rep(10,n)
+        ## s <- rep(10,n)
+        T <- rep(1,n)
+        stats <- replicate(round(n^2.3), {
+            theta <- rnorm(n)
+            ## T <- 4 + rexp(n)
+            lambda <- T*exp(mu.null+sqrt(tau2.null)*theta)
+            x <- rpois(n,lambda)
+            params <- cbind(T=T)
+            ## theta <- rnorm(n)
+            ## odds <- exp(mu.true+sqrt(tau2.true)*theta)
+            ## x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
+            ## params <- cbind(m.T=m.T,m.C=m.C,s=s)
+            LR <- LR.gaussian(x,params,mu.null,cond.pmf.poisson)$LR
+            ## LR <- LR.gaussian(x,params,mu.null,loglik.unit.hyperg)$LR
+            LR.bartlett <- LR / (1+bartlett.C/n)
+            c(LR=LR,LR.bartlett=LR.bartlett)
+        })
+        ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
+        ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
     })
-    ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
-    ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
-})
-by.n <- simplify2array(by.n)
-print(Sys.time() - tic)
-plot(ns,by.n['LR',],type='l',ylim=range(by.n))
-lines(ns,by.n['LR.bartlett',],col=2)
-apply(by.n,1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
+    by.n <- simplify2array(by.n)
+    print(Sys.time() - tic)
+    plot(ns,by.n['LR',],type='l',ylim=range(by.n))
+    lines(ns,by.n['LR.bartlett',],col=2)
+    apply(by.n,1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
 }
 
 
@@ -2117,7 +2117,7 @@ pmf.derivs.fun <- lapply(filelist, function(file) {
     pmf <- function(x,params,prob) {
         s <- params['s']
         dbinom(x=x,size=s,prob=prob)
-        }
+    }
     ## factMoment <- function(k,params,odds) {
     ##     ## print(params)
     ##     m.T <- params['m.T']
@@ -2254,10 +2254,10 @@ params <- c(m.T=m.T,m.C=m.C,s=s)
 n.GH <- 30
 ## with(list(theta=GH$theta.grid),
 ## f(1:n,1:n,GH$theta.grid,beta,params)
-    GH <- fastGHQuad::gaussHermiteData(n.GH)
-    GH$x <- sqrt(2)*GH$x
-    GH$w <- GH$w / sqrt(pi)
-    names(GH) <- c('theta.grid','w')
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+GH$x <- sqrt(2)*GH$x
+GH$w <- GH$w / sqrt(pi)
+names(GH) <- c('theta.grid','w')
 
 ## theta <- GH$theta.grid[1]
 ## odds <- exp(beta[2]+sqrt(beta[1])*theta)
@@ -2380,7 +2380,7 @@ out <- replicate(1e2, {
     xs <- rpois(500,30)
     lambdas <- rpois(500,30)
     ## uu <- outer(xs,lambdas,function(x,lambda)dpois(x,lambda))
-vv <- sapply(lambdas,function(lambda)dpois(xs,lambda))
+    vv <- sapply(lambdas,function(lambda)dpois(xs,lambda))
 })
 print(Sys.time()-start)
 
@@ -2404,7 +2404,7 @@ pmf.derivs.fun <- lapply(filelist, function(file) {
         m.C <- params['m.C']
         s <- params['s']
         BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)        
-        }
+    }
     factMoment <- function(k,params,odds) {
         ## print(params)
         m.T <- params['m.T']
@@ -2601,8 +2601,8 @@ ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=c(m.T = 345, m.C = 
 odds <- 9.450665e+14
 m.T <- 345; m.C <- 362; s <- 4
 x <- c(0L, 1L, 2L, 0L, 5L, 1L, 1L, 1L, 1L, 1L, 0L, 0L, 3L, 6L, 0L, 
-BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)        
-BiasedUrn::dFNCHypergeo(x[1],m1=m.T,m2=m.C,n=s,odds=odds)        
+       BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)        
+       BiasedUrn::dFNCHypergeo(x[1],m1=m.T,m2=m.C,n=s,odds=odds))  
 
 
 ## binomial-prop.  !!ugly curve for large n.GH [update: needed to
@@ -2623,20 +2623,24 @@ print(CIs)
 plogis(CIs)
 
 ## diagnostic for n.GH
-n.GHs <- seq(50,4e2,by=50)
+n.GHs <- seq(100,800,by=100)
+## cond.pmf <- cond.pmf.binomial.irr
 cond.pmf <- cond.pmf.poisson
 by.n.GH <- lapply(n.GHs,function(n.GH) {
-    LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf,logtau2.bounds=c(-5,5),n.GH=n.GH)
-    profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
-    profile.fit$profile
+    LR.fit <- LR.gaussian(x=x,params=params,mu.null=mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-5,5),n.GH=n.GH)
+    profile.fit <- profile.LR(LR.fit,grid=list(offset=3.5,size=10),logtau2.bounds=c(-5,5))
+    profile.fit
 })
 
-stats <- sapply(by.n.GH,function(m)m['LR.bartlett',])    
+stats <- parallel::mclapply(by.n.GH,mc.cores=5,FUN=function(m)m$profile['LR.bartlett',])    
+stats <- simplify2array(stats)
 col <- cm.colors(ncol(stats))
-matplot(profile.fit$mu.grid,stats,type='l',lty=1,col=col,log='y')
+matplot(by.n.GH[[1]]$mu.grid,stats,type='l',lty=1,col=col,log='y')
 legend('topleft',lty=1,col=col,legend=n.GHs)
 abline(h=log(qchisq(1-.05,df=1)))
 ## abline(v=CIs[,'LR.bartlett'])
+
+lapply(by.n.GH,confint.LR)
 
 ## patwardhan data
 source('utils.R')
@@ -2661,10 +2665,12 @@ source('utils.R')
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
 stijnen.vi <- read.table('stijnen-table-VI.txt')
-x <- stijnen.vi$Y1
-T <- stijnen.vi$T1/1000
-params <- cbind(T=T,x.min=0,x.max=5e3)
-LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=500)
+n.GH <- 1e2
+x <- stijnen.vi$Y0
+T <- stijnen.vi$T0/1000
+mu.null <- 0.8
+params <- cbind(T=T,x.min=0,x.max=1e3)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=mu.null,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=n.GH)
 ## print(fit$mle.full) #matches stijnen and metafor
 ## require(metafor) 
 ## fit <- rma.glmm(measure="IRLN", xi=Y0, ti=T0/1000, data=stijnen.vi, method="ML")
@@ -2678,9 +2684,9 @@ plogis(CIs)
 
 ## problem area for poisson data analysis
 
-mu <- mean(profile.fit$mu.grid[17:18])
+mu <- mean(by.n.GH[[1]]$mu.grid[17:18])
 ## [1] 2.022873
-tau2 <- mean(profile.fit$tau2.grid[17:18])
+tau2 <- mean(by.n.GH[[1]]$tau2.grid[17:18])
 ## [1] 0.6578561
 
 
@@ -2767,3 +2773,10 @@ print(Sys.time() - start)
 CIs <- confint.LR(profile.fit,alpha=.05)
 print(CIs)
 plogis(CIs)
+
+
+
+
+
+
+

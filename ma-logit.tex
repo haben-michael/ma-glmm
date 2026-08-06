@@ -72,7 +72,10 @@ Abstract. ...
 \textsc{Keywords: Meta-analysis, Bartlett correction, Generalized linear mixed models}
 
 
-1. introduction: (skip generic metaanalysis material). There is currently underway a move toward generalized mixed models in carrying out meta-analyses of event outcomes, particularly in situations where sample sizes are small or events are rare. GLMMs avoid many of the dubious assumptions of the main competing approach, inverse-variance weighting, such as gaussianity of the effects and perfect knowledge of standard deviations. % have been since stijnen
+\section{Introduction}
+\label{sec:introduction}
+
+There is currently underway a move toward generalized mixed models in carrying out meta-analyses of event outcomes, particularly in situations where sample sizes are small or events are rare. GLMMs avoid many of the dubious assumptions of the main competing approach, inverse-variance weighting, such as gaussianity of the effects and perfect knowledge of standard deviations. % have been since stijnen
 % 2010, glmm have become the preferred model for random effects
 % meta-analysis based on count data. cochran etc have recommended ... .
 However, inferences under GLMMs are still based on an asymptotic
@@ -103,9 +106,10 @@ effectiveness and robustness of the corrected test, finding ... . In Section ((r
 we re-visit the data analyses of ((stijnen)), finding ... .
 
 
-2. background.
+\section{Background}
+\label{sec:background}
 
-2a. [[notation for events, trials.]]  % let $n$ denote the number of studies included in the
+ % let $n$ denote the number of studies included in the
 % meta-analysis. for single-arm trials let yi denote the number of
 % events in study i, and for two-arm trials let yti and yci denote the
 % number of events in the treatment and control arms of study i. when
@@ -119,13 +123,12 @@ We consider the random effects model for meta-analysis. % in all casea a random 
 % the studies. this random effect is modelled as gaussian
 In this model, a Gaussian random effects models the effect of the individual studies,
 \begin{align}
-  \re_i = \munull + \taunull\Z, \Z \sim N(0,1)
+  \re_i = \munull + \taunull\Z,\qquad \Z \sim N(0,1)
 \end{align}
-the target of inference in the meta-analysis is $\munull$, with
-$\tausqnull$ a nuisance parameter. the conditional distribution of the
+The target of inference in the meta-analysis is $\munull$, with
+$\tausqnull$ a nuisance parameter. The conditional distribution of the
 data given the random effect depends on the type of
-analysis. following stijnen we consider 4 types of analyses: single
-arm and two arm trials, proportions and incidence/rates.
+analysis being conducted. Following ((stijnen)) we consider 4 types of analyses, determined by whether the studies included are single-arm or two-arm trials, and whether the estimand of the meta-analysis is a proportion or incidence rate.
 \begin{enumerate}
 \item Single arm, proportions. Each study reports the number of events $\Y_i$ and total number of trials $\m_i$.  The statistical model is binomial
 \begin{align}
@@ -136,16 +139,19 @@ arm and two arm trials, proportions and incidence/rates.
       f(\y_i\mid \Z) &=  {\m_i \choose \y_i}p^{\y_i}(1-p)^{\m_i-\y_i}\\
   p &= \expit(\munull + \taunull\Z_i)
 \end{align}
-The target of inference $\munull$ represents the log-odds  of an event. The number of trials $\m_i$ is treated as non-random.
+The target of inference $\munull$ represents the log-odds  of an event. The number of trials $\m_i$ is treated as a parameter of the conditional PMF $f_i=f_{m_i}$, which therefore depends on the study in the meta-analysis.[[replace f with fi in displays, update next 3 similarly]]
 
 \item Two arms, proportions. Each study reports, for treatment and control arm, the number of events $\T{\Y}_i$ and $\C{\Y}_i$ and the total number of trials $\T{\m}_i$ and $\C{\m}_i$. The statistical model conditions on the total number of events $S_i=\T{\Y}_i+\C{\Y}_i$, under which $\T{\Y}_i$ follows Fisher's non-central hypergeometric distribution
 \begin{align}
-  f(\T{\y}_i \mid \Z_i, S_i) = \frac{{\T{\m}_i\choose \T{\y}_i}{\C{\m}_i\choose S_i-\T{\y}_i}\exp(\re_i\T{\y}_i)}
+  % f(\T{\y}_i \mid \Z_i, S_i) &= \frac{{\T{\m}_i\choose \T{\y}_i}{\C{\m}_i\choose S_i-\T{\y}_i}\exp(\re_i\T{\y}_i)}
+  % {\sum_{\max(0,S_i-\C{\m}_i)}^{\min(S_i,\T{\m}_i)}
+  % {\T{\m}_i\choose \y}{\C{\m}_i\choose S_i-\y}\exp(\re_i \y)}\\
+  f(\T{\y}_i \mid \Z_i) &= \frac{{\T{\m}_i\choose \T{\y}_i}{\C{\m}_i\choose S_i-\T{\y}_i}\omega^{\T{\y}_i}}
   {\sum_{\max(0,S_i-\C{\m}_i)}^{\min(S_i,\T{\m}_i)}
-  {\T{\m}_i\choose \y}{\C{\m}_i\choose S_i-\y}\exp(\re_i \y)}
+                               {\T{\m}_i\choose \y}{\C{\m}_i\choose S_i-\y}\omega^{ \y}}\\
+  \omega &= \exp(\munull + \taunull\Z_i)
 \end{align}
-[[replace thetai with z expressions throughout??]]
-The target of inference $\munull$ represents the ratio of the treatment to control log-odds.[[ref to bivriate model which models baseline risk, mentions assumptions in this approach]]
+The target of inference $\munull$ represents the ratio of the treatment to control log-odds. The parameters of the conditional PMF include $S, \T{\m}, \C{\m}$.[[ref to bivriate model which models baseline risk, mentions assumptions in this approach]]
 
 \item Single arm, incidence rate. Each study reports the number
 of events $\Y_i$ and the duration of observation $T_i$.  The model is
@@ -157,19 +163,20 @@ Poisson,
 The target of
 inference represents the log of the incidence rate. The follow-up time $T_i$ is treated as non-random.
 
-\item Two arms, incidence rates. Each study reports, for treatment and control arm, the number of events $\T{\Y}_i$ and $\C{\Y}_i$ and the duration of observation $\T{T}_i$ and $\C{T}_i$. the model is binomial
+\item Two arms, incidence rates. Each study reports, for treatment and control arm, the number of events $\T{\Y}_i$ and $\C{\Y}_i$ and the duration of observation $\T{T}_i$ and $\C{T}_i$. Conditionally on $S_i=\T{\Y}_i+\C{\Y}_i$, $\T{\Y}_i$ is binomial
 \begin{align}
-  f(\T{\y}_i \mid \Z_i) &= {\T{\m}_i \choose \T{\y}_i}p^{\T{\y}_i}(1-p)^{\T{\m}_i - \T{\y}_i}\\
+  f(\T{\y}_i \mid \Z_i) &= {S_i \choose \T{\y}_i}p^{\T{\y}_i}(1-p)^{S_i - \T{\y}_i}\\
   p &= \expit(\log(\T{T}_i/\C{T}_i)+\munull + \taunull\Z_i)
 \end{align}
 The target of inference
-is the logarithm of the ratio of the incidence rates between the two arms. As before the periods $\T{T}_i$ and $\C{T}_i$ are teated as non-random.
+is the logarithm of the ratio of the incidence rates between the two arms. As before the periods $\T{T}_i$ and $\C{T}_i$ are teated as  parameters of the conditional PMF.
 \end{enumerate}
+
 In all cases the likelihood for  study $i$ has the form:
 \begin{align}
-  L(\effect,\tau^2 | \Y_i) = \int_{-\infty}^\infty f(\Y_i|\z)\phi(\z)d\z
-\end{align}[[this is suppressing the dependnce of f on i]]
-where $f(y|\z)$ is the conditional PMF given the random effect, as given above.
+  L_i(\effect,\tau^2 | \Y_i) = \int_{-\infty}^\infty f_i(\Y_i|\z)\phi(\z)d\z
+\end{align}
+where $f_i(y|\z)$ is study $i$'s  PMF conditional on a Gaussian random effect, as given above.
 % int condpmf * phi. condpmf = , parameters= (used loosely--need to distinguish from mu/tau2).
 
 The likelihood ratio test of the null $\effect=\munull$ is based on the test statistic
@@ -179,23 +186,22 @@ The likelihood ratio test of the null $\effect=\munull$ is based on the test sta
 where $(\hat\effect,\hat\tau^2)$ maximizes
 $(\effect,\tau^2)\mapsto\sum_{i=1}^n\log L_i(\effect,\tau^2 | \Y_i)$
 and $\hat{\tau}^2_0=\hat{\tau}^2_0(\effect)$ maximizes
-$\tau^2 \mapsto\sum_{i=1}^n\log L_i(\munull,\tau^2 | \Y_i)$.  By Wilks
-theorem in routine applications $\W$ converges to a chi squared
-distribution with a single degree of freedom under the null hypothesis. Relying on this asymptotic approximation a confidence interval
+$\tau^2 \mapsto\sum_{i=1}^n\log L_i(\munull,\tau^2 | \Y_i)$.  In routine applications  $\W$ converges to a chi squared
+distribution  under the null hypothesis, by Wilks' Theorem. Relying on this asymptotic approximation a confidence interval
 for $\munull$ can be formed by inverting the test statistic.
 
 
 % 2b. bartlett correction
 
-Under a range of conditions[[, chiefly the existence of an edgeworth expansion for the underlying random variables,]] the mean of a correctly specified LR statistic ((ref)) admits an expansion in integral powers of $1/\n$ 
+Under a range of conditions [[citations]] the mean of a correctly specified LR statistic ((ref)) admits an expansion in integral powers of $1/\n$ 
 \begin{align}
   \E(\W)  = 1 + b/\n + O(1/\n^2).
 \end{align}
-It then follows that
+Therefore, the Bartlett-corrected statistic
 \begin{align}
-\WB = \E(\frac{\W}{1+b/\n})
+\WB = \frac{\W}{1+b/\n}
 \end{align}
-is bias-corrected to order $O(1/\n^2)$.
+is de-biased to order $O(1/\n^2)$.
 % write out expansion of likelihood. odd powers of
 % root n vanish. identify c as the 1/n term. so dividing by 1+c then
 % removes the mean bias to order 1/n,
@@ -209,52 +215,61 @@ the entire distribution. % that this mean bias
 % reduction in fact removes the 1/n bias from ((ref LR expansion)) as
 % well, i.e., the chi squared approximation.
 Then the resulting asymptotic rate of convergence to a chi squared
-random variable is $O(1/\n^2)$. As with ((ref lr statistic)), the adjusted statistic may be inverted to obtain CIs and p-vals. [[mention C depends on parameters, or maybe make explicit in the notation]]
+random variable is $O(1/\n^2)$. As with ((ref lr statistic)), the adjusted statistic may be inverted to obtain CIs and p-values. [[mention C depends on parameters, or maybe make explicit in the notation]]
 
 
 Among the assumptions underlying the above development we focus on two
 prominent ones. The first is correct specification of the likelihood,
-in particular, gaussianity of the unobserved random effect. we refer
+in particular, gaussianity of the unobserved random effect. [[we refer
 to sitjnen to other modeling assumptions implicit in ((ref 1--4
-above)), such as ... . while the LR test itself depends on gaussianity
-for valid inference ((ref showing bad estimatio of tau2)), the
-bartlett correction doubles down on the assumption. second, the
-arguments for the bartlett correction to deliver 1/n2 rate generally
-depend on cramer's condition for the underlying RVs, which excludes
-lattice variables such as are considered here. open question since the
-80s, when lattice RVs can be bartlett codnitions. cramers condition
-has been relaxed in recent work ((cite)) but these conditions are
-difficult to evaluate in specific cases. they do offer promise that the entireprise of bartlett correcting count data, which has been done since 80s ((cite cordeiro)), is not pointless. we make not theoretical contibutions here and will examine both model robustness and discreteness by simulation.
+above)), such as ... . ]] While the LR test itself depends on
+gaussianity for valid inference ((citation showing effects of bad
+estimatio of tau2)), the Bartlett correction doubles down on the
+assumption. Second, the arguments that the Bartlett correction to
+deliver $1/\n^2$ rate are usually justified by Cram\'er's condition
+for the underlying random variables, which excludes lattice variables
+such as are considered here. while bartlett correction has been
+applied to lattice random variables since at least the 80s, their
+effectiveness does not appear to be understood in much generality
+((cite frydenberg re multinomial ngative result and gotze, and janson
+re positive result)). [[of bartlett correction does not open question
+since the 80s, when lattice RVs can be bartlett codnitions. cramers
+condition has been relaxed in recent work ((cite)) but these
+conditions are difficult to evaluate in specific cases. they do offer
+promise that the entireprise of bartlett correcting count data, which
+has been done since 80s ((cite cordeiro)), is not pointless.]] we have
+no theoretical contibutions to make here and will examine both model
+robustness and discreteness by simulation.
 
-3. proposed method.
+\section{Method}
+\label{sec:method}
 
 lawley ((cite)) provides expressions for the correction ((ref)) as
-sums and products of the components of the inverse fisher information
-and certain tensors [[k terms]], defined as follows. Let partial $D_r$
+sums and products of the components of the inverse Fisher information
+and certain tensors [[k terms]]. the specific formulas arent of interest here; being a small set of sums and products they don't introduce numerical or computational difficulties that aren't already to be found in the basic k terms. Let $D_r$
 denote partial differentiation with respect to a sequence of the
-parameters $\effect$ and $\tau^2$ given by $r$. Define
+parameters $\effect$ and $\tau^2$ given by $r$. For example, ... denotes the off-diagonal term of the obseerved information matrix for ((ref total likelihood)) Define
 $\k_r=\E D_r l(\effect,\tau^2)$ and $\k_r^{(s)} = D_s \k_r$. In this
 notation the Fisher information matrix has components
 $\k_{11}, \k_{12}, \k_{22}$.[[intro component notation or use mu,tau2
 here?]]. Lawley's formulas for computation of the correction require
 all terms $\k_r$ where $r$ is of length 2, 3, or 4, and all terms
-$\k_r^{(s)}$ where $r$ is of length $3$ and $s$ length $1$ or $r$ is
+$\k_r^{(s)}$ where $r$ is of length $3$ and $s$ of length $1$ or $r$ is
 of length $2$ and $s$ of length $1$ or $2$. Taking into account
 permutation symmetry of the order of differentiation, there are $35$
 such terms.
 
 To compute the tensor components ((ref)) for the likelihood ((ref)),
-we approximate the integral by a quadrature rule. since all the
-likelihoods involve integrating against a gaussian, gauss-hermite
-approximation is a natural choice, replacing the integral ((ref)) with
-a weighted sum. ((how much detail to give here, maybe
-just leave it as a sum approximation.))
+we approximate the integral by a quadrature rule. Since all the
+likelihoods ((ref)) involve integrating against a Gaussian,
+Gauss-Hermite quadrature is a natural choice. This and similar methods  consist in a weights and nodes in the domain of integration, the size of which controls the quality of approximation, allowing the
+integral ((ref)) to be approximated by a weighted sum on, say ((how much detail to give here,[[set notation nGH and w. this tuning parameter will be needed later. say we are using fixed rule not adatpve]].
+maybe just leave it as a sum approximation.))
 \begin{align}
  L(\re,\tau^2 | \Y) =  \int_{-\infty}^\infty f(\Y|\z)\phi(\z)d\z
   \approx  \sum_{j}\w_j  f(\Y|\z_j)
 \end{align}
-
-The higher-order partial derivative of the log-likelihood is approximated by
+A higher-order partial derivative of the log-likelihood may be approximated by
    $D_r \log L(\effect,\tau^2 | \Y) \approx  D_r \log\sum_{j} \w_j  f(\Y|\z_j)$. The expectation of the latter  may be approximated by another quadrature
 \begin{align}
   \k_r &=  \sum_\y  \left(D_r \log L(\effect,\tau^2 | \y)\right)  \int f(y|\z)\phi(\z)d\z\\
@@ -263,48 +278,56 @@ The higher-order partial derivative of the log-likelihood is approximated by
 \end{align}
 The outer sum is taken over the support of $\Y$, which is a finite set in all the models considered here other than the Poisson model. The Poisson model requires a truncation rule, discussed further below.
 % expression ((...)) approximates k terms of the form ((inner only)). k terms of the form ((inner and outer)) may be approximated by 
- the general tensor component is then
+The general tensor component needed for the computation of the Bartlett correction factor is then
 \begin{align}
     k_r^{(s)} 
-      &\approx  \sum_y D_s\left( \left(D_r \log\sum_{j} \w_j  f(y|\theta_j)\right)  \sum_k \w_k f(y|\theta_k)\right)
+      &\approx  \sum_y D_s\left( \left(D_r \log\sum_{j} \w_j  f(y|\z_j)\right)  \sum_k \w_k f(y|\z_k)\right)
 \end{align}
 
-Carrying these differentiations through yields rational expressions in
+Carrying these differentiations ((ref above display)) through yields rational expressions in
 derivatives of the weighted sums $\sum_{j} \w_j f(\y|\z_j)$. The
 form of these 35 expressions, for the 35 k terms, are the same for any
 model based on a likelihood of the form ((ref)), and may be
 pre-computed. For example $\k_{\mu,\mu}=  \F_{20}-(\F_{10}^2/\F_{00})$ , and $\k_{\mu,\tau^2}^{(\tau^2)}=(\F_{01}^2\F_{10})/\F_{00}^2 - (\F_{02}\F_{10} + \F_{01}\F_{11})/
-\F_{00} + \F_{12}$, letting
-$\F_{jk}=d^j/d\mu^j d^k/d(\tau^2)^k\sum_{j} \w_j  f(y|\theta_j)$.
+\F_{00} + \F_{12}$, with the notation
+$\F_{jk}=\sum_{j} \w_j \frac{d^j}{d\mu^j}\frac{d^k}{d(\tau^2)^k}  f(y|\z_j)$.[[notatoin clash with j, need to reserve i for fi]]
 
 
+The derivatives $\F_{jk}$ of the model-specific conditional PMFs that
+appear in the 35 tensor components number 15: $\F_{jk}$ for
+$0\le j+k \le 4$. The form of these derivatives may be derived
+independently of data but their specific values in general depend on
+parameters of the conditional PMF ((see above)), and must typically be
+computed for each study of a meta-analysis. The latter computations may be carried out in 
+parallel when the meta-analysis consists of stochatically independent studies, such as we consider here. Using well-known
+recurrences ((cite johnson and kotz univariate discrete distributions)) the derivatives $\F_{jk}, 0\le j+k \le 4$, may be re-written as polynomial
+expressions of $\F_{00}=\sum_{j} \w_j  f(y|\theta_j)$,[[add i subscript to f's? also in derivation above??]] for which
+optimized and numerically stable routines are available. For example, for the model ((ref poisson/incidence rate model)),
+\begin{align}
+  \frac{d}{d\lambda_i} f_{\lambda_i}(\y_i\mid \Z_i)
+  = f_{\lambda_i}(\y_i-1\mid \Z_i) - f_{\lambda_i}(\y_i\mid \Z_i)
+\end{align}
+[[make Fjk functions 0f y, so this recurrence can be written in terms o fthem]]
 
-The derivatives of the model-specific conditional PMFs that appear in
-the 35 tensor components number 15: $\F_{jk}$ for $0\le j+k \le 4$. The form of these derivatives may be pre-computed but
-their specific values in general depend on parameters of the
-conditional PMF ((see above)), and must typically be computed for each
-study of a meta-analysis. using well-known recurrences the derivatives
-may be re-written as polynomial expressions of the conditional PMFs
-given in ((ref 1--4)), for which fast and numerically stable routines
-are available. For example: ... . [[see appendix for similar
-recurrences, or refer to johnson and kotz or wherever]]
 
+mention CAS, andrews and stafford, old lawley program.
 
 further implementation
 details.
-
-chain rule: differentiate wrt pmf sums. get 35 k terms in terms of pmfsums (give an example or two).
-
-differentiate pmfs using recurrences in terms usual pmfs to allow fast, stable routines to be used.
-
-some specific issues: support for poisson. speed issues with hyperg.
+support for poisson. speed issues with hyperg.
 
 
-3. simulation
+\section{Simulation}
+\label{sec:simulation}
 
-goals: robustness/gaussianity check. discreteness issue.
+we examine the rate of convergence ot a chi squared of the LR and
+Bartlett-corrected LR. rate approximated using log-log. data
+parameters are sampled from stijnen tables ((data analysis)) so as to
+resemble real data. we also examine robustness of the gaussianity assumption. since the leading term in CLT-type approximations is based on the skew, we examine how the rate varies as the skew of the underlying RV is varied. we use the sinh-asinch model ... to obtain a family of RVs based on the Gaussian with the skew perturbed.
 
-4. data analysis.
+\section{Data analysis}
+\label{sec:data-analysis}
+We revisit the data analysis of ((stijnen2010)).
 
 4a. proportions
 

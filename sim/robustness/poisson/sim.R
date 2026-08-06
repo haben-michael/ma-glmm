@@ -27,7 +27,7 @@ by.n <- sapply(ns, function(n) {
     ## bartletts <- parallel::mclapply(seq(50,5e2,by=50),mc.cores=5,FUN=function(n.GH) {
         ## cat('.')
     params <- cbind(T=Ts,x.min=0,x.max=5e2)
-    ks.df <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.null,tau2=tau2.null,n.GH=n.GH)
+    ks.df <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.null,tau2=tau2.null,n.GH=n.GH)$ks.df.ma
     bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
 ## })
     
