@@ -2623,7 +2623,7 @@ print(CIs)
 plogis(CIs)
 
 ## diagnostic for n.GH
-n.GHs <- seq(100,800,by=100)
+n.GHs <- seq(100,400,by=100)
 ## cond.pmf <- cond.pmf.binomial.irr
 cond.pmf <- cond.pmf.poisson
 by.n.GH <- lapply(n.GHs,function(n.GH) {
@@ -2660,16 +2660,16 @@ plogis(CIs)
 
 
 
-## poisson data analysis
+    ## poisson data analysis
 source('utils.R')
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
 stijnen.vi <- read.table('stijnen-table-VI.txt')
-n.GH <- 1e2
+n.GH <- 3e2
 x <- stijnen.vi$Y0
 T <- stijnen.vi$T0/1000
 mu.null <- 0.8
-params <- cbind(T=T,x.min=0,x.max=1e3)
+params <- cbind(T=T,x.min=0,x.max=3e3)
 LR.fit <- LR.gaussian(x=x,params=params,mu.null=mu.null,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=n.GH)
 ## print(fit$mle.full) #matches stijnen and metafor
 ## require(metafor) 
@@ -2776,6 +2776,55 @@ plogis(CIs)
 
 
 
+
+
+
+
+## debug binomial-irr sim. means flatlining.
+
+source('utils.R')
+ns <- 5:15
+## sas.params <- sas.invert.params(skew,kurt)
+## re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
+set.seed(1)#!!!!!!!!!
+re.distr <- rnorm #!!!!
+mu.null <- 0#-.476
+tau2.null <- 1/2#.35^2
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-irr.rds')
+cond.pmf <- cond.pmf.binomial.irr
+n.GH <- 15 ##!!!!!!!!!!
+stijnen.6 <- read.table('stijnen-table-VI.txt')
+x <- x.T <- stijnen.6$Y1
+x.C <- stijnen.6$Y0
+T.t <- stijnen.6$T1/1000
+T.c <- stijnen.6$T0/1000
+s <- x.C+x.T
+## all.params <- cbind(T.t=T.t,T.c=T.c,s=s,x.min=0,x.max=s)
+all.params <- cbind(s=rep(30,max(ns)),T.t=1,T.c=1.5)## all.params <- params[sample(nrow(params),max(ns),replace=TRUE),]
+## by.n <- sapply(ns, function(n) {
+tic <- Sys.time()
+by.n <- parallel::mclapply(ns,mc.cores=6,FUN= function(n) {
+## by.n <- sapply(ns,FUN= function(n) {
+    cat('.')
+    ## params <- all.params[1:n,]
+    ## params <- params[sample(nrow(all.params),n,replace=TRUE),]
+    params <- do.call(rbind,replicate(n,all.params[1,],simplify=FALSE))
+    stats <- replicate(round(n^3), {
+        x <- dgp.binomial.irr(n,mu.null,tau2.null,params,re.distr=re.distr)
+        LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-15,15),n.GH=n.GH,control=list(maxit=1e4))$LR
+    })
+    ecdf.LR <- ecdf(pchisq(stats,df=1,lower=FALSE))
+    ks <- max(abs(ecdf.LR(knots(ecdf.LR)) - knots(ecdf.LR)))
+    means <- mean(stats-1)
+    c(ks=ks,means=means)
+})
+by.n <- simplify2array(by.n)
+print(Sys.time() - tic)
+plot(ns,by.n['ks.LR',],type='l',ylim=range(by.n[1:2,]))
+lines(ns,by.n['ks.LR.bartlett',],col=2)
+apply(by.n,1,function(x)coef(lm(log(abs(x)) ~ log(ns)))[2]) |> print()
+## plot(ns,by.n['means',],type='l')
 
 
 

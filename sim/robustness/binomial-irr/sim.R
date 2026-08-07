@@ -12,37 +12,47 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 ## re.distr <- rnorm #!!!!
 
 mu.null <- -.476
-tau2.null <- .35^2
+tau2.null <- .5#.35^2
+## mu.null <- 0#-.476
+## tau2.null <- 1/2#.35^2
 ks.fun <- readRDS('../../../ks-fun.rds')
 pmf.derivs.fun <- readRDS('../../../pmf-derivs-fun-binomial-irr.rds')
 ## stijnen.vi <- read.table('../../../stijnen-table-VI.txt')
 ## all.Ts <- sample(stijnen.vi$T0,max(ns),replace=TRUE)
 ## all.Ts <- all.Ts / 1000
 cond.pmf <- cond.pmf.binomial.irr
-n.GH <- 50
+n.GH <- 2e1
 stijnen.6 <- read.table('../../../stijnen-table-VI.txt')
-x <- x.T <- stijnen.6$Y1
-x.C <- stijnen.6$Y0
-T.t <- stijnen.6$T1/1000
-T.c <- stijnen.6$T0/1000
-s <- x.C+x.T
-params <- cbind(T.t=T.t,T.c=T.c,s=s,x.min=0,x.max=s)
-all.params <- params[sample(nrow(params),max(ns),replace=TRUE),]
+stijnen.params <- with(stijnen.6, cbind(T.t=T1,T.c=T0,s=Y0+Y1,x.min=0,x.max=Y0+Y1))
+mc.idx <- sample(nrow(stijnen.params),max(ns),replace=TRUE)
+mc.params <- stijnen.params[mc.idx,]
+## mc.mles <- sapply(ns, function(n)
+##     LR.gaussian(stijnen.6$Y1[mc.idx[1:n]],params=stijnen.params[mc.idx[1:n],,drop=FALSE],mu.null=0,cond.pmf=cond.pmf,logtau2.bounds=c(-15,15),n.GH=n.GH,control=list(maxit=1e4))$mle.full
+##     ) |> t()
+## all.params <- cbind(s=rep(30,max(ns)),T.t=1,T.c=1.5,x.min=0,x.max=30)
+## all.params <- do.call(rbind,replicate(max(ns),apply(stijnen.params,2,median),simplify=FALSE))
 
-by.n <- sapply(ns, function(n) {
-## repeat{
-## by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
+by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
+    ## by.n <- sapply(seq_along(ns), function(i) {
+    ## repeat{
     cat('.')
     ## Ts <- all.Ts[1:n]
     ## bartletts <- parallel::mclapply(seq(50,5e2,by=50),mc.cores=5,FUN=function(n.GH) {
-        ## cat('.')
-    params <- all.params[1:n,]
+    ## cat('.')
+    ## pairs <- sapply(1:11, function(i) {
+    n <- ns[i]
+    params <- mc.params[1:n,]
+    ## mu.null <-mc.mles[i,'mu']; tau2.null <- mc.mles[i,'tau2']
+    ## bartlett.Cs <- sapply(c(20,200), function(n.GH) {
     ks.df <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.null,tau2=tau2.null,n.GH=n.GH)$ks.df
     bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
-## })
+    ## })
+   ## })
+    ## })
     stats <- replicate(round(n^3), {
         x <- dgp.binomial.irr(n,mu.null,tau2.null,params,re.distr=re.distr)
-        LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,n.GH=n.GH)$LR
+        ## LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,n.GH=n.GH)$LR
+        LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-15,15),n.GH=n.GH,control=list(maxit=1e4))$LR
         LR.bartlett <- LR / (1+bartlett.C)
         c(LR=LR,LR.bartlett=LR.bartlett)
     })
@@ -53,10 +63,10 @@ by.n <- sapply(ns, function(n) {
 })
 by.n <- simplify2array(by.n)
 ## print(Sys.time() - tic)
-## plot(ns,by.n['LR',],type='l',ylim=range(by.n))
-## lines(ns,by.n['LR.bartlett',],col=2)
+## plot(ns,by.n['ks.LR',],type='l',ylim=range(by.n))
+## lines(ns,by.n['ks.LR.bartlett',],col=2)
 ## apply(by.n[1:2,],1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
 
 filename <- paste0('save',as.integer(abs(rnorm(1))*1e8),'.RData')
-save(skew=skew,kurt=kurt,ns=ns,by.n=by.n,file=filename)
+save(tau2.null=tau2.null,skew=skew,kurt=kurt,ns=ns,by.n=by.n,file=filename)
 

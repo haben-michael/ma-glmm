@@ -613,6 +613,16 @@ patwardhan$Y1 <- patwardhan$TP
 patwardhan$Y0 <- patwardhan$FP
 
 
+
+GOOD STIJNEN TABLE VI DATA
+niel.weise.appendix <- data.frame(
+  Study = 1:9,
+  Y0    = c(11, 8, 14, 10, 1, 8, 15, 7, 3),
+  T0    = c(1988, 1460, 10962, 1502, 482, 913, 6840, 1015, 440),
+  Y1    = c(7, 8, 3, 6, 1, 1, 17, 3, 2),
+  T1    = c(1344, 1599, 12012, 1536, 370, 729, 6760, 1107, 320)
+)
+
 DEBUGGING POISSON PROFILE CURVE. TURNED OUT TO BE SUPPORT WAS TOO SMALL.
 
 

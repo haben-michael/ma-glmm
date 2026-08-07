@@ -2,9 +2,9 @@
 ## process  rate sim (IID data, using R with gauss-hermite)
 save.path <- './sim/260714/'
 save.path <- './sim/260722/' #poisson
-## save.path <- './sim/260723/'
-save.path <- './sim/260724/'
-save.path <- './sim/260728/'
+save.path <- './sim/260723/'
+## save.path <- './sim/260724/'
+## save.path <- './sim/260728/'
 ## png.file <- './figs/gaussian.png'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
@@ -161,9 +161,9 @@ with(subset(df,skew==0 & stat=='ks.LR.bartlett'),  lines(rate ~ kurt,col=2))
 
 ## compute rates, then aggregate
 ## process  rate sim (IID data, using R with gauss-hermite)
-## save.path <- './sim/robustness/'
+## save.path <- './sim/robustness/binomial-prop/'
 save.path <- './sim/robustness/poisson/'
-save.path <- './sim/robustness/binomial-irr/'
+## save.path <- './sim/robustness/binomial-irr/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))

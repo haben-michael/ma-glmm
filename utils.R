@@ -592,33 +592,39 @@ lawley <- function(k.df,p) {
 
 
 ## work with cond pmf, compute unit loglik inside function
-LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-5,5),n.GH=50) {
+LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-5,5),n.GH=50,...) {
     ## browser()
-        GH <- fastGHQuad::gaussHermiteData(n.GH)
-        GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
-        ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL)loglik.unit(mu,tau2,xi,paramsi,cond.pmf,GH)
-        ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=GH) {
-        ##     ## browser()
-        ##     if(is.null(GH)) {
-        ##         likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
-        ##     } else {
-        ##         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
-        ##     }
-        ##     return(log(likelihood))
-        ## }
-        loglik.unit <- function(mu,tau2,xi,paramsi,GH) {
-            ## browser()
-            ## print(xi); print(paramsi); print(mu);print(tau2)
-            likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
-            return(log(likelihood))
-        }
-        loglik <- function(mu,tau2,x,params,GH) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
-        logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
-        tau2.mle.redu <- exp(logtau2.mle.redu)
-        mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
-        mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
-        LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
-        return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR, loglik.fun=loglik, x=x, params=params, cond.pmf=cond.pmf,logtau2.bounds=logtau2.bounds, n.GH=n.GH))
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+    ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL)loglik.unit(mu,tau2,xi,paramsi,cond.pmf,GH)
+    ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=GH) {
+    ##     ## browser()
+    ##     if(is.null(GH)) {
+    ##         likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
+    ##     } else {
+    ##         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+    ##     }
+    ##     return(log(likelihood))
+    ## }
+    loglik.unit <- function(mu,tau2,xi,paramsi,GH) {
+        ## browser()
+        ## print(xi); print(paramsi); print(mu);print(tau2)
+        likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+        ## print(c(mu,tau2,log(likelihood),paramsi))
+        return(log(likelihood))
+    }
+    loglik <- function(mu,tau2,x,params,GH) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
+    logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+    tau2.mle.redu <- exp(logtau2.mle.redu)
+    ## mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
+    ## mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='L-BFGS-B',lower=c(-Inf,logtau2.bounds[1]),upper=c(Inf,logtau2.bounds[2]))$par
+    ## fit.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='L-BFGS-B',lower=c(-Inf,logtau2.bounds[1]),upper=c(Inf,logtau2.bounds[2]))
+    fit.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS',...)
+    if(fit.full$convergence != 0L)warning('full fit convergence failure')
+    mle.full <- fit.full$par
+    mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+    LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
+    return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR, loglik.fun=loglik, x=x, params=params, cond.pmf=cond.pmf,logtau2.bounds=logtau2.bounds, n.GH=n.GH))
 }
 
 profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$logtau2.bounds,n.GH=LR.fit$n.GH) {
@@ -661,7 +667,7 @@ profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$log
         bartlett.C.profile <- lawley(ks.df.ma.profile,2) - lawley(ks.df.ma.profile,1)
         return(list(LR=LR.profile,LR.bartlett=LR.profile / (1+bartlett.C.profile),bartlett.C=bartlett.C.profile,ks.fit=ks.fit.profile))
     })
-    ks.fit.profile <- lapply(profiled.stats,function(lst)lst$ks.fit.profile)
+    ks.fit.profile <- lapply(profiled.stats,function(lst)lst$ks.fit)
     ks.df.ma.profile <- lapply(ks.fit.profile,function(lst)lst$ks.df.ma)
     profiled.stats <- lapply(profiled.stats,`[[<-`,'ks.fit',NULL) |> sapply(unlist)
     return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid,ks.fit.profile=ks.fit.profile,ks.df.ma=ks.df.ma.profile))
