@@ -1,6 +1,7 @@
 args <- commandArgs(trailingOnly=TRUE)
 skew <- as.numeric(args[1])
 kurt <- as.numeric(args[2])
+tau2.null <- as.numeric(args[3])
 
 source('../../../utils.R')
 ns <- 5:15
@@ -12,7 +13,7 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 ## re.distr <- rnorm #!!!!
 
 mu.null <- -.476
-tau2.null <- .5#.35^2
+## tau2.null <- .5#.35^2
 ## mu.null <- 0#-.476
 ## tau2.null <- 1/2#.35^2
 ks.fun <- readRDS('../../../ks-fun.rds')
@@ -32,8 +33,8 @@ mc.params <- stijnen.params[mc.idx,]
 ## all.params <- cbind(s=rep(30,max(ns)),T.t=1,T.c=1.5,x.min=0,x.max=30)
 ## all.params <- do.call(rbind,replicate(max(ns),apply(stijnen.params,2,median),simplify=FALSE))
 
-by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
-    ## by.n <- sapply(seq_along(ns), function(i) {
+## by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
+by.n <- sapply(seq_along(ns), function(i) {
     ## repeat{
     cat('.')
     ## Ts <- all.Ts[1:n]
@@ -49,7 +50,7 @@ by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
     ## })
    ## })
     ## })
-    stats <- replicate(round(n^3), {
+    stats <- replicate(round(n^4), {
         x <- dgp.binomial.irr(n,mu.null,tau2.null,params,re.distr=re.distr)
         ## LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,n.GH=n.GH)$LR
         LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-15,15),n.GH=n.GH,control=list(maxit=1e4))$LR
@@ -70,3 +71,8 @@ by.n <- simplify2array(by.n)
 filename <- paste0('save',as.integer(abs(rnorm(1))*1e8),'.RData')
 save(tau2.null=tau2.null,skew=skew,kurt=kurt,ns=ns,by.n=by.n,file=filename)
 
+# % while true; do
+#   {
+#     parallel --jobs -2 Rscript sim.R ::: $(seq -.25 0.05 .25) ::: 0 ::: $(seq .1 .2 .5)
+#   }
+# done

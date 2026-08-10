@@ -99,8 +99,16 @@ While Bartlett corrections have long been applied to generalized
 linear models [[cite]], there do not appear to be extensions to even
 the simple GLMMs that are used in meta-analysis. The reason for the
 reluctance appears to be computational difficulty [[cite
-hanada]]. Unlike in the case of GLMs, closed-form expressions are
-unavailable for Bartlett corrections for GLMMs.[[check there are closed forms for glms!! ]]  We argue that with
+hanada]]. while computer algebra systems have long been applied to
+carry out the third- and fourth-order derivative arrays needed for Bartlett correction ((cite
+old cordeiro paper, andrews and stafford, mccullagh maybe)), closed
+form expressions for the are unavailable for any of the commonly used
+models other than the normal-normal/identity link ((cite noma,
+michael2026)). A combination of automatic symbolic manipulation and
+numerical approximation appears
+necessary.% Unlike in the case of GLMs, closed-form expressions are
+% unavailable for Bartlett corrections for GLMMs.[[check there are closed forms for glms!! ]]
+We argue that with
 careful design these difficulties can be overcome and consumer-grade
 hardware is sufficient for practical implementation.
 
@@ -183,7 +191,7 @@ In all cases the likelihood for  study $i$ has the form:
 \begin{align}
   L_i(\effect,\tau^2 | \Y_i) = \int_{-\infty}^\infty f_i(\Y_i|\z)\phi(\z)d\z, \qquad i=1,\ldots n
 \end{align}
-where $f_i(y|\z)$ is study $i$'s  PMF conditional on a Gaussian random effect, as given above.
+where $f_i(y|\z)$ is study $i$'s  PMF conditional on a Gaussian random effect, as given above. Furthermore, the model parameters $(\effect,\tau^2)$ only enter the likelihood ((ref)) through a parameter of the conditional PMF, the mean $\lambda$ in the case of the Poisson, the success probability $p$ in the cases of the binomial, or the odds ratio $\omega$ in the case of the non-central hypergeometric.[[maybe put this up]]
 % int condpmf * phi. condpmf = , parameters= (used loosely--need to distinguish from mu/tau2).
 
 The likelihood ratio test of the null $\effect=\munull$ is based on the test statistic
@@ -249,6 +257,8 @@ condition has been relaxed in recent work ((cite)) but these
 conditions are difficult to evaluate in specific cases. they do offer
 promise that the entireprise of bartlett correcting count data, which
 has been done since 80s ((cite cordeiro)), is not pointless.]] }
+
+[[add a third issue. say at outset 2 issues are really issues with the lr test generally, and the 3rd is about the bartlett correction. wilks theorem applies to interior points. when tau2=0 ie fixed effects model, not applicable. some simulations have suggested does not affect inference for mu, but difficult to see this can be so in general, since inference for tau2 is known to be off ((self,liang)) at the boundary and mu and tau2 are not orthogonal in our models. means for lr test must check tau2 interior is reasonable eg examining the mle, or perhaps computing a fixed effects compute the fixed effects LR CI. [[with iv method can think of re model as a generalization of the fe, if the data is actually fixed effects CIs are valid there is just a loss of power. in the case of the lr, the random effects procedure is different from the fixed effects procedure.]]
 
 \section{Method}
 \label{sec:method}
@@ -316,9 +326,9 @@ independently of data but their specific values in general depend on
 parameters of the conditional PMF ((see above)), and must typically be
 computed for each study of a meta-analysis. The latter computations
 may be carried out in parallel when the meta-analysis consists of
-stochatically independent studies, such as we consider here. Furthermore, using standard recurrences ((cite johnson and kotz univariate discrete
-distributions)) the derivatives $\F_{jk}(\y), 0\le j+k \le 4$, may be
-re-written  as polynomial expressions $\F_{00}(\y)=\sum_{j} \w_j f(y|\theta_j)$, involving only the PMF itself, for which optimized and numerically
+stochatically independent studies, such as we consider here. Furthermore, since the conditional PMFs only depend on the model parameters $(\effect,\tau^2)$ through the PMF's parameters, the derivatives $\F_{jk}(\y), 0\le j+k \le 4$, may be
+re-written  as linear combinations [[linear for binomial and hyperg also??]] of $\F_{00}(\y)=\sum_{j} \w_j f(y|\theta_j)$ using standard recurrences ((cite johnson and kotz univariate discrete
+distributions)), The terms $\F_{00}$ involve only the PMF itself, for which optimized and numerically
 stable routines are available. For example, two applications of the
 Poisson PMF recurrence
 $ \frac{d}{d\lambda} f_{\lambda}(\y\mid \Z) = f_{\lambda}(\y-1\mid \Z)
@@ -330,20 +340,17 @@ poisson/incidence rate model)),
                 +( \frac{d^2\lambda}{d\mu d\tau^2} - 2 \frac{d\lambda}{d\mu} \frac{d\lambda}{d\tau^2}) \F_{00}(\y-1)
                 + \frac{d\lambda}{d\mu} \frac{d\lambda}{d\tau^2} \F_{00}(\y),\qquad \y\ge 2
 \end{align}
-This device exploits the fact that the model parameters $(\effect,\tau^2)$ only enter the likelihood ((ref)) through a parameter of the conditional PMF, the mean $\lambda$ in the case of the Poisson, the success probability $p$ in the cases of the binomial, or the odds ratio $\omega$ in the case of the non-central hypergeometric.[[maybe in 4 definitions make explicit dependence of param on mu,tau2 ]]
-
-mention CAS, andrews and stafford, old lawley program.
 
 further implementation
 details.
-support for poisson. speed issues with hyperg.
+two hyperparameters for poisson. speed issues with hyperg. also the grid size for profile curve--this is present already with the LR statistic.
 
 
 \section{Simulation}
 \label{sec:simulation}
 
-we examine by simulation how quickly the LR and
-Bartlett-corrected LR converge to the target chi-squared distribution under the models ((ref)). The purpose is three-fold: 1. to investigate whether the quadrature approximations used by the proposed method are sufficient, 2. to investigate whether the bartlett correction is effective as applied to this type of lattice data, as there are few theoretical results here, and 3. to assess the robustness the of the proposed method to deviations from the assumed Gaussian model for the random effect.
+we examine by simulation the rate at which the LR and
+Bartlett-corrected LR statistics converge to the reference chi-squared distribution under the models ((ref)). The purpose is three-fold: 1. to investigate whether the quadrature approximations used by the proposed method are sufficient, 2. to investigate whether the bartlett correction is effective as applied to this type of lattice data, as there are few theoretical results here, and 3. to assess the robustness the of the proposed method to deviations from the assumed Gaussian model for the random effect.[[add tau2 boundary issue here]]
 
 to make the simulation results relevant, a meta-analysis of we data
 parameters are sampled from stijnen tables ((data analysis)) so as to

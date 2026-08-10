@@ -163,7 +163,7 @@ with(subset(df,skew==0 & stat=='ks.LR.bartlett'),  lines(rate ~ kurt,col=2))
 ## process  rate sim (IID data, using R with gauss-hermite)
 ## save.path <- './sim/robustness/binomial-prop/'
 save.path <- './sim/robustness/poisson/'
-## save.path <- './sim/robustness/binomial-irr/'
+save.path <- './sim/robustness/binomial-irr/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -183,3 +183,42 @@ long.agg <- subset(long.agg,subset=stat=='ks.LR' | stat=='ks.LR.bartlett')
 
 plot(rate~skew, data=subset(long.agg,stat=='ks.LR'&kurt==0),type='l',ylim=range(long.agg$rate))
 lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
+
+
+
+
+## varying tau2 also
+## compute rates, then aggregate
+## process  rate sim (IID data, using R with gauss-hermite)
+## save.path <- './sim/robustness/binomial-prop/'
+save.path <- './sim/robustness/poisson/'
+save.path <- './sim/robustness/binomial-irr/'
+filelist <- dir(save.path)
+filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+print(length(filelist))
+by.sim <- lapply(filelist, function(file) {
+    load(paste0(save.path,file))
+    ## df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
+    ## df <- do.call(rbind,df.lst)
+    ## df <- cbind(df,skew=skew,kurt=kurt)
+    rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
+    data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt,tau2.null=tau2.null)
+})
+long <- do.call(rbind,by.sim)
+long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
+rownames(long) <- NULL
+long.agg <- aggregate(rate ~ ., median,data=long)
+long.agg <- subset(long.agg,subset=stat=='ks.LR' | stat=='ks.LR.bartlett')
+long.agg <- subset(long.agg,tau2.null%in%c(.1,.3,.5))
+df <- subset(long.agg,stat=='ks.LR.bartlett')
+tau2.nulls <- unique(df$tau2.null)
+col <- gray.colors(length(tau2.nulls))
+plot(NA,type='n',xlim=range(df$skew),ylim=c(-2,max(long.agg$rate)))
+for(i in seq_along(tau2.nulls))
+    lines(rate ~ skew, data=subset(df,tau2.null==tau2.nulls[i]),col=col[i])
+df <- subset(long.agg,stat=='ks.LR')
+tau2.nulls <- unique(df$tau2.null)
+col <- gray.colors(length(tau2.nulls))
+## plot(NA,type='n',xlim=range(df$skew),ylim=c(-2,max(df$rate)))
+for(i in seq_along(tau2.nulls))
+    lines(rate ~ skew, data=subset(df,tau2.null==tau2.nulls[i]),col=col[i],lty=2)

@@ -627,7 +627,7 @@ LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-5,5),n.GH=50
     return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR, loglik.fun=loglik, x=x, params=params, cond.pmf=cond.pmf,logtau2.bounds=logtau2.bounds, n.GH=n.GH))
 }
 
-profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$logtau2.bounds,n.GH=LR.fit$n.GH) {
+profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$logtau2.bounds,n.GH=LR.fit$n.GH,mc.cores=1) {
     ## browser()
     GH <- fastGHQuad::gaussHermiteData(n.GH)
     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
@@ -657,7 +657,8 @@ profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$log
     ## ks.profile <- lapply(profiled.stats,`[[`,'ks')
     ## profiled.stats <- lapply(profiled.stats,`[[<-`,'ks',NULL) |> sapply(unlist)
     ## return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid,ks.profile=ks.profile))
-    profiled.stats <- lapply(seq_along(mu.profile.grid),function(i) {
+    ## profiled.stats <- lapply(seq_along(mu.profile.grid),function(i) {
+    profiled.stats <- parallel::mclapply(seq_along(mu.profile.grid),mc.cores=mc.cores,FUN=function(i) {
         cat('.')
         LR.profile <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.profile.grid[i],tau2.profile.grid[i],x,params,GH))
         ## ks.profile <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)
@@ -672,8 +673,9 @@ profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$log
     profiled.stats <- lapply(profiled.stats,`[[<-`,'ks.fit',NULL) |> sapply(unlist)
     return(list(profile=profiled.stats,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid,ks.fit.profile=ks.fit.profile,ks.df.ma=ks.df.ma.profile))
 }
+
 ## confint.LR <- function(fit,logtau2.bounds=c(-5,5),grid=list(offset=1,size=20),alpha=.05,n.GH=fit$n.GH) {
-confint.LR <- function(profile.fit,alpha=.05,plot=TRUE) {
+confint.LR <- function(profile.fit,alpha=.05,plot=TRUE,...) {
     ## browser()
     ## profiled.stats <- profile.fit$profile
     ## LR.profile <- sapply(profiled.stats,function(x)x$LR)
@@ -687,19 +689,42 @@ confint.LR <- function(profile.fit,alpha=.05,plot=TRUE) {
         lines(mu.grid,profile['LR.bartlett',],lty=2,type='o')
         abline(h=q)
     }
-    CIs <- apply(profile[c('LR','LR.bartlett'),] - q, 1, function(vals) {        
+    CIs <- apply(profile[c('LR','LR.bartlett'),] - q, 1, simplify=FALSE, FUN=function(vals) {
+        ## left.idx <- which(diff(sign(vals))!=0)
+        ## stopifnot(length(left.idx)==2)
+        ## stopifnot(left.idx[2]<length(vals))
+        ## stopifnot(vals[left.idx[2]]<0)
+        ## right.idx <- left.idx+1 
+        ## left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
+        ## right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
+        ## left.wt*mu.grid[left.idx] + right.wt*mu.grid[right.idx]
         left.idx <- which(diff(sign(vals))!=0)
-        ## print(vals)
-        ## print(left.idx)
-        stopifnot(length(left.idx)==2)
-        stopifnot(left.idx[2]<length(vals))
-        stopifnot(vals[left.idx[2]]<0)
+        stopifnot(length(left.idx)>0)
         right.idx <- left.idx+1 
         left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
         right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
-        left.wt*mu.grid[left.idx] + right.wt*mu.grid[right.idx]
+        zeroes <- left.wt*mu.grid[left.idx] + right.wt*mu.grid[right.idx]
+        if(vals[1]<0)zeroes <- c(-Inf,zeroes)
+        if(vals[length(vals)]<0)zeroes <- c(zeroes,Inf)
+        n.zeroes <- length(zeroes)
+        CI.left <- zeroes[(1:n.zeroes) %% 2 ==1]
+        CI.right <- zeroes[(1:n.zeroes) %% 2 ==0]
+        cbind(CI.left,CI.right)
     } )
     return(CIs)
 }
 
-
+## vals <- profile['LR.bartlett',]-q
+## ## stopifnot(vals[1]>0 && vals[length(vals)]>0)
+## ## signs <- sign(vals)
+## left.idx <- which(diff(sign(vals))!=0)
+## right.idx <- left.idx+1 
+## left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
+## right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
+## zeroes <- left.wt*mu.grid[left.idx] + right.wt*mu.grid[right.idx]
+## if(vals[1]<0)zeroes <- c(-Inf,zeroes)
+## if(vals[length(vals)]<0)zeroes <- c(zeroes,Inf)
+## n.zeroes <- length(zeroes)
+## CI.left <- zeroes[(1:n.zeroes) %% 2 ==1]
+## CI.right <- zeroes[(1:n.zeroes) %% 2 ==0]
+## cbind(CI.left,CI.right)
