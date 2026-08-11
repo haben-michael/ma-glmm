@@ -2579,31 +2579,7 @@ niel.weise <- read.table('niel-weise.txt')
 ## dput(bartlett.C)
 
 
-## hyperg--buggy. when odds get very large biasedurn routine acts up.
-source('utils.R')
-ks.fun <- readRDS('ks-fun.rds')
-pmf.derivs.fun <- readRDS('pmf-derivs-fun-hyperg.rds')
-stijnen.i <- read.table('stijnen-table-I.txt')
-stijnen.i <- stijnen.i[-15,] # get rid of uninformative study
-x <- stijnen.i$Y1
-s <- with(stijnen.i, Y0+Y1)
-m.T <- stijnen.i$n1
-m.C <- stijnen.i$n0
-supp.x <- max(0,s-m.C):min(s,m.T)
-params <- cbind(m.T=m.T,m.C=m.C,s=s,x.min=pmax(0,s-m.C),x.max=pmin(s,m.T))
-LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.hyperg,n.GH=1e2)
-profile.fit <- profile.LR(LR.fit,grid=list(offset=2.5,size=10),logtau2.bounds=c(-5,5),mc.cores=3)
-CIs <- confint.LR(profile.fit)
 
-params=c(m.T = 345, m.C = 362, s = 4, x.min = 0, x.max = 4);mu=-3.01863845860975;tau2= 3.9122241122493139897642;n.GH=1e2
-
-ks.study0(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=c(m.T = 345, m.C = 362, s = 4, x.min = 0, x.max = 4),mu=-3.01863845860975,tau2= 3.9122241122493139897642,n.GH=50)
-
-odds <- 9.450665e+14
-m.T <- 345; m.C <- 362; s <- 4
-x <- c(0L, 1L, 2L, 0L, 5L, 1L, 1L, 1L, 1L, 1L, 0L, 0L, 3L, 6L, 0L, 
-       BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)        
-       BiasedUrn::dFNCHypergeo(x[1],m1=m.T,m2=m.C,n=s,odds=odds))  
 
 
 ## binomial-IRR
@@ -2711,7 +2687,7 @@ print(CIs)
 
 
 
-## poisson data analysis
+## poisson diagnostic
 source('utils.R')
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
@@ -2720,8 +2696,8 @@ n.GH <- 3e2
 x <- stijnen.vi$Y0
 T <- stijnen.vi$T0/1000
 mu.null <- 0
-n.GH <- seq(100,800,by=100)
-x.max <- 6e3#seq(1e3,5e3,by=1e3)
+n.GH <- 500#seq(100,800,by=100)
+x.max <- seq(1e3,1e4,by=1e3)
 pars <- expand.grid(n.GH=n.GH,x.max=x.max)
 profile.fits <- apply(pars, 1, function(par) {
     n.GH <- par['n.GH']; x.max <- par['x.max']
@@ -2733,6 +2709,13 @@ profile.fits <- apply(pars, 1, function(par) {
     print(Sys.time() - start)
     profile.fit
 })
+
+stats <- lapply(profile.fits,FUN=function(m)m$profile['LR.bartlett',])    
+stats <- simplify2array(stats)
+col <- cm.colors(ncol(stats))
+matplot(profile.fits[[1]]$mu.grid,stats,type='l',lty=1,col=col)
+legend('topleft',lty=1,col=col,legend=pars$x.max)
+abline(h=(qchisq(1-.05,df=1)))
 
 
 # load('../poisson diagnostic 1.RData')
@@ -2751,6 +2734,16 @@ profile.fits <- apply(pars, 1, function(par) {
 # profile.fits <- c(profile.fits1,profile.fits2)
 # profile.fits <- profile.fits[idx]
 # save.image('../poisson diagnostic 3.RData')
+
+
+# pars <- rbind(pars,pars3)
+# profile.fits <- c(profile.fits,profile.fits3)
+
+
+# idx <- order(pars$x.max,pars$n.GH)
+# pars <- pars[idx,]
+# profile.fits <- profile.fits[idx]
+
 
 
 # n.GH <- seq(100,500,by=100)
@@ -2773,10 +2766,52 @@ rownames(CI.mat) <- unique(pars$n.GH)
 colnames(CI.mat) <- unique(pars$x.max)
 
 
-idx <- which(pars$n.GH==500)
+idx <- which(pars$n.GH==700)
 stats <- lapply(profile.fits[idx],FUN=function(m)m$profile['LR.bartlett',])    
 stats <- simplify2array(stats)
 col <- cm.colors(ncol(stats))
 matplot(profile.fits[[1]]$mu.grid,stats,type='l',lty=1,col=col)
 legend('topleft',lty=1,col=col,legend=pars$x.max[idx])
 abline(h=(qchisq(1-.05,df=1)))
+
+
+
+
+## hyperg. n.GH>55 or so gets NaNs. biasedUrn hyperg pmf returns them
+## when the odds is very large. oddly this is only when passing a
+## vector of x's, otherwise, biasedUrn just returns the expected 0
+## therm (example below). but non-vectorized it is too slow.
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-hyperg.rds')
+stijnen.i <- read.table('stijnen-table-I.txt')
+stijnen.i <- stijnen.i[-15,] # get rid of uninformative study
+x <- stijnen.i$Y1
+s <- with(stijnen.i, Y0+Y1)
+m.T <- stijnen.i$n1
+m.C <- stijnen.i$n0
+n.GH <- 50
+## supp.x <- max(0,s-m.C):min(s,m.T)
+params <- cbind(m.T=m.T,m.C=m.C,s=s,x.min=pmax(0,s-m.C),x.max=pmin(s,m.T))
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.hyperg,n.GH=n.GH)
+start <- Sys.time()
+profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=10),logtau2.bounds=c(-10,10),mc.cores=2)
+print(Sys.time() - start)
+CIs <- confint.LR(profile.fit)
+
+
+## biasedUrn stange behavior.
+
+beta <- c(6.46818227043636, 0.728696470009073)
+paramsi <- c(m.T = 151, m.C = 157, s = 11, x.min = 0, x.max = 11)
+thetai <- 14.3671500775778
+m.T <- paramsi['m.T']
+m.C <- paramsi['m.C']
+s <- paramsi['s']
+odds <- exp(1)^(thetai * sqrt(beta[1]) + beta[2])
+BiasedUrn::dFNCHypergeo(5,m1=m.T,m2=m.C,n=s,odds=odds)        
+
+
+
+
+

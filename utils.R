@@ -395,16 +395,45 @@ str.to.fun <- function(str, args, bindings = list(), parent = baseenv()) {
 ## }
 .cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
     ## x <- 0; theta <-  -18.95964; mu <- 0; tau2 <- 0.3071743;params <- c(m.T=116,m.C=117,s=3,x.min=0,x.max=3)
-        m.T <- params[,'m.T']
-        m.C <- params[,'m.C']
-        s <- params[,'s']
+    m.T <- params[,'m.T']
+    m.C <- params[,'m.C']
+    s <- params[,'s']
     odds <- exp(mu+sqrt(tau2)*theta)
     ## print(x);print(s);print(params)
     ## browser()
+    ## print(c(m.T,m.C,s,odds))
         BiasedUrn::dFNCHypergeo(x=x,m1=m.T,m2=m.C,n=s,odds=odds)            
 }
-cond.pmf.hyperg <-  Vectorize(.cond.pmf.hyperg,vectorize.args=c("x","theta"))
+cond.pmf.hyperg <-  Vectorize(.cond.pmf.hyperg,vectorize.args=c("theta"))
 ## cond.pmf.hyperg <- function(x,theta,mu,tau2,params)  <- sapply(theta, function(thetai) _cond.pmf.hyperg(x,thetai,mu,tau2,params)
+
+
+## my version doesnt seem much faster than biasedUrn
+.cond.pmf.hyperg <- function(x,m1,m2,n,odds) {
+    ## m.T <- params[,'m.T']
+    ## m.C <- params[,'m.C']
+    ## s <- params[,'s']
+    numer <- choose(m1,x)*choose(m2,n-x)*odds^x
+    supp.x <- max(0,n-m2):min(n,m1)
+    denom <- rowSums(  outer(odds,supp.x,function(oddsj,xj)choose(m1,xj)*choose(m2,n-xj)*oddsj^xj ) )
+    numer / denom
+}
+cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+    m.T <- params[,'m.T']
+    m.C <- params[,'m.C']
+    s <- params[,'s']
+    odds <- exp(mu+sqrt(tau2)*theta)
+    out <- .cond.pmf.hyperg(x=x,m1=m.T,m2=m.C,n=s,odds=odds)
+    ## print(out)
+    return(out)
+}
+## n <- sample(2:10,1)
+## x <- sample(1:n,1)
+## m1 <- 8; m2 <- 10
+## odds <- rchisq(1,df=5)
+## BiasedUrn::dFNCHypergeo(x=x,m1=m1,m2=m2,n=n,odds=odds)
+## .cond.pmf.hyperg(x,m1,m2,n,odds)
+
 
 ## cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
 ##     m.T <- params[,'m.T']
@@ -415,11 +444,11 @@ cond.pmf.hyperg <-  Vectorize(.cond.pmf.hyperg,vectorize.args=c("x","theta"))
 ##     denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.T,xj)*choose(m.C,s-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
 ##     numer / denom
 ## }
-dgp.hyperg <- function(n,mu,tau2,params) {
+dgp.hyperg <- function(n,mu,tau2,params,re.distr=rnorm) {
     m.T <- params[,'m.T']
     m.C <- params[,'m.C']
     s <- params[,'s']
-    theta <- rnorm(n)
+    theta <- re.distr(n)
     odds <- exp(mu+sqrt(tau2)*theta)
     x <- x.T <- sapply(1:n, function(i) BiasedUrn::rFNCHypergeo(1,m1=m.T[i],m2=m.C[i],n=s[i],odds=odds[i]))
 }
@@ -562,7 +591,7 @@ ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50) {
     ## browser()
     ks.study.fits <- lapply(1:nrow(params), function(i) {
         ## if(i==16)browser()
-        supp.x <- params[i,'x.min']:params[i,'x.max']
+        ## supp.x <- params[i,'x.min']:params[i,'x.max']
         ks.study.fit <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH)
     })
     ## k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
@@ -591,35 +620,69 @@ lawley <- function(k.df,p) {
 }
 
 
-## work with cond pmf, compute unit loglik inside function
-LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-5,5),n.GH=50,...) {
+## ## work with cond pmf, compute unit loglik inside function
+## LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-5,5),n.GH=50,...) {
+##     ## browser()
+##     GH <- fastGHQuad::gaussHermiteData(n.GH)
+##     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+##     ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL)loglik.unit(mu,tau2,xi,paramsi,cond.pmf,GH)
+##     ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=GH) {
+##     ##     ## browser()
+##     ##     if(is.null(GH)) {
+##     ##         likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
+##     ##     } else {
+##     ##         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+##     ##     }
+##     ##     return(log(likelihood))
+##     ## }
+##     loglik.unit <- function(mu,tau2,xi,paramsi,GH) {
+##         ## browser()
+##         ## print(xi); print(paramsi); print(mu);print(tau2)
+##         if(log(tau2)<logtau2.bounds[1] || log(tau2)>logtau2.bounds[2]) {
+##             warning('tau2 boundary  hit, returning minimum negative')
+##             return(-.Machine$double.xmax)
+##         }
+##         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+##         ## print(c(mu,tau2,log(likelihood),paramsi))
+##         ## print(tau2)
+##         return(log(likelihood))
+##     }
+##     loglik <- function(mu,tau2,x,params,GH) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
+##     logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+##     tau2.mle.redu <- exp(logtau2.mle.redu)
+##     ## print(logtau2.bounds[1] - log(tau2.mle.redu))
+##     ## mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
+##     ## mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='L-BFGS-B',lower=c(-Inf,logtau2.bounds[1]),upper=c(Inf,logtau2.bounds[2]))$par
+##     ## fit.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='L-BFGS-B',lower=c(-Inf,logtau2.bounds[1]),upper=c(Inf,logtau2.bounds[2]))
+##     fit.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS',...)
+##     if(fit.full$convergence != 0L)warning('full fit convergence failure')
+##     mle.full <- fit.full$par
+##     mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+##     LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
+##     return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR, loglik.fun=loglik, x=x, params=params, cond.pmf=cond.pmf,logtau2.bounds=logtau2.bounds, n.GH=n.GH))
+## }
+## pass in starting values for optim, stop starting with tau2.mle.redu
+LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-5,5),par.start=c(mu=0,tau2=1),n.GH=50,...) {
     ## browser()
     GH <- fastGHQuad::gaussHermiteData(n.GH)
     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
-    ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL)loglik.unit(mu,tau2,xi,paramsi,cond.pmf,GH)
-    ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=GH) {
-    ##     ## browser()
-    ##     if(is.null(GH)) {
-    ##         likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
-    ##     } else {
-    ##         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
-    ##     }
-    ##     return(log(likelihood))
-    ## }
     loglik.unit <- function(mu,tau2,xi,paramsi,GH) {
         ## browser()
         ## print(xi); print(paramsi); print(mu);print(tau2)
+        if(log(tau2)<logtau2.bounds[1] || log(tau2)>logtau2.bounds[2]) {
+            ## warning('tau2 boundary  hit, returning minimum negative')
+            return(-.Machine$double.xmax)
+        }
         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
         ## print(c(mu,tau2,log(likelihood),paramsi))
+        ## print(tau2)
         return(log(likelihood))
     }
     loglik <- function(mu,tau2,x,params,GH) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
     logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
     tau2.mle.redu <- exp(logtau2.mle.redu)
-    ## mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
-    ## mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='L-BFGS-B',lower=c(-Inf,logtau2.bounds[1]),upper=c(Inf,logtau2.bounds[2]))$par
-    ## fit.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='L-BFGS-B',lower=c(-Inf,logtau2.bounds[1]),upper=c(Inf,logtau2.bounds[2]))
-    fit.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS',...)
+    ## print(tau2.DL)
+    fit.full <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS',...)
     if(fit.full$convergence != 0L)warning('full fit convergence failure')
     mle.full <- fit.full$par
     mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])

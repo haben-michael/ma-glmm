@@ -76,9 +76,9 @@ Abstract. ...
 \section{Introduction}
 \label{sec:introduction}
 
-There is currently underway a move toward generalized mixed models in
+There is currently underway a move to favor generalized linear mixed models in
 carrying out meta-analyses of event outcomes, particularly in
-situations where sample sizes are small or events are rare. GLMMs
+when sample sizes are small or events are rare. GLMMs
 avoid many of the dubious assumptions, such as gaussianity of the effects and
 perfect knowledge of standard deviations, required by the traditional alternative,
 inverse-variance weighting. % have been since stijnen
@@ -99,14 +99,13 @@ While Bartlett corrections have long been applied to generalized
 linear models [[cite]], there do not appear to be extensions to even
 the simple GLMMs that are used in meta-analysis. The reason for the
 reluctance appears to be computational difficulty [[cite
-hanada]]. while computer algebra systems have long been applied to
-carry out the third- and fourth-order derivative arrays needed for Bartlett correction ((cite
-old cordeiro paper, andrews and stafford, mccullagh maybe)), closed
-form expressions for the are unavailable for any of the commonly used
+hanada]]. While computer algebra systems have long been applied to
+compute out the third- and fourth-order derivative arrays needed for Bartlett correction of GLMs ((cite
+old cordeiro paper, andrews and stafford, mccullagh maybe)), closed-form expressions for GLMM Bartlett corrections are unavailable for any of the commonly used
 models other than the normal-normal/identity link ((cite noma,
 michael2026)). A combination of automatic symbolic manipulation and
 numerical approximation appears
-necessary.% Unlike in the case of GLMs, closed-form expressions are
+necessary. % Unlike in the case of GLMs, closed-form expressions are
 % unavailable for Bartlett corrections for GLMMs.[[check there are closed forms for glms!! ]]
 We argue that with
 careful design these difficulties can be overcome and consumer-grade
@@ -326,11 +325,17 @@ independently of data but their specific values in general depend on
 parameters of the conditional PMF ((see above)), and must typically be
 computed for each study of a meta-analysis. The latter computations
 may be carried out in parallel when the meta-analysis consists of
-stochatically independent studies, such as we consider here. Furthermore, since the conditional PMFs only depend on the model parameters $(\effect,\tau^2)$ through the PMF's parameters, the derivatives $\F_{jk}(\y), 0\le j+k \le 4$, may be
-re-written  as linear combinations [[linear for binomial and hyperg also??]] of $\F_{00}(\y)=\sum_{j} \w_j f(y|\theta_j)$ using standard recurrences ((cite johnson and kotz univariate discrete
-distributions)), The terms $\F_{00}$ involve only the PMF itself, for which optimized and numerically
-stable routines are available. For example, two applications of the
-Poisson PMF recurrence
+stochatically independent studies, such as we consider
+here. Furthermore, since the conditional PMFs only depend on the model
+parameters $(\effect,\tau^2)$ through the PMF's distributional
+parameters, the derivatives $\F_{jk}(\y), 0\le j+k \le 4$, may be
+re-written as linear combinations [[linear for binomial and hyperg
+also??]] of $\F_{00}(\y)=\sum_{j} \w_j f(y|\theta_j)$ using standard
+recurrences ((cite johnson and kotz univariate discrete
+distributions)). The advantage of this form is that the terms
+$\F_{00}$ involve only the PMF itself, for which optimized and
+numerically stable routines are available. For example, two
+applications of the Poisson PMF recurrence
 $ \frac{d}{d\lambda} f_{\lambda}(\y\mid \Z) = f_{\lambda}(\y-1\mid \Z)
 - f_{\lambda}(\y\mid \Z), \y\ge 1, $ yield, for model ((ref
 poisson/incidence rate model)),
