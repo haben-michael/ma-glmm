@@ -193,6 +193,7 @@ lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
 ## save.path <- './sim/robustness/binomial-prop/'
 save.path <- './sim/robustness/poisson/'
 save.path <- './sim/robustness/binomial-irr/'
+save.path <- './sim/robustness/hyperg/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -209,7 +210,7 @@ long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
 rownames(long) <- NULL
 long.agg <- aggregate(rate ~ ., median,data=long)
 long.agg <- subset(long.agg,subset=stat=='ks.LR' | stat=='ks.LR.bartlett')
-long.agg <- subset(long.agg,tau2.null%in%c(.1,.3,.5))
+## long.agg <- subset(long.agg,tau2.null%in%c(.1,.3,.5))
 df <- subset(long.agg,stat=='ks.LR.bartlett')
 tau2.nulls <- unique(df$tau2.null)
 col <- gray.colors(length(tau2.nulls))

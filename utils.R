@@ -1,48 +1,4 @@
 
-## re-parameterize the sinh-arcsinh family
-
-rsas <- function(n,eps,delta) {
-    z <- rnorm(n)
-    sinh((asinh(z)+eps)/delta)
-}
-
-dsas <- function(x,eps,delta) {
-    S2 <- sinh(delta*asinh(x)-eps)^2
-    delta * sqrt( (1+S2) / (2*pi*(1+x^2)) ) * exp(-S2/2)
-}
-
-sas.moment <- function(k,eps,delta) {
-    integrate(function(x) x^k * dsas(x,eps,delta), -Inf, Inf)$val
-}
-
-sas.skew <- function(m) {
-    var <- m[2] - m[1]^2
-    skew.unstand <- m[3] - 3*m[2]*m[1] + 3*m[1]*m[1]^2 - m[1]^3
-    skew.unstand / var^(3/2)
-}
-
-sas.kurt <- function(m) {
-    var <- m[2] - m[1]^2
-    kurt.unstand <- m[4] - 4*m[3]*m[1] + 6*m[2]*m[1]^2 - 4*m[1]*m[1]^3 + m[1]^4
-    
-    kurt.unstand / (var^2) - 3 
-}
-
-sas.invert.params <- function(target.skew, target.kurt) {
-    obj <- function(par) {
-        eps <- par[1] 
-        delta <- exp(par[2])
-        m <- sapply(1:4, function(k) sas.moment(k, eps, delta))
-        (sas.skew(m) - target.skew)^2 + (sas.kurt(m) - target.kurt)^2
-    }
-    
-    argmin <- optim(par=c(0,0), fn=obj)$par
-    return( c(eps=argmin[1], delta=exp(argmin[2])) )
-}
-
-
-
-
 
 
 mma.to.R <- function(
@@ -378,37 +334,69 @@ str.to.fun <- function(str, args, bindings = list(), parent = baseenv()) {
 
 
 
+## re-parameterize the sinh-arcsinh family
 
-
-
-## ## safer but slower:
-## cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
-##     m.T <- params[,'m.T']; m.C <- params[,'m.C']; s <- params[,'s']
-##     logpmf.part <- function(xi)lgamma(m.T+1) - lgamma(xi+1) -lgamma(m.T-xi+1) + lgamma(m.C+1) - lgamma(s-xi+1) - lgamma(m.C-s+xi+1)
-##     lognumer <- logpmf.part(x)+ (mu+sqrt(tau2)*theta)*x
-##     ## logpmf.mat <- logpmf.part(0:m.T) + outer(0:m.T,theta)*sqrt(tau2) + (0:m.T)*mu
-##     supp <- max(0,s-m.C):min(s,m.T)
-##     logpmf.mat <- logpmf.part(supp) + outer(supp,theta)*sqrt(tau2) + supp*mu
-##     colmaxes <- apply(logpmf.mat,2,max)        
-##     logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
-##     exp(lognumer - logdenom)
-## }
-.cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
-    ## x <- 0; theta <-  -18.95964; mu <- 0; tau2 <- 0.3071743;params <- c(m.T=116,m.C=117,s=3,x.min=0,x.max=3)
-    m.T <- params[,'m.T']
-    m.C <- params[,'m.C']
-    s <- params[,'s']
-    odds <- exp(mu+sqrt(tau2)*theta)
-    ## print(x);print(s);print(params)
-    ## browser()
-    ## print(c(m.T,m.C,s,odds))
-        BiasedUrn::dFNCHypergeo(x=x,m1=m.T,m2=m.C,n=s,odds=odds)            
+rsas <- function(n,eps,delta) {
+    z <- rnorm(n)
+    sinh((asinh(z)+eps)/delta)
 }
-cond.pmf.hyperg <-  Vectorize(.cond.pmf.hyperg,vectorize.args=c("theta"))
+
+dsas <- function(x,eps,delta) {
+    S2 <- sinh(delta*asinh(x)-eps)^2
+    delta * sqrt( (1+S2) / (2*pi*(1+x^2)) ) * exp(-S2/2)
+}
+
+sas.moment <- function(k,eps,delta) {
+    integrate(function(x) x^k * dsas(x,eps,delta), -Inf, Inf)$val
+}
+
+sas.skew <- function(m) {
+    var <- m[2] - m[1]^2
+    skew.unstand <- m[3] - 3*m[2]*m[1] + 3*m[1]*m[1]^2 - m[1]^3
+    skew.unstand / var^(3/2)
+}
+
+sas.kurt <- function(m) {
+    var <- m[2] - m[1]^2
+    kurt.unstand <- m[4] - 4*m[3]*m[1] + 6*m[2]*m[1]^2 - 4*m[1]*m[1]^3 + m[1]^4
+    
+    kurt.unstand / (var^2) - 3 
+}
+
+sas.invert.params <- function(target.skew, target.kurt) {
+    obj <- function(par) {
+        eps <- par[1] 
+        delta <- exp(par[2])
+        m <- sapply(1:4, function(k) sas.moment(k, eps, delta))
+        (sas.skew(m) - target.skew)^2 + (sas.kurt(m) - target.kurt)^2
+    }
+    
+    argmin <- optim(par=c(0,0), fn=obj)$par
+    return( c(eps=argmin[1], delta=exp(argmin[2])) )
+}
+
+
+
+
+
+
+## .cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+##     ## x <- 0; theta <-  -18.95964; mu <- 0; tau2 <- 0.3071743;params <- c(m.T=116,m.C=117,s=3,x.min=0,x.max=3)
+##     m.T <- params[,'m.T']
+##     m.C <- params[,'m.C']
+##     s <- params[,'s']
+##     odds <- exp(mu+sqrt(tau2)*theta)
+##     ## print(x);print(s);print(params)
+##     ## browser()
+##     ## print(c(m.T,m.C,s,odds))
+##         BiasedUrn::dFNCHypergeo(x=x,m1=m.T,m2=m.C,n=s,odds=odds)            
+## }
+## cond.pmf.hyperg <-  Vectorize(.cond.pmf.hyperg,vectorize.args=c("theta"))
+
 ## cond.pmf.hyperg <- function(x,theta,mu,tau2,params)  <- sapply(theta, function(thetai) _cond.pmf.hyperg(x,thetai,mu,tau2,params)
 
 
-## my version doesnt seem much faster than biasedUrn
+## my version
 .cond.pmf.hyperg <- function(x,m1,m2,n,odds) {
     ## m.T <- params[,'m.T']
     ## m.C <- params[,'m.C']
@@ -427,6 +415,20 @@ cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
     ## print(out)
     return(out)
 }
+
+## ## safer but slower:
+## cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+##     m.T <- params[,'m.T']; m.C <- params[,'m.C']; s <- params[,'s']
+##     logpmf.part <- function(xi)lgamma(m.T+1) - lgamma(xi+1) -lgamma(m.T-xi+1) + lgamma(m.C+1) - lgamma(s-xi+1) - lgamma(m.C-s+xi+1)
+##     lognumer <- logpmf.part(x)+ (mu+sqrt(tau2)*theta)*x
+##     ## logpmf.mat <- logpmf.part(0:m.T) + outer(0:m.T,theta)*sqrt(tau2) + (0:m.T)*mu
+##     supp <- max(0,s-m.C):min(s,m.T)
+##     logpmf.mat <- logpmf.part(supp) + outer(supp,theta)*sqrt(tau2) + supp*mu
+##     colmaxes <- apply(logpmf.mat,2,max)        
+##     logdenom <- colmaxes + log(rowSums(exp(t(logpmf.mat) - colmaxes)))
+##     exp(lognumer - logdenom)
+## }
+
 ## n <- sample(2:10,1)
 ## x <- sample(1:n,1)
 ## m1 <- 8; m2 <- 10
@@ -454,7 +456,39 @@ dgp.hyperg <- function(n,mu,tau2,params,re.distr=rnorm) {
 }
 
 
+par.start.hyperg <- function(x,params) {
+    cells <- data.frame(y.1.T=x, y.1.C =params[,'s']-x)
+    cells <- within(cells, {
+        y.0.T <- params[,'m.T']-y.1.T;
+        y.0.C <- params[,'m.C']-y.1.C
+    })
+    ## y.1.T <- x; y.0.T <- params[,'m.T']-y.1.T
+    ## y.1.C <- params[,'s']-y.1.T; y.0.C <- params[,'m.C']-y.1.C
+    ## idx.cc <- y.1.T==0L | y.0.T==0L | y.1.C==0L | y.0.C==0L
+    idx.cc <- apply(cells,1,function(v)any(v==0L))
+    cells[idx.cc,] <- cells[idx.cc,]+.5
+    y.nn <- with(cells, log(y.1.T/y.0.T) - log(y.1.C/y.0.C))
+    sigma2.nn <- with(cells, 1/y.1.T + 1/y.0.T + 1/y.1.C + 1/y.0.C)
+    w.fe <- 1/sigma2.nn
+    mu.fe <- y.nn %*% w.fe / sum(w.fe)    
+    Q <- w.fe%*%(y.nn-c(mu.fe))^2
+    tau2.DL <- max(0L, (Q - (length(y.nn)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
+    tau2.start <- if(tau2.DL>0L)tau2.DL else var(y.nn)/1e4
+    return(c(mu=mu.fe,tau2=tau2.start))
+}
 
+
+par.start.poisson <- function(x,params) {
+    x.cc <- x; x.cc[x.cc=0L] <-  x.cc[x.cc=0L]+.5
+    y.nn <- log(x.cc)/params[,'T']
+    sigma2.nn <- 1/x.cc
+    w.fe <- 1/sigma2.nn
+    mu.fe <- y.nn %*% w.fe / sum(w.fe)    
+    Q <- w.fe%*%(y.nn-c(mu.fe))^2
+    tau2.DL <- max(0L, (Q - (length(y.nn)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
+    tau2.start <- if(tau2.DL>0L)tau2.DL else var(y.nn)/1e4
+    return(c(mu=mu.fe,tau2=tau2.start))
+}
 
 cond.pmf.poisson <- function(x,theta,mu,tau2,params) {
     T <- params[,'T']
@@ -485,8 +519,36 @@ dgp.binomial.prop <- function(n,mu,tau2,params,re.distr=rnorm) {
     rbinom(n,size=m,prob=pr(theta))
 }
 
+par.start.binomial.prop <- function(x,params) {
+    x.1 <- x
+    x.0 <- params[,'m'] - x
+    idx.cc <- x.0==0 | x.1==0
+    x.0[idx.cc] <- x.0[idx.cc]+.5
+    x.1[idx.cc] <- x.1[idx.cc]+.5
+    y.nn <- log(x.1/x.0)
+    sigma2.nn <- 1/x.0 + 1/x.1
+    w.fe <- 1/sigma2.nn
+    mu.fe <- y.nn %*% w.fe / sum(w.fe)    
+    Q <- w.fe%*%(y.nn-c(mu.fe))^2
+    tau2.DL <- max(0L, (Q - (length(y.nn)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
+    tau2.start <- if(tau2.DL>0L)tau2.DL else var(y.nn)/1e4
+    return(c(mu=mu.fe,tau2=tau2.start))
+}
 
 
+par.start.binomial.irr <- function(x,params) {
+    idx.cc <- x==0L | x==params[,'s']        
+    x.T.nn <- x; x.C.nn <- params[,'s']-x;
+    x.T.nn[idx.cc] <- x.T.nn[idx.cc]+.5; x.C.nn[idx.cc] <- x.C.nn[idx.cc]+.5
+    y.nn <- log(x.T.nn/params[,'T.t']) - log(x.C.nn/params[,'T.c'])
+    sigma2.nn <- 1/x.T.nn + 1/x.C.nn
+    w.fe <- 1/sigma2.nn
+    mu.fe <- y.nn %*% w.fe / sum(w.fe)    
+    Q <- w.fe%*%(y.nn-c(mu.fe))^2
+    tau2.DL <- max(0L, (Q - (length(y.nn)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
+    tau2.start <- if(tau2.DL>0L)tau2.DL else max(1,var(y.nn))/1e4
+    return(c(mu=mu.fe,tau2=tau2.start))
+}
 cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params) {
     T.t <- params[,'T.t']
     T.c <- params[,'T.c']
@@ -539,7 +601,7 @@ dgp.binomial.irr <- function(n,mu,tau2,params,re.distr=rnorm) {
 ## }
 
 
-ks.study <- function(pmf.derivs.fun,ks.fun,params,mu,tau2,n.GH=50) {
+ks.study <- function(pmf.derivs.fun,ks.fun,params,mu,tau2,n.GH=1e2,debug=FALSE) {
     ## browser()
     beta <- c(tau2,mu)
     ## if(is.null(GH)) {
@@ -569,35 +631,41 @@ ks.study <- function(pmf.derivs.fun,ks.fun,params,mu,tau2,n.GH=50) {
     k.vals <- colSums(ks.unit) 
     k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
-    out <- list(ks.df=ks.df, ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit)
+    ## out <- list(ks.df=ks.df, ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit)
+    out <- list(ks.df=ks.df)
+    if(debug) out <- c(out,debug=list(ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit))
     return(out)
 }
 
 
-ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50) {
-    ## browser()
-    ks <- lapply(1:nrow(params), function(i) {
-        ## if(i==16)browser()
-        supp.x <- params[i,'x.min']:params[i,'x.max']
-        ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH)$ks.df
-    })
-    k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
-    ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
-    return(ks.df.ma)
-}
+## ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50) {
+##     ## browser()
+##     ks <- lapply(1:nrow(params), function(i) {
+##         ## if(i==16)browser()
+##         supp.x <- params[i,'x.min']:params[i,'x.max']
+##         ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH)$ks.df
+##     })
+##     k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
+##     ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
+##     return(ks.df.ma)
+## }
 
 ## with debugging info
-ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50) {
+ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=1e2,debug=FALSE) {
     ## browser()
     ks.study.fits <- lapply(1:nrow(params), function(i) {
         ## if(i==16)browser()
         ## supp.x <- params[i,'x.min']:params[i,'x.max']
-        ks.study.fit <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH)
+        ks.study.fit <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params[i,],mu,tau2,n.GH=n.GH,debug=debug)
     })
     ## k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
     k.vals.ma <- sapply(ks.study.fits,function(fit)fit$ks.df$k.val) |> rowSums()
     ks.df.ma <- data.frame(inner=ks.study.fits[[1]]$ks.df$inner, outer=ks.study.fits[[1]]$ks.df$outer,k.val=k.vals.ma)
-    return(list(ks.df.ma=ks.df.ma,ks.study.fits=ks.study.fits))
+    ks.study.fits <- sapply(ks.study.fits,`[[<-`,'ks.df',NULL)
+    out <- list(ks.df.ma=ks.df.ma)
+    if(debug) out <- c(out,debug=ks.study.fits)
+    return(out)
+    ## return(list(ks.df.ma=ks.df.ma,ks.study.fits=ks.study.fits))
 }
 
 
@@ -615,82 +683,57 @@ lawley <- function(k.df,p) {
         r <- idx.str[1]; s <- idx.str[2]; t <- idx.str[3]; u <- idx.str[4]; v <- idx.str[5]; w <- idx.str[6]
         -inv.inf[r,s] * inv.inf[t,u] * inv.inf[v,w] * (1/6*k(c(r,t,v))*k(c(s,u,w)) + 1/4*k(c(r,t,u))*k(c(s,v,w)) - k(c(r,t,v))*k(c(s,w),u) - k(c(r,t,u))*k(c(s,w),v) + k(c(r,t),v)*k(c(s,w),u) + k(c(r,t),u)*k(c(s,w),v))
     })
-    bias <- out <- sum(lawley.4) - sum(lawley.6)
-    return(bias)
+    out <- bias <- sum(lawley.4) - sum(lawley.6)
+    return(out)
+}
+
+bartlett.LR <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50,debug=FALSE) {
+    ks.ma.fit <- ks.ma(params=params,ks.fun=ks.fun,pmf.derivs.fun=pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
+    ks.df.ma <- ks.ma.fit$ks.df.ma
+    bartlett.C <- lawley(ks.df.ma,2) - lawley(ks.df.ma,1)
+    return(bartlett.C)
 }
 
 
-## ## work with cond pmf, compute unit loglik inside function
-## LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-5,5),n.GH=50,...) {
-##     ## browser()
-##     GH <- fastGHQuad::gaussHermiteData(n.GH)
-##     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
-##     ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=NULL)loglik.unit(mu,tau2,xi,paramsi,cond.pmf,GH)
-##     ## loglik.unit <- function(mu,tau2,xi,paramsi,GH=GH) {
-##     ##     ## browser()
-##     ##     if(is.null(GH)) {
-##     ##         likelihood <- integrate(function(theta)cond.pmf(xi,theta,mu,tau2,paramsi)*dnorm(theta),-Inf,Inf)$val 
-##     ##     } else {
-##     ##         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
-##     ##     }
-##     ##     return(log(likelihood))
-##     ## }
-##     loglik.unit <- function(mu,tau2,xi,paramsi,GH) {
-##         ## browser()
-##         ## print(xi); print(paramsi); print(mu);print(tau2)
-##         if(log(tau2)<logtau2.bounds[1] || log(tau2)>logtau2.bounds[2]) {
-##             warning('tau2 boundary  hit, returning minimum negative')
-##             return(-.Machine$double.xmax)
-##         }
-##         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
-##         ## print(c(mu,tau2,log(likelihood),paramsi))
-##         ## print(tau2)
-##         return(log(likelihood))
-##     }
-##     loglik <- function(mu,tau2,x,params,GH) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
-##     logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
-##     tau2.mle.redu <- exp(logtau2.mle.redu)
-##     ## print(logtau2.bounds[1] - log(tau2.mle.redu))
-##     ## mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS')$par
-##     ## mle.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='L-BFGS-B',lower=c(-Inf,logtau2.bounds[1]),upper=c(Inf,logtau2.bounds[2]))$par
-##     ## fit.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='L-BFGS-B',lower=c(-Inf,logtau2.bounds[1]),upper=c(Inf,logtau2.bounds[2]))
-##     fit.full <- optim(par=c(mu.null,log(tau2.mle.redu)),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS',...)
-##     if(fit.full$convergence != 0L)warning('full fit convergence failure')
-##     mle.full <- fit.full$par
-##     mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
-##     LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
-##     return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR, loglik.fun=loglik, x=x, params=params, cond.pmf=cond.pmf,logtau2.bounds=logtau2.bounds, n.GH=n.GH))
-## }
+
 ## pass in starting values for optim, stop starting with tau2.mle.redu
-LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-5,5),par.start=c(mu=0,tau2=1),n.GH=50,...) {
+LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-3,3),par.start=c(mu=0,tau2=1),n.GH=1e2,...) {
     ## browser()
     GH <- fastGHQuad::gaussHermiteData(n.GH)
     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
     loglik.unit <- function(mu,tau2,xi,paramsi,GH) {
         ## browser()
-        ## print(xi); print(paramsi); print(mu);print(tau2)
+        ## print(c(mu,tau2,xi,paramsi))
+        ## if(tau2>1e3)browser()
         if(log(tau2)<logtau2.bounds[1] || log(tau2)>logtau2.bounds[2]) {
             ## warning('tau2 boundary  hit, returning minimum negative')
-            return(-.Machine$double.xmax)
+            return(-1e10)#     return(-.Machine$double.xmax)
         }
         likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
         ## print(c(mu,tau2,log(likelihood),paramsi))
         ## print(tau2)
         return(log(likelihood))
     }
-    loglik <- function(mu,tau2,x,params,GH) sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
+    loglik <- function(mu,tau2,x,params,GH) {
+        out <- sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
+        ## print(out)        
+        ## if(is.nan(out))browser()
+        if(is.nan(out))out <- -1e10#-.Machine$double.xmax
+        return(out)
+        }
     logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
     tau2.mle.redu <- exp(logtau2.mle.redu)
-    ## print(tau2.DL)
+    start.val <- loglik(par.start[1],par.start[2],x,params,GH)
+    if(is.nan(start.val) || !is.finite(start.val))browser()
     fit.full <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS',...)
     if(fit.full$convergence != 0L)warning('full fit convergence failure')
     mle.full <- fit.full$par
     mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
     LR <- 2 * (loglik(mu.mle.full,tau2.mle.full,x,params,GH) - loglik(mu.null,tau2.mle.redu,x,params,GH))
-    return(list(mle.full=c(mu=mu.mle.full,tau2=tau2.mle.full),mle.redu=c(mu=mu.null,tau2=tau2.mle.redu), LR=LR, loglik.fun=loglik, x=x, params=params, cond.pmf=cond.pmf,logtau2.bounds=logtau2.bounds, n.GH=n.GH))
+    return(list(mle.full=c(mu=unname(mu.mle.full),tau2=unname(tau2.mle.full)),mle.redu=c(mu=unname(mu.null),tau2=unname(tau2.mle.redu)), LR=LR, loglik.fun=loglik, x=x, params=params, cond.pmf=cond.pmf,logtau2.bounds=logtau2.bounds, n.GH=n.GH))
 }
 
-profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=fit$logtau2.bounds,n.GH=LR.fit$n.GH,mc.cores=1) {
+profile.LR <- function(LR.fit,grid=list(offset=1,size=20),logtau2.bounds=LR.fit$logtau2.bounds,n.GH=LR.fit$n.GH,mc.cores=1) {
     ## browser()
     GH <- fastGHQuad::gaussHermiteData(n.GH)
     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
@@ -791,3 +834,9 @@ confint.LR <- function(profile.fit,alpha=.05,plot=TRUE,...) {
 ## CI.left <- zeroes[(1:n.zeroes) %% 2 ==1]
 ## CI.right <- zeroes[(1:n.zeroes) %% 2 ==0]
 ## cbind(CI.left,CI.right)
+
+
+
+## REFACTORED
+
+

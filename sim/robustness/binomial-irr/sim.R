@@ -9,11 +9,11 @@ ns <- 5:15
 sas.params <- sas.invert.params(skew,kurt)
 re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 
-## set.seed(1)#!!!!!!!!!
+# set.seed(13)#!!!!!!!!!
 ## re.distr <- rnorm #!!!!
 
 mu.null <- -.476
-## tau2.null <- .5#.35^2
+## tau2.null <- .35^2
 ## mu.null <- 0#-.476
 ## tau2.null <- 1/2#.35^2
 ks.fun <- readRDS('../../../ks-fun.rds')
@@ -52,8 +52,21 @@ by.n <- sapply(seq_along(ns), function(i) {
     ## })
     stats <- replicate(round(n^4), {
         x <- dgp.binomial.irr(n,mu.null,tau2.null,params,re.distr=re.distr)
+        ## idx.cc <- x==0L | x==params[,'s']        
+        ## x.T.nn <- x; x.C.nn <- params[,'s']-x;
+        ## x.T.nn[idx.cc] <- x.T.nn[idx.cc]+.5; x.C.nn[idx.cc] <- x.C.nn[idx.cc]+.5
+        ## y.nn <- log(x.T.nn/params[,'T.t']) - log(x.C.nn/params[,'T.c'])
+        ## sigma2.nn <- 1/x.T.nn + 1/x.C.nn
+        ## w.fe <- 1/sigma2.nn
+        ## mu.fe <- y.nn %*% w.fe / sum(w.fe)    
+        ## Q <- w.fe%*%(y.nn-c(mu.fe))^2
+        ## tau2.DL <- max(0L, (Q - (length(y.nn)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
+        ## if(is.nan(tau2.DL))browser()
+        ## tau2.start <- if (tau2.DL>0L) tau2.DL else 1e-3
+        ## mu.start <- mu.fe
+        LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-15,15),n.GH=n.GH,par.start=par.start.binomial.irr(x,params),control=list(maxit=1e4))$LR
         ## LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,n.GH=n.GH)$LR
-        LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-15,15),n.GH=n.GH,control=list(maxit=1e4))$LR
+        ## LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-15,15),n.GH=n.GH,control=list(maxit=1e4))$LR
         LR.bartlett <- LR / (1+bartlett.C)
         c(LR=LR,LR.bartlett=LR.bartlett)
     })

@@ -4,6 +4,7 @@ TODO
 2. move supp.x into params in ks.study
 3. rename GH$x to GH$theta.grid
 4. T.t vs T.T variable name incosnistencyx
+5. debug data is too big. pass switch not to get it.
 
 ## DEBUGGING
 
@@ -985,4 +986,32 @@ apply(by.n,1,function(x)coef(lm(log(abs(x)) ~ log(ns)))[2]) |> print()
 
 
 
+
+ONE TIME
+
+# load('../poisson diagnostic 1.RData')
+# profile.fits1 <- profile.fits
+# load('../poisson diagnostic 2.RData')
+# profile.fits2 <- profile.fits
+# n.GH <- seq(100,500,by=100)
+# x.max <- seq(1e3,5e3,by=1e3)
+# par1 <- expand.grid(n.GH=n.GH,x.max=x.max)
+# n.GH <- seq(600,800,by=100)
+# x.max <- seq(1e3,5e3,by=1e3)
+# par2 <- expand.grid(n.GH=n.GH,x.max=x.max)
+# pars <- rbind(par1,par2)
+# idx <- order(pars$x.max,pars$n.GH)
+# pars <- pars[idx,]
+# profile.fits <- c(profile.fits1,profile.fits2)
+# profile.fits <- profile.fits[idx]
+# save.image('../poisson diagnostic 3.RData')
+
+
+# pars <- rbind(pars,pars3)
+# profile.fits <- c(profile.fits,profile.fits3)
+
+
+# idx <- order(pars$x.max,pars$n.GH)
+# pars <- pars[idx,]
+# profile.fits <- profile.fits[idx]
 

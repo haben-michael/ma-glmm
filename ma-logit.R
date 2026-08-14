@@ -2593,52 +2593,95 @@ T.t <- stijnen.6$T1/1000
 T.c <- stijnen.6$T0/1000
 s <- x.C+x.T
 params <- cbind(T.t=T.t,T.c=T.c,s=s,x.min=0,x.max=s)
-LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.irr,logtau2.bounds=c(-5,5),n.GH=100)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.irr,logtau2.bounds=c(-10,10),par.start=par.start.binomial.irr(x,params),n.GH=50)
 ## print(fit$mle.full) #matches stijnen and metafor
 ## require(metafor) 
 ## fit <- rma.glmm(measure="IRLN", xi=Y0, ti=T0/1000, data=stijnen.vi, method="ML")
 ## summary(fit)
 start <- Sys.time()
-profile.fit <- profile.LR(LR.fit,grid=list(offset=3.5,size=10),logtau2.bounds=c(-5,5))
+profile.fit <- profile.LR(LR.fit,grid=list(offset=3.5,size=20),logtau2.bounds=c(-5,5))
 print(Sys.time() - start)
 CIs <- confint.LR(profile.fit,alpha=.05)
 print(CIs)
-plogis(CIs)
+## > > $LR
+##        CI.left     CI.right
+## [1,] -1.053636 -0.005980577
+
+## $LR.bartlett
+##        CI.left   CI.right
+## [1,] -1.119055 0.04583006
 
 
-## binomial-prop.  !!ugly curve for large n.GH [update: needed to
-## increase n.GH. for small n.GH the curve looks fine but the
-## information is unstable. once k terms stabilize the bartlett curve and CIs are essentially the same as the uncorrected LR's].
-ks.fun <- readRDS('ks-fun.rds')
-niel.weise <- read.table('niel-weise.txt')
-pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
-x <- niel.weise$Y0
-ms <- niel.weise$n0
-params <- cbind(m=ms,x.min=0,x.max=ms)
-LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.prop,logtau2.bounds=c(-5,5),n.GH=150)
-start <- Sys.time()
-profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-5,5))
-print(Sys.time() - start)
-CIs <- confint.LR(profile.fit,alpha=.05)
-print(CIs)
-plogis(CIs)
 
 ## diagnostic for n.GH
-n.GHs <- seq(100,400,by=100)
-## cond.pmf <- cond.pmf.binomial.irr
-cond.pmf <- cond.pmf.poisson
+n.GHs <- seq(50,250,by=50)
+cond.pmf <- cond.pmf.binomial.irr
+## cond.pmf <- cond.pmf.poisson
 by.n.GH <- lapply(n.GHs,function(n.GH) {
-    LR.fit <- LR.gaussian(x=x,params=params,mu.null=mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-5,5),n.GH=n.GH)
-    profile.fit <- profile.LR(LR.fit,grid=list(offset=3.5,size=10),logtau2.bounds=c(-5,5))
+    LR.fit <- LR.gaussian(x=x,params=params,mu.null=mu.null,cond.pmf=cond.pmf,par.start=par.start.binomial.irr(x,params),logtau2.bounds=c(-10,10),n.GH=n.GH)
+    profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=10,mc.cores=5))
     profile.fit
 })
 
 stats <- lapply(by.n.GH,FUN=function(m)m$profile['LR.bartlett',])    
 stats <- simplify2array(stats)
 col <- cm.colors(ncol(stats))
-matplot(by.n.GH[[1]]$mu.grid,stats,type='l',lty=1,col=col,log='y')
+matplot(by.n.GH[[1]]$mu.grid,stats,type='l',lty=1,col=col)
 legend('topleft',lty=1,col=col,legend=n.GHs)
-abline(h=log(qchisq(1-.05,df=1)))
+abline(h=qchisq(1-.05,df=1))
+
+
+## binomial-prop.  !!ugly curve for large n.GH [update: needed to
+## increase n.GH. for small n.GH the curve looks fine but the
+## information is unstable. once k terms stabilize the bartlett curve and CIs are essentially the same as the uncorrected LR's].
+source('utils.R')
+ks.fun <- readRDS('ks-fun.rds')
+stijnen.1 <- read.table('stijnen-table-I.txt')
+stijnen.1 <- stijnen.1[-15,] # get rid of uninformative study
+## niel.weise <- read.table('niel-weise.txt')
+pmf.derivs.fun <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+x <- stijnen.1$Y1
+ms <- stijnen.1$n1
+params <- cbind(m=ms,x.min=0,x.max=ms)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.binomial.prop,logtau2.bounds=c(-5,5),par.start=par.start.binomial.prop(x,params),n.GH=400)
+start <- Sys.time()
+profile.fit <- profile.LR(LR.fit,grid=list(offset=1.2,size=20),logtau2.bounds=c(-10,10),mc.cores=5)
+print(Sys.time() - start)
+CIs <- confint.LR(profile.fit,alpha=.05)
+print(CIs)
+## control group
+## $LR
+##        CI.left  CI.right
+## [1,] -3.937548 -2.916536
+## $LR.bartlett
+##       CI.left CI.right
+## [1,] -3.96277 -2.89521
+
+## treatment group
+## > $LR
+##        CI.left  CI.right
+## [1,] -5.572486 -4.132205
+## $LR.bartlett
+##        CI.left  CI.right
+## [1,] -5.606172 -4.109588
+
+
+## diagnostic for n.GH
+n.GHs <- seq(100,400,by=100)
+cond.pmf <- cond.pmf.binomial.prop
+## cond.pmf <- cond.pmf.poisson
+by.n.GH <- lapply(n.GHs,function(n.GH) {
+    LR.fit <- LR.gaussian(x=x,params=params,mu.null=mu.null,cond.pmf=cond.pmf,par.start=par.start.binomial.prop(x,params),logtau2.bounds=c(-10,10),n.GH=n.GH)
+    profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=10,mc.cores=5))
+    profile.fit
+})
+
+stats <- lapply(by.n.GH,FUN=function(m)m$profile['LR.bartlett',])    
+stats <- simplify2array(stats)
+col <- cm.colors(ncol(stats))
+matplot(by.n.GH[[1]]$mu.grid,stats,type='l',lty=1,col=col)
+legend('topleft',lty=1,col=col,legend=n.GHs)
+abline(h=qchisq(1-.05,df=1))
 ## abline(v=CIs[,'LR.bartlett'])
 
 lapply(by.n.GH,confint.LR)
@@ -2667,8 +2710,8 @@ ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun <- readRDS('pmf-derivs-fun-poisson.rds')
 stijnen.vi <- read.table('stijnen-table-VI.txt')
 n.GH <- 3e2
-x <- stijnen.vi$Y0
-T <- stijnen.vi$T0/1000
+x <- stijnen.vi$Y1
+T <- stijnen.vi$T1/1000
 mu.null <- 0
 params <- cbind(T=T,x.min=0,x.max=2.5e3)
 LR.fit <- LR.gaussian(x=x,params=params,mu.null=mu.null,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=n.GH)
@@ -2678,13 +2721,10 @@ mu.null <- LR.fit$mle.full['mu']; tau2.null <- LR.fit$mle.full['tau2']
 ## fit <- rma.glmm(measure="IRLN", xi=Y0, ti=T0/1000, data=stijnen.vi, method="ML")
 ## summary(fit)
 start <- Sys.time()
-profile.fit <- profile.LR(LR.fit,grid=list(offset=3.5,size=10),logtau2.bounds=c(-5,5),mc.cores=5)
+profile.fit <- profile.LR(LR.fit,grid=list(offset=3.5,size=20),logtau2.bounds=c(-5,5),mc.cores=5)
 print(Sys.time() - start)
 CIs <- confint.LR(profile.fit,alpha=.05)
 print(CIs)
-
-
-
 
 
 ## poisson diagnostic
@@ -2696,17 +2736,20 @@ n.GH <- 3e2
 x <- stijnen.vi$Y0
 T <- stijnen.vi$T0/1000
 mu.null <- 0
-n.GH <- 500#seq(100,800,by=100)
+n.GH <- 100#seq(100,800,by=100)
 x.max <- seq(1e3,1e4,by=1e3)
 pars <- expand.grid(n.GH=n.GH,x.max=x.max)
 profile.fits <- apply(pars, 1, function(par) {
     n.GH <- par['n.GH']; x.max <- par['x.max']
+    # browser()
     params <- cbind(T=T,x.min=0,x.max=x.max)
-    LR.fit <- LR.gaussian(x=x,params=params,mu.null=mu.null,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),n.GH=n.GH)
+    par.start <- par.start.poisson(x,params)
+    LR.fit <- LR.gaussian(x=x,params=params,mu.null=mu.null,cond.pmf=cond.pmf.poisson,logtau2.bounds=c(-5,5),par.start=par.start,n.GH=n.GH)
     mu.null <- LR.fit$mle.full['mu']; tau2.null <- LR.fit$mle.full['tau2']
     start <- Sys.time()
     profile.fit <- profile.LR(LR.fit,grid=list(offset=3.5,size=10),logtau2.bounds=c(-5,5),mc.cores=parallel::detectCores()-2)
     print(Sys.time() - start)
+    print(confint.LR(profile.fit,plot=FALSE))
     profile.fit
 })
 
@@ -2717,32 +2760,6 @@ matplot(profile.fits[[1]]$mu.grid,stats,type='l',lty=1,col=col)
 legend('topleft',lty=1,col=col,legend=pars$x.max)
 abline(h=(qchisq(1-.05,df=1)))
 
-
-# load('../poisson diagnostic 1.RData')
-# profile.fits1 <- profile.fits
-# load('../poisson diagnostic 2.RData')
-# profile.fits2 <- profile.fits
-# n.GH <- seq(100,500,by=100)
-# x.max <- seq(1e3,5e3,by=1e3)
-# par1 <- expand.grid(n.GH=n.GH,x.max=x.max)
-# n.GH <- seq(600,800,by=100)
-# x.max <- seq(1e3,5e3,by=1e3)
-# par2 <- expand.grid(n.GH=n.GH,x.max=x.max)
-# pars <- rbind(par1,par2)
-# idx <- order(pars$x.max,pars$n.GH)
-# pars <- pars[idx,]
-# profile.fits <- c(profile.fits1,profile.fits2)
-# profile.fits <- profile.fits[idx]
-# save.image('../poisson diagnostic 3.RData')
-
-
-# pars <- rbind(pars,pars3)
-# profile.fits <- c(profile.fits,profile.fits3)
-
-
-# idx <- order(pars$x.max,pars$n.GH)
-# pars <- pars[idx,]
-# profile.fits <- profile.fits[idx]
 
 
 
@@ -2767,6 +2784,7 @@ colnames(CI.mat) <- unique(pars$x.max)
 
 
 idx <- which(pars$n.GH==700)
+idx <- which(pars$x.max>=6e3)
 stats <- lapply(profile.fits[idx],FUN=function(m)m$profile['LR.bartlett',])    
 stats <- simplify2array(stats)
 col <- cm.colors(ncol(stats))
@@ -2784,20 +2802,28 @@ abline(h=(qchisq(1-.05,df=1)))
 source('utils.R')
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun <- readRDS('pmf-derivs-fun-hyperg.rds')
-stijnen.i <- read.table('stijnen-table-I.txt')
-stijnen.i <- stijnen.i[-15,] # get rid of uninformative study
-x <- stijnen.i$Y1
-s <- with(stijnen.i, Y0+Y1)
-m.T <- stijnen.i$n1
-m.C <- stijnen.i$n0
+stijnen.1 <- read.table('stijnen-table-I.txt')
+stijnen.1 <- stijnen.1[-15,] # get rid of uninformative study
+x <- stijnen.1$Y1
+s <- with(stijnen.1, Y0+Y1)
+m.T <- stijnen.1$n1
+m.C <- stijnen.1$n0
 n.GH <- 50
 ## supp.x <- max(0,s-m.C):min(s,m.T)
 params <- cbind(m.T=m.T,m.C=m.C,s=s,x.min=pmax(0,s-m.C),x.max=pmin(s,m.T))
-LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.hyperg,n.GH=n.GH)
+LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf.hyperg,par.start=par.start.hyperg(x,params),n.GH=n.GH,control = list(maxit = 5e3))
 start <- Sys.time()
-profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=10),logtau2.bounds=c(-10,10),mc.cores=2)
+profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=20),logtau2.bounds=c(-10,10),mc.cores=2)
 print(Sys.time() - start)
 CIs <- confint.LR(profile.fit)
+print(CIs)
+## $LR
+##        CI.left   CI.right
+## [1,] -2.216696 -0.7077608
+
+## $LR.bartlett
+##        CI.left   CI.right
+## [1,] -2.253979 -0.6763749
 
 
 ## biasedUrn stange behavior.
@@ -2813,5 +2839,273 @@ BiasedUrn::dFNCHypergeo(5,m1=m.T,m2=m.C,n=s,odds=odds)
 
 
 
+## diagnostic for n.GH
+n.GHs <- c(20,30,40,50)
+cond.pmf <- cond.pmf.hyperg
+## cond.pmf <- cond.pmf.poisson
+by.n.GH <- lapply(n.GHs,function(n.GH) {
+    LR.fit <- LR.gaussian(x=x,params=params,mu.null=0,cond.pmf=cond.pmf,par.start=par.start.hyperg(x,params),logtau2.bounds=c(-10,10),n.GH=n.GH)
+    profile.fit <- profile.LR(LR.fit,grid=list(offset=1.5,size=10,mc.cores=5))
+    profile.fit
+})
 
+stats <- lapply(by.n.GH,FUN=function(m)m$profile['LR.bartlett',])    
+stats <- simplify2array(stats)
+col <- cm.colors(ncol(stats))
+matplot(by.n.GH[[1]]$mu.grid,stats,type='l',lty=1,col=col)
+legend('topleft',lty=1,col=col,legend=n.GHs)
+abline(h=qchisq(1-.05,df=1))
+## abline(v=CIs[,'LR.bartlett'])
+
+
+
+
+
+
+## refactoring code
+source('utils.R')
+meta.glmm <- function(x,params,model.str,GH=NULL,n.GH=50,logtau2.bounds=c(-20,3),pmf.derivs.fun=NULL,...) {
+    if(is.null(GH)) {
+        GH <- fastGHQuad::gaussHermiteData(n.GH)
+        GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+        names(GH)[which(names(GH)=='x')] <- 'theta.grid'
+    }
+    loglik.unit <- function(mu,tau2,xi,paramsi,GH) {
+        ## browser()
+        ## print(xi); print(paramsi); print(mu);print(tau2)
+        if(log(tau2)<logtau2.bounds[1] || log(tau2)>logtau2.bounds[2]) {
+            ## warning('tau2 boundary  hit, returning minimum negative')
+            return(-.Machine$double.xmax)
+        }
+        likelihood <- sum(GH$w*cond.pmf(xi,GH$theta.grid,mu,tau2,paramsi))
+        ## print(c(mu,tau2,log(likelihood),paramsi))
+        ## print(tau2)
+        return(log(likelihood))
+    }
+    loglik <- function(mu,tau2) {
+        out <- sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
+        ## print(out)        
+        ## if(is.nan(out))browser()
+        if(is.nan(out))out <- -1e10#-.Machine$double.xmax
+        return(out)
+    }
+    ## load appropriate k formulas if necessary
+    if(is.null(pmf.derivs.fun)) {
+        pmf.derivs.filename <- switch(model.str,
+                                      'bn-prop' = 'pmf-derivs-fun-binomial-prop.rds', 'hn'='pmf-derivs-fun-hyperg.rds', 'pn'='pmf-derivs-fun-poisson.rds', 'bn-irr'='pmf-derivs-fun-binomial-irr.rds')
+        pmf.derivs.fun <- readRDS(pmf.derivs.filename)
+    }
+    ## assign cond.pmf,dgp,par.start
+    cond.pmf <- switch(model.str,
+                       'bn-prop' = cond.pmf.binomial.prop, 'hn'=cond.pmf.hyperg, 'pn'=cond.pmf.poisson, 'bn-irr'=cond.pmf.binomial.irr)
+    dgp <- switch(model.str,
+                  'bn-prop' = dgp.binomial.prop, 'hn'=dgp.hyperg, 'pn'=dgp.poisson, 'bn-irr'=dgp.binomial.irr)
+    par.start <- switch(model.str,
+                        'bn-prop' = par.start.binomial.prop, 'hn'=par.start.hyperg, 'pn'=par.start.poisson, 'bn-irr'=par.start.binomial.irr)
+    par.start <- par.start(x,params) # clean up, bring par.start here
+    ## compute full mle
+    start.val <- loglik(par.start[1],par.start[2])
+    if(is.nan(start.val) || !is.finite(start.val))browser()
+    fit.full <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2])),method='BFGS',...)
+    if(fit.full$convergence != 0L)warning('full fit convergence failure')
+    mle.full <- fit.full$par
+    mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+    out <- list(
+        mle.full=c(mu=unname(mu.mle.full),tau2=unname(tau2.mle.full)),
+        GH=GH,n.GH=n.GH,
+        loglik=loglik,
+        params=params,
+        par.start=par.start,
+        logtau2.bounds=logtau2.bounds,
+        pmf.derivs.fun=pmf.derivs.fun)
+    return(out)
+}
+LR.meta.glmm <- function(meta.glmm.fit,mu.null) {
+    ## browser()
+    loglik <- meta.glmm.fit$loglik
+    x <- meta.glmm.fit$x
+    mu.mle.full <- meta.glmm.fit$mle.full['mu']
+    tau2.mle.full <- meta.glmm.fit$mle.full['tau2']
+    par.start <- meta.glmm.fit$par.start
+    logtau2.bounds <- meta.glmm.fit$logtau2.bounds
+    logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2)),interval=logtau2.bounds,maximum=TRUE)$max
+    tau2.mle.redu <- exp(logtau2.mle.redu)
+    LR <- 2 * (loglik(mu.mle.full,tau2.mle.full) - loglik(mu.null,tau2.mle.redu))
+    out <- list(mle.redu=c(mu=unname(mu.null),tau2=unname(tau2.mle.redu)), LR=LR)
+    return(out)
+    ## return(list(mle.full=c(mu=unname(mu.mle.full),tau2=unname(tau2.mle.full)),mle.redu=c(mu=unname(mu.null),tau2=unname(tau2.mle.redu)), LR=LR, loglik.fun=loglik, x=x, params=params, cond.pmf=cond.pmf,logtau2.bounds=logtau2.bounds, n.GH=n.GH))
+}
+profile.meta.glmm <- function(meta.glmm.fit,ks.fun,grid=list(offset=1,size=20),mc.cores=1,debug=FALSE) {
+    ## browser()
+    x <- meta.glmm.fit$x
+    params <- meta.glmm.fit$params
+    cond.pmf <- meta.glmm.fit$cond.pmf
+    logtau2.bounds <- meta.glmm.fit$logtau2.bounds
+    GH <- meta.glmm.fit$GH
+    mu.mle.full <- meta.glmm.fit$mle.full['mu']; tau2.mle.full <- meta.glmm.fit$mle.full['tau2'];
+    loglik <- meta.glmm.fit$loglik.fun
+    pmf.derivs.fun <- meta.glmm.fit$pmf.derivs.fun
+    mu.profile.grid <- seq(mu.mle.full-grid$offset*sqrt(tau2.mle.full),mu.mle.full+grid$offset*sqrt(tau2.mle.full),len=grid$size)
+    profile.fits <- lapply(mu.profile.grid, function(mu.null)LR.meta.glmm(meta.glmm.fit,mu.null))
+    LR.profile <- sapply(profile.fits,function(fit)fit$LR)
+    tau2.profile.grid <- sapply(profile.fits,function(fit)fit$mle.redu['tau2'])
+    bartlett.C.profile <- parallel::mclapply(seq_along(mu.profile.grid),mc.cores=mc.cores,FUN=function(i) bartlett.meta.glmm(params,ks.fun,pmf.derivs.fun,mu=mu.profile.grid[i],tau2=tau2.profile.grid[i],n.GH=n.GH)) |> simplify2array()
+    LR.bartlett.profile <- LR.profile / (1+bartlett.C.profile)
+    return(list(LR.profile=LR.profile,LR.bartlett.profile=LR.bartlett.profile,mu.grid=mu.profile.grid,tau2.grid=tau2.profile.grid))
+}
+confint.meta.glmm <- function(meta.glmm.fit,alpha=.05,plot=TRUE,debug=FALSE,ks.fun,grid=list(offset=1,size=20),mc.cores=1,...) {
+    ## browser()
+    LR.profile <- profile.fit$LR.profile
+    LR.bartlett.profile <- profile.fit$LR.bartlett.profile
+    ## profile <- profile.fit$profile
+    mu.grid <- profile.fit$mu.grid
+    tau2.grid <- profile.fit$tau2.grid
+    profile <- rbind(LR=LR.profile,LR.bartlett=LR.bartlett.profile)
+    q <- qchisq(1-alpha,df=1)
+    if(plot) {
+        plot(mu.grid,profile['LR',],ylim=range(profile[c('LR','LR.bartlett'),]),type='o')
+        lines(mu.grid,profile['LR.bartlett',],lty=2,type='o')
+        abline(h=q)
+    }
+    CIs <- apply(profile[c('LR','LR.bartlett'),] - q, 1, simplify=FALSE, FUN=function(vals) {
+        left.idx <- which(diff(sign(vals))!=0)
+        stopifnot(length(left.idx)>0)
+        right.idx <- left.idx+1 
+        left.wt <- abs(vals[right.idx]/(vals[right.idx]-vals[left.idx]))
+        right.wt <- abs(vals[left.idx]/(vals[right.idx]-vals[left.idx]))
+        zeroes <- left.wt*mu.grid[left.idx] + right.wt*mu.grid[right.idx]
+        if(vals[1]<0)zeroes <- c(-Inf,zeroes)
+        if(vals[length(vals)]<0)zeroes <- c(zeroes,Inf)
+        n.zeroes <- length(zeroes)
+        CI.left <- zeroes[(1:n.zeroes) %% 2 ==1]
+        CI.right <- zeroes[(1:n.zeroes) %% 2 ==0]
+        cbind(CI.left,CI.right)
+    } )
+    return(CIs)
+}
+stijnen.1 <- read.table('stijnen-table-I.txt')
+stijnen.1 <- stijnen.1[-15,] # get rid of uninformative study
+x <- stijnen.1$Y1
+s <- with(stijnen.1, Y0+Y1)
+m.T <- stijnen.1$n1
+m.C <- stijnen.1$n0
+n.GH <- 50
+## supp.x <- max(0,s-m.C):min(s,m.T)
+params <- cbind(m.T=m.T,m.C=m.C,s=s,x.min=pmax(0,s-m.C),x.max=pmin(s,m.T))
+fit <- meta.glmm(x=x,params=params,n.GH=n.GH,model.str='hn',control = list(maxit = 5e3))
+
+## LR.meta.glmm(fit,-1)
+ks.fun <- readRDS('ks-fun.rds')
+profile.fit <- profile.meta.glmm(fit,ks.fun=ks.fun,grid=list(offset=1,size=2))
+confint.meta.glmm(profile.fit)
+
+
+
+
+## hypergeometric sim debug
+
+
+source('../../../utils.R')
+ns <- 5:15
+
+## sas.params <- sas.invert.params(skew,kurt)
+## re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
+
+set.seed(2)#!!!!!!!!!
+re.distr <- rnorm #!!!!
+tau2.null <- 1.5
+
+mu.null <- -1.353
+ks.fun <- readRDS('../../../ks-fun.rds')
+pmf.derivs.fun <- readRDS('../../../pmf-derivs-fun-hyperg.rds')
+cond.pmf <- cond.pmf.hyperg
+dgp <- dgp.hyperg
+n.GH <- 4e1
+stijnen.1 <- read.table('../../../stijnen-table-I.txt')
+stijnen.1 <- stijnen.1[-15,] # get rid of uninformative study
+stijnen.params <- with(stijnen.1, cbind(m.T=n1,m.C=n0,s=Y0+Y1))
+stijnen.params <- with(as.data.frame(stijnen.params), cbind(stijnen.params,x.min=pmax(0,s-m.C),x.max=pmin(s,m.T)) )                  
+## mc.idx <- sample(nrow(stijnen.params),max(ns),replace=TRUE)
+mc.idx <- 1:nrow(stijnen.params)
+mc.params <- stijnen.params[mc.idx,]
+start <- Sys.time()
+by.n <- parallel::mclapply(seq_along(ns), mc.cores=5, FUN=function(i) {
+## by.n <- sapply(seq_along(ns), function(i) {
+    ## repeat{
+    cat('.')
+    ## Ts <- all.Ts[1:n]
+    ## bartletts <- parallel::mclapply(seq(50,5e2,by=50),mc.cores=5,FUN=function(n.GH) {
+    ## cat('.')
+    ## pairs <- sapply(1:11, function(i) {
+    n <- ns[i]
+    params <- mc.params[1:n,]
+    ## mu.null <-mc.mles[i,'mu']; tau2.null <- mc.mles[i,'tau2']
+    ## bartlett.Cs <- sapply(c(20,200), function(n.GH) {
+    ks.df <- ks.ma(params,ks.fun,pmf.derivs.fun,mu=mu.null,tau2=tau2.null,n.GH=n.GH)$ks.df
+    bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
+    ## })
+   ## })
+    ## })
+    stats <- replicate(round(n^3), {
+        x <- dgp(n,mu.null,tau2.null,params,re.distr=re.distr)
+        ## LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,n.GH=n.GH)$LR
+        LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-3,3),n.GH=n.GH,par.start=par.start.hyperg(x,params),control=list(maxit=1e4))$LR
+        LR.bartlett <- LR / (1+bartlett.C)
+        c(LR=LR,LR.bartlett=LR.bartlett)
+    })
+    ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
+    ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
+    means <- rowMeans(stats-1)
+    c(ks=ks,means=means)
+})
+by.n <- simplify2array(by.n)
+print(Sys.time() - start)
+plot(ns,by.n['ks.LR',],type='l',ylim=range(by.n[1:2,]))
+lines(ns,by.n['ks.LR.bartlett',],col=2)
+apply(by.n[1:2,],1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
+
+
+## just LR
+
+source('utils.R')
+ns <- 5:15
+set.seed(2)#!!!!!!!!!
+re.distr <- rnorm #!!!!
+tau2.null <- 1.5
+mu.null <- -1.353
+## ks.fun <- readRDS('../../../ks-fun.rds')
+## pmf.derivs.fun <- readRDS('../../../pmf-derivs-fun-hyperg.rds')
+cond.pmf <- cond.pmf.hyperg
+dgp <- dgp.hyperg
+n.GH <- 1e2
+stijnen.1 <- read.table('stijnen-table-I.txt')
+stijnen.1 <- stijnen.1[-15,] # get rid of uninformative study
+stijnen.params <- with(stijnen.1, cbind(m.T=n1,m.C=n0,s=Y0+Y1))
+stijnen.params <- with(as.data.frame(stijnen.params), cbind(stijnen.params,x.min=pmax(0,s-m.C),x.max=pmin(s,m.T)) )                  
+## mc.idx <- sample(nrow(stijnen.params),max(ns),replace=TRUE)
+mc.idx <- 1:nrow(stijnen.params)
+mc.params <- stijnen.params[mc.idx,]
+start <- Sys.time()
+by.n <- parallel::mclapply(seq_along(ns), mc.cores=5, FUN=function(i) {
+## by.n <- sapply(seq_along(ns), function(i) {
+    ## repeat{
+    cat('.')
+    n <- ns[i]
+    params <- mc.params[1:n,]
+    stats <- replicate(round(n^2), {
+        x <- dgp(n,mu.null,tau2.null,params,re.distr=re.distr)
+        LR <- LR.gaussian(x,params,mu.null,cond.pmf=cond.pmf,logtau2.bounds=c(-20,3),n.GH=n.GH,par.start=par.start.hyperg(x,params),control=list(maxit=1e4))$LR
+        if(abs(LR)>1e5)browser()
+        LR
+    })
+    ecdf.LR <- ecdf(pchisq(stats,df=1,lower=FALSE))
+    ks <- max(abs(ecdf.LR(knots(ecdf.LR)) - knots(ecdf.LR)))
+    means <- mean(stats-1)
+    c(ks=ks,means=means)
+})
+by.n <- simplify2array(by.n)
+print(Sys.time() - start)
+plot(ns,by.n['ks',],type='l',ylim=range(by.n[1:2,]))
+## lines(ns,by.n['ks.LR.bartlett',],col=2)
+apply(by.n[1:2,],1,function(ks)coef(lm(log(abs(ks)) ~ log(ns)))[2]) |> print()
 
