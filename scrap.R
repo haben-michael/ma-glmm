@@ -5,6 +5,7 @@ TODO
 3. rename GH$x to GH$theta.grid
 4. T.t vs T.T variable name incosnistencyx
 5. debug data is too big. pass switch not to get it.
+6. add stijnen tables along with r package
 
 ## DEBUGGING
 
@@ -1015,3 +1016,23 @@ ONE TIME
 # pars <- pars[idx,]
 # profile.fits <- profile.fits[idx]
 
+
+
+
+## ## ks.fun <- readRDS('ks-fun.rds')
+## ## ks.fun.clean <- lapply(ks.fun, function(fn) {
+## ##   environment(fn) <- baseenv()
+## ##   return(fn)
+## ## })
+## ## saveRDS(ks.fun.clean,file='ks.fun.rds',compress=FALSE)
+
+## ## filename <- 'pmf-derivs-fun-binomial-irr.rds'
+## ## filename <- 'pmf-derivs-fun-binomial-prop.rds'
+## ## filename <- 'pmf-derivs-fun-poisson.rds'
+## filename <- 'pmf-derivs-fun-hyperg.rds'
+## pmf.derivs <- readRDS(filename)
+## pmf.derivs.clean <- lapply(pmf.derivs, function(fn) {
+##   environment(fn) <- baseenv()
+##   return(fn)
+## })
+## saveRDS(pmf.derivs.clean,file=filename,compress=FALSE)

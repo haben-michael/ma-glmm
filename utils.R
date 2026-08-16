@@ -396,7 +396,7 @@ sas.invert.params <- function(target.skew, target.kurt) {
 ## cond.pmf.hyperg <- function(x,theta,mu,tau2,params)  <- sapply(theta, function(thetai) _cond.pmf.hyperg(x,thetai,mu,tau2,params)
 
 
-## my version
+## my version. dotted version matches biasedUrn's call syntax.
 .cond.pmf.hyperg <- function(x,m1,m2,n,odds) {
     ## m.T <- params[,'m.T']
     ## m.C <- params[,'m.C']
@@ -633,7 +633,7 @@ ks.study <- function(pmf.derivs.fun,ks.fun,params,mu,tau2,n.GH=1e2,debug=FALSE) 
     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
     ## out <- list(ks.df=ks.df, ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit)
     out <- list(ks.df=ks.df)
-    if(debug) out <- c(out,debug=list(ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit))
+    if(debug) out <- c(out,debug=list(list(ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit)))
     return(out)
 }
 
@@ -663,7 +663,7 @@ ks.ma <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=1e2,debug=FALSE) {
     ks.df.ma <- data.frame(inner=ks.study.fits[[1]]$ks.df$inner, outer=ks.study.fits[[1]]$ks.df$outer,k.val=k.vals.ma)
     ks.study.fits <- sapply(ks.study.fits,`[[<-`,'ks.df',NULL)
     out <- list(ks.df.ma=ks.df.ma)
-    if(debug) out <- c(out,debug=ks.study.fits)
+    if(debug) out <- c(out,debug=list(ks.study.fits))
     return(out)
     ## return(list(ks.df.ma=ks.df.ma,ks.study.fits=ks.study.fits))
 }
@@ -687,12 +687,12 @@ lawley <- function(k.df,p) {
     return(out)
 }
 
-bartlett.LR <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50,debug=FALSE) {
-    ks.ma.fit <- ks.ma(params=params,ks.fun=ks.fun,pmf.derivs.fun=pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
-    ks.df.ma <- ks.ma.fit$ks.df.ma
-    bartlett.C <- lawley(ks.df.ma,2) - lawley(ks.df.ma,1)
-    return(bartlett.C)
-}
+## bartlett.LR <- function(params,ks.fun,pmf.derivs.fun,mu,tau2,n.GH=50,debug=FALSE) {
+##     ks.ma.fit <- ks.ma(params=params,ks.fun=ks.fun,pmf.derivs.fun=pmf.derivs.fun,mu=mu,tau2=tau2,n.GH=n.GH)
+##     ks.df.ma <- ks.ma.fit$ks.df.ma
+##     bartlett.C <- lawley(ks.df.ma,2) - lawley(ks.df.ma,1)
+##     return(bartlett.C)
+## }
 
 
 

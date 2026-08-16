@@ -299,7 +299,7 @@ component ((ref)) for the unit likelihood ((ref)), we approximate the
 integral by a quadrature rule. Since all the likelihoods ((ref))
 involve integrating against a Gaussian, Gauss-Hermite quadrature is a
 natural choice[[, and for the sake of simplicity we adopt here a
-non-adaptive variant]]. This and similar methods consist in weights
+non-adaptive variant]]. This and similar methods ((cite stats paper)) consist in weights
 $\w_1,\ldots,\w_{\nGH}$ and nodes in the domain of integration
 $\z_1,\ldots,\z_{\nGH}$ allowing the Gaussian integral of smooth integrands
 like ((ref)) to be approximated by a weighted sum,
@@ -435,7 +435,7 @@ efficiacy of an anti-infection treatment for catheters. each of the 9
 studies reports, for each arm, the number of catheter-related
 infections observed in a population as well as the total
 ``catheter-days'', the sum over the population of the number of days
-each unit used a catheter.
+each subject used a catheter.
 
 We use the poisson-normal model ((ref)) to obtain CIs for the log incidence rate in each arm, and the binomial-irr model ((ref)) to obtain CIs for the log-incidence-rate ratio. For this smaller meta-analysis the difference between the corrected and uncorrected CIs is more dramatic.
 
@@ -458,7 +458,7 @@ log-odds ratio
 \midrule
 
 \multirow{2}{*}{log IR} 
-  & stijnen-6, control arm & [0.92, 1.88] & [0.69, 2.45] & $+84.0\%$ \\
+  & stijnen-6, control arm & [0.92, 1.88] & [0.84, 2.51] & $+75.0\%$ \\
   & stijnen-6, treatment arm & [0.13, 1.51] & [-0.18, 1.94] & $+52.3\%$ \\
 \cmidrule(lr){1-5}
 
