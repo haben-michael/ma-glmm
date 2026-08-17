@@ -506,13 +506,14 @@ dgp.poisson <- function(n,mu,tau2,params,re.distr=rnorm) {
 
 
 
-cond.pmf.binomial.prop <- function(x,theta,mu,tau2,params) {
-    m <- params[,'m']
+cond.pmf.bn.prop <- cond.pmf.binomial.prop <- function(x,theta,mu,tau2,params) {
+    ## m <- params[,'m']
+    m <- if(is.null(dim(params))) params['m'] else params[,'m']
     pr <- function(theta)plogis(mu+sqrt(tau2)*theta)
     dbinom(x,size=m,prob=pr(theta))
     ## integrand <- function(theta)pr(theta)^xi*(1-pr(theta))^(mi-xi)
 }
-dgp.binomial.prop <- function(n,mu,tau2,params,re.distr=rnorm) {
+dgp.bn.prop <- dgp.binomial.prop <- function(n,mu,tau2,params,re.distr=rnorm) {
     m <- params[,'m']
     theta <- re.distr(n)
     pr <- function(theta)plogis( mu+sqrt(tau2)*theta)

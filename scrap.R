@@ -6,7 +6,8 @@ TODO
 4. T.t vs T.T variable name incosnistencyx
 5. debug data is too big. pass switch not to get it.
 6. add stijnen tables along with r package
-7. logsumexp agh nodes
+7. logsumexp agh nodes in make_quad
+8. names. var.map -> cond.var.map. param -> par.
 
 ## DEBUGGING
 

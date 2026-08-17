@@ -3090,31 +3090,98 @@ CI <- confint.meta.glmm(meta.glmm.fit,grid=list(offset=3,size=10),mc.cores=5,bar
 source('utils.R')
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun.poisson <- readRDS('pmf-derivs-fun-poisson.rds')
-integrand.mode.poisson <- function(xi, paramsi, mu, tau2, tol=1e-10) {
-    ## browser()
-    z <- 0
-    for (j in 1:20) {
-        lambda <- paramsi["T"] *
-            exp(mu + sqrt(tau2) * z)
-        f <- sqrt(tau2) * (xi - lambda) - z
-        fp <- -1 - tau2 * lambda
-        z.new <- z - f / fp
-        if (abs(z.new - z) < tol) {
-            break
-        }
-        z <- z.new
-    }
-    mode <- z.new
-    return(mode)
+pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+pmf.derivs.fun.hyperg <- readRDS('pmf-derivs-fun-hyperg.rds')
+## integrand.mode.poisson <- function(yi, paramsi, mu, tau2, tol=1e-10) {
+##     ## browser()
+##     z <- 0
+##     for (j in 1:20) {
+##         lambda <- paramsi["T"] *
+##             exp(mu + sqrt(tau2) * z)
+##         f <- sqrt(tau2) * (yi - lambda) - z
+##         fp <- -1 - tau2 * lambda
+##         z.new <- z - f / fp
+##         if (abs(z.new - z) < tol) {
+##             break
+##         }
+##         z <- z.new
+##     }
+##     mode <- z.new
+##     return(mode)
+## }
+## par.start.poisson <- function(x,params) {
+##     x.cc <- x; x.cc[x.cc=0L] <-  x.cc[x.cc=0L]+.5
+##     y.nn <- log(x.cc)/params[,'T']
+##     sigma2.nn <- 1/x.cc
+##     w.fe <- 1/sigma2.nn
+##     mu.fe <- y.nn %*% w.fe / sum(w.fe)    
+##     Q <- w.fe%*%(y.nn-c(mu.fe))^2
+##     tau2.DL <- max(0L, (Q - (length(y.nn)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
+##     tau2.start <- if(tau2.DL>0L)tau2.DL else var(y.nn)/1e4
+##     return(c(mu=mu.fe,tau2=tau2.start))
+## }
+nn.transform.poisson <- function(y,params) {
+    y.cc <- y; y.cc[y.cc=0L] <-  y.cc[y.cc=0L]+.5
+    y.nn <- log(y.cc)/params[,'T']
+    sigma2.nn <- 1/y.cc
+    return(data.frame(y=y.nn,sigma2=sigma2.nn))
+}
+## cond.pmf.derivs.poisson <- function(zi, yi, paramsi, mu, tau2) {
+##     lambda <- paramsi["T"] * exp(mu + sqrt(tau2) * zi)
+##     deriv <- sqrt(tau2) * (yi - lambda) - zi
+##     hess <- -1 - tau2 * lambda
+##     return(structure(unname(c(deriv,hess)), names=c('first','second')))
+## }
+newton.step.poisson <- function(zi, yi, paramsi, mu, tau2) {
+    lambda <- paramsi["T"] * exp(mu + sqrt(tau2) * zi)
+    out <- (sqrt(tau2)*(yi-lambda) - zi) / (tau2*lambda+1)
+    return(out)
 }
 var.map.poisson <- function(zi,paramsi,mu,tau2)paramsi['T']*exp(mu+sqrt(tau2)*zi)
+nn.transform.bn.prop <- function(y,params) {
+    y.1 <- y
+    y.0 <- params[,'m'] - y
+    idy.cc <- y.0==0 | y.1==0
+    y.0[idy.cc] <- y.0[idy.cc]+.5
+    y.1[idy.cc] <- y.1[idy.cc]+.5
+    y.nn <- log(y.1/y.0)
+    sigma2.nn <- 1/y.0 + 1/y.1
+    return(data.frame(y=y.nn,sigma2=sigma2.nn))
+}
+newton.step.bn.prop <- function(zi, yi, paramsi, mu, tau2) {
+    ## browser()
+    p <- plogis(mu+sqrt(tau2)*zi)
+    out <- (sqrt(tau2)*(yi - paramsi['m']*p)-zi) / (paramsi['m']*tau2*p*(1-p)+1)
+    ## deriv <- sqrt(tau2)*(yi - paramsi['m']*p)
+    ## hess <- -paramsi['m']*tau2*p*(1-p)
+    ## if(is.nan(deriv)||is.nan(hess))browser()
+    ## return(structure(unname(c(deriv,hess)), names=c('first','second')))
+    return(out)
+}
+var.map.bn.prop <- function(zi,paramsi,mu,tau2) {
+    p <- plogis(mu+sqrt(tau2)*zi)
+    paramsi['m']*p*(1-p)
+    }
 model <- function(model.str) {
     out <- switch(model.str,
+                  'bn-prop' = list(
+                      cond.pmf = cond.pmf.bn.prop,
+                      ## cond.pmf.derivs = cond.pmf.derivs.bn.prop,
+                      newton.step = newton.step.bn.prop,
+                      dgp = dgp.bn.prop,
+                      nn.transform = nn.transform.bn.prop,
+                      ## par.start = par.start.bn.prop,
+                      ## integrand.mode = integrand.mode.bn.prop,
+                      var.map = var.map.bn.prop,
+                      pmf.derivs.fun = pmf.derivs.fun.bn.prop
+                  ),
                   'pn' = list(
                       cond.pmf = cond.pmf.poisson,
+                      newton.step = newton.step.poisson,
                       dgp = dgp.poisson,
-                      par.start = par.start.poisson,
-                      integrand.mode = integrand.mode.poisson,
+                      nn.transform = nn.transform.poisson,
+                      ## par.start = par.start.poisson,
+                      ## integrand.mode = integrand.mode.poisson,
                       var.map = var.map.poisson,
                       pmf.derivs.fun = pmf.derivs.fun.poisson
                   )
@@ -3126,12 +3193,12 @@ ks.study <- function(paramsi,mu,tau2,quad,pmf.derivs.fun,debug=FALSE)  {
     ## browser()
     pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
         ## browser()
-        supp.x <-  paramsi['x.min']:paramsi['x.max']
-        ## units.mat <- sapply(quad.rule$z,function(zi)pmf.deriv.fun(beta=beta,params=params,theta=zi,x=supp.x))
+        supp.y <-  paramsi['y.min']:paramsi['y.max']
+        ## units.mat <- sapply(quad.rule$z,function(zi)pmf.deriv.fun(beta=beta,params=params,theta=zi,x=supp.y))
         ## colSums(quad.rule$wt * t(units.mat))
-        quad.rules <- lapply(supp.x, function(xi)quad(xi,paramsi,mu,tau2))
+        quad.rules <- lapply(supp.y, function(yi)quad(yi,paramsi,mu,tau2))
         nodes.mat <- sapply(quad.rules,`[[`,'wt')
-        units.mat <- sapply(seq_along(supp.x), function(i)pmf.deriv.fun(beta=beta,params=paramsi,theta=quad.rules[[i]]$z,supp.x[i]))
+        units.mat <- sapply(seq_along(supp.y), function(i)pmf.deriv.fun(beta=beta,params=paramsi,theta=quad.rules[[i]]$z,supp.y[i]))
         colSums(nodes.mat*units.mat)
     })
     ks.unit <- sapply(seq_along(ks.fun), function(i) {
@@ -3179,8 +3246,8 @@ make.quad <- function(integrand.mode,var.map,n.GH,adaptive=TRUE) {
             list(z=sqrt(2)*GH$x,wt=GH$w/sqrt(pi))
         }
     } else {
-        out <- function(xi,paramsi,mu,tau2) {
-            mode <- integrand.mode(xi,paramsi,mu,tau2)
+        out <- function(yi,paramsi,mu,tau2) {
+            mode <- integrand.mode(yi,paramsi,mu,tau2)
             scale <- (1 + tau2 * var.map(mode,paramsi, mu, tau2))^(-1 / 2)
             z <- mode + sqrt(2) * scale * GH$x
             wt <- sqrt(2) * scale *
@@ -3192,20 +3259,23 @@ make.quad <- function(integrand.mode,var.map,n.GH,adaptive=TRUE) {
     }
     return(out)
 }
-make.loglik <- function(cond.pmf,params,x,quad) {
-    loglik.unit <- function(mu,tau2,xi,paramsi) {
+make.loglik <- function(cond.pmf,params,y,quad) {
+    loglik.unit <- function(mu,tau2,yi,paramsi) {
+        ## browser()
+        stopifnot(is.finite(mu)&&is.finite(tau2))        
         ## if(log(tau2)<logtau2.bounds[1] || log(tau2)>logtau2.bounds[2]) {
-        ## warning('tau2 boundary  hit, returning minimum negative')
+        ## ## warning('tau2 boundary  hit, returning minimum negative')
         ## return(-.Machine$double.xmax)
         ## }
-        rule <- quad(xi,paramsi,mu,tau2)
-        likelihood <- sum(rule$wt*cond.pmf(xi,rule$z,mu,tau2,paramsi))
+        rule <- quad(yi,paramsi,mu,tau2)
+        likelihood <- sum(rule$wt*cond.pmf(yi,rule$z,mu,tau2,paramsi))
         ## print(c(mu,tau2,log(likelihood),paramsi))
         ## print(tau2)
         return(log(likelihood))
     }
     loglik <- function(mu,tau2) {
-        out <- sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,])))
+        ## print(c(mu,tau2))
+        out <- sum(sapply(seq_along(y),function(i)loglik.unit(mu,tau2,y[i],params[i,])))
         ## ## print(out)        
         ## ## if(is.nan(out))browser()
         ## if(is.nan(out))out <- -1e10#-.Machine$double.xmax
@@ -3223,10 +3293,43 @@ make.profile.LR <- function(loglik,mle,par.start,logtau2.bounds) {
     }
     return(LR.profile)
 }
-mle <- function(loglik,par.start,...) {
+make.integrand.mode <- function(newton.step, tol=1e-10) {
+    integrand.mode <- function(yi, paramsi, mu, tau2) {
+        z <- 0
+        for (j in 1:20) { #!!!!
+            ## browser()
+            ## derivs <- model$cond.pmf.derivs(z, yi, paramsi, mu, tau2)
+            ## z.new <- z - derivs['first'] / derivs['second']
+            z.new <- z + newton.step(z, yi, paramsi, mu, tau2)
+            ## if(!is.finite(z.new))browser()
+            ## print(z.new)
+            ## print(c(z.new,z))
+            if (abs(z.new - z) < tol) {
+                break
+            }
+            z <- z.new
+        }
+        mode <- z.new
+        return(mode)
+    }
+    return(integrand.mode)
+}
+## z.deriv <- function(zi, yi, paramsi, mu, tau2) {
+##     ## browser()
+##     p <- plogis(mu+sqrt(tau2)*zi)
+##     sqrt(tau2)*( yi-paramsi['m']*p )
+##     }
+mle <- function(loglik,par.start,logtau2.bounds=c(-20,3),...) {
+    ## browser()
     fit <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2])),method='BFGS',...)
-    ## if(fit.full$convergence != 0L)warning('full fit convergence failure')
-    ## mle.full <- fit.full$par
+##     fit <- optim(
+##   par = c(par.start['mu'], log(par.start['tau2'])),
+##   fn = function(par) -loglik(par[1], exp(par[2])),
+##   method = 'L-BFGS-B',
+##   lower = c(-Inf, logtau2.bounds[1]),
+##   upper = c( Inf, logtau2.bounds[2]),
+##   ...
+## )
     mu.mle <- unname(fit$par[1]); tau2.mle <- unname(exp(fit$par[2]))
     out <- list(mle=c(mu=mu.mle,tau2=tau2.mle), status=fit$convergence)
 }
@@ -3276,47 +3379,93 @@ confint <- function(mu.grid, profile, alpha=.05, plot=TRUE,...) {
     ## if(debug) out <- c(out,profile.fit$debug)
     return(out)
 }
-meta.glmm <- function(x,params,model.str,n.GH,adaptive,logtau2.bounds) {
+meta.glmm <- function(y,params,model.str,n.GH,adaptive,logtau2.bounds,...) {
+    ## browser()
     model <- model(model.str)
-    quad <- make.quad(model$integrand.mode,mod$var.map,n.GH=n.GH,adaptive=adaptive)
-    loglik <- make.loglik(mod$cond.pmf,params,x,quad)
-    par.start0 <- model$par.start(x,params)
-    mle0 <- mle(loglik,par.start)$mle
+    integrand.mode <- make.integrand.mode(model$newton.step)
+    quad <- make.quad(integrand.mode,model$var.map,n.GH=n.GH,adaptive=adaptive)
+    loglik <- make.loglik(model$cond.pmf,params,y,quad)
+    ## par.start0 <- model$par.start(y,params)
+    par.start <- with(model$nn.transform(y,params), {
+        w.fe <- 1/sigma2
+        mu.fe <- y %*% w.fe / sum(w.fe)    
+        Q <- w.fe%*%(y-c(mu.fe))^2
+        tau2.DL <- max(0L, (Q - (length(y)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
+        c(mu=mu.fe,tau2=tau2.DL)
+    })
+    mle0 <- mle(loglik,par.start,logtau2.bounds,...)$mle
     profile.LR <- make.profile.LR(loglik,mle0,par.start0,logtau2.bounds=logtau2.bounds)
     bartlett.C <- make.bartlett.C(params,quad,model$pmf.derivs.fun)
-    out <- list(model.str=model.str, quad=quad, loglik=loglik, mle=mle0, profile.LR=profile.LR, bartlett.C=bartlett.C, part.start=par.start0)
+    out <- list(model.str=model.str, quad=quad, loglik=loglik, mle=mle0, profile.LR=profile.LR, bartlett.C=bartlett.C, par.start=par.start)
     return(out)
 }
 confint.meta.glmm <- function(meta.glmm.fit,alpha=.05,plot=TRUE,debug=FALSE,bartlett=TRUE,mu.grid=list(offset=1,size=20),mc.cores=1,...) {
     ## browser()
     mle0 <- meta.glmm.fit$mle
-    mu.grid <- seq(mle0['mu']-grid$offset*sqrt(mle0['tau2']),mle0['mu']+grid$offset*sqrt(mle0['tau2']),len=grid$size)    
+    mu.grid <- seq(mle0['mu']-mu.grid$offset*sqrt(mle0['tau2']),mle0['mu']+mu.grid$offset*sqrt(mle0['tau2']),len=mu.grid$size)    
     profile <- profile(mu.grid,meta.glmm.fit$profile.LR,mle0,meta.glmm.fit$bartlett.C)
     confint(mu.grid=mu.grid, profile=rbind(LR=profile$LR,LR.bartlett=profile$LR.bartlett), alpha=alpha, plot=plot,...)
 }
-stijnen.vi <- read.table('stijnen-table-VI.txt')
-n.GH <- 30
-x <- stijnen.vi$Y1
-T <- stijnen.vi$T1/1000
-mu.null <- 0
-tau2.null <- 1
-params <- cbind(T=T,x.min=0,x.max=1e2)
-mod <- model('pn')
-quad <- make.quad(mod$integrand.mode,mod$var.map,n.GH=n.GH,adaptive=FALSE)
-## quad(x[1],params[1,],mu.null,tau2.null)
-loglik <- make.loglik(mod$cond.pmf,params,x,quad)
-## loglik(mu.null,tau2.null)
-par.start <- mod$par.start(x,params)
-mle0 <- mle(loglik,par.start)$mle
-profile.LR <- make.profile.LR(loglik,mle0,par.start,logtau2.bounds=c(-20,3))
-profile.LR(0)
-grid <- list(offset=2,size=10)
-mu.grid <- seq(mle0['mu']-grid$offset*sqrt(mle0['tau2']),mle0['mu']+grid$offset*sqrt(mle0['tau2']),len=grid$size)
-## profile <- profile(mu.grid,profile.LR, mle,bartlett=TRUE)
-bartlett.C <- make.bartlett.C(params,quad,mod$pmf.derivs.fun)
-## bartlett.C(mu.null,tau2.null)
-profiled <- profile(mu.grid,profile.LR,mle0,bartlett.C,mc.cores=5)
-profiled <- rbind(LR=profiled$LR,LR.bartlett=profiled$LR.bartlett)
+## stijnen.vi <- read.table('stijnen-table-VI.txt')
+## n.GH <- 30
+## y <- stijnen.vi$Y1
+## T <- stijnen.vi$T1/1000
+## params <- cbind(T=T,y.min=0,y.max=1e2)
+## mu.null <- 0
+## tau2.null <- 1
+## mod <- model('pn')
+## integrand.mode <- function(yi, paramsi, mu, tau2, tol=1e-10) {
+##     z <- 0
+##     for (j in 1:20) { #!!!!
+##         ## browser()
+##         derivs <- mod$cond.pmf.derivs(z, yi, paramsi, mu, tau2)
+##         z.new <- z - derivs['first'] / derivs['second']
+##         if (abs(z.new - z) < tol) {
+##             break
+##         }
+##         z <- z.new
+##     }
+##     mode <- z.new
+##     return(mode)
+## }
+## quad <- make.quad(integrand.mode,mod$var.map,n.GH=n.GH,adaptive=TRUE)
+## ## quad(x[1],params[1,],mu.null,tau2.null)
+## loglik <- make.loglik(mod$cond.pmf,params,y,quad)
+## ## loglik(mu.null,tau2.null)
+## nn.data <- mod$nn.transform(y,params)
+## par.start <- with(nn.data, {
+##     w.fe <- 1/sigma2
+##     mu.fe <- y %*% w.fe / sum(w.fe)    
+##     Q <- w.fe%*%(y-c(mu.fe))^2
+##     tau2.DL <- max(0L, (Q - (length(y)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
+##     c(mu=mu.fe,tau2=tau2.DL)
+## })
+## ## par.start <- mod$par.start(y,params)
+## mle0 <- mle(loglik,par.start)$mle
+## profile.LR <- make.profile.LR(loglik,mle0,par.start,logtau2.bounds=c(-20,3))
+## profile.LR(0)
+## grid <- list(offset=2,size=10)
+## mu.grid <- seq(mle0['mu']-grid$offset*sqrt(mle0['tau2']),mle0['mu']+grid$offset*sqrt(mle0['tau2']),len=grid$size)
+## ## profile <- profile(mu.grid,profile.LR, mle,bartlett=TRUE)
+## bartlett.C <- make.bartlett.C(params,quad,mod$pmf.derivs.fun)
+## ## bartlett.C(mu.null,tau2.null)
+## profiled <- profile(mu.grid,profile.LR,mle0,bartlett.C,mc.cores=5)
+## profiled <- rbind(LR=profiled$LR,LR.bartlett=profiled$LR.bartlett)
 ## confint(mu.grid=mu.grid,profile=profiled)
-fit <- meta.glmm(x,params,'pn',n.GH=50,adaptive=FALSE,logtau2.bounds=c(-20,3))
+## using constructor/convenience functions:
+## stijnen.vi <- read.table('stijnen-table-VI.txt')
+## n.GH <- 30
+## y <- stijnen.vi$Y1
+## T <- stijnen.vi$T1/1000
+## params <- cbind(T=T,y.min=0,y.max=1e2)
+## mu.null <- 0
+## tau2.null <- 1
+## fit <- meta.glmm(y,params,'pn',n.GH=50,adaptive=TRUE,logtau2.bounds=c(-20,3))
+## confint.meta.glmm(fit,mc.cores=5)
+stijnen.1 <- read.table('stijnen-table-I.txt')
+stijnen.1 <- stijnen.1[-15,] # get rid of uninformative study
+y <- stijnen.1$Y1
+ms <- stijnen.1$n1
+params <- cbind(m=ms,y.min=0,y.max=ms)
+fit <- meta.glmm(y,params,'bn-prop',n.GH=10,adaptive=TRUE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
 confint.meta.glmm(fit,mc.cores=5)
