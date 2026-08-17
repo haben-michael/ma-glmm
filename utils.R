@@ -491,7 +491,7 @@ par.start.poisson <- function(x,params) {
 }
 
 cond.pmf.poisson <- function(x,theta,mu,tau2,params) {
-    T <- params[,'T']
+    T <- if(is.null(dim(params))) params['T'] else params[,'T']
     lambda <- T*exp(mu+sqrt(tau2)*theta)
     dpois(x,lambda=lambda)
 }

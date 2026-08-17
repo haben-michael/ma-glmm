@@ -1,11 +1,12 @@
 TODO
 
 1. x to y
-2. move supp.x into params in ks.study
-3. rename GH$x to GH$theta.grid
+2. --move supp.x into params in ks.study
+3. --rename GH$x to GH$theta.grid
 4. T.t vs T.T variable name incosnistencyx
 5. debug data is too big. pass switch not to get it.
 6. add stijnen tables along with r package
+7. logsumexp agh nodes
 
 ## DEBUGGING
 

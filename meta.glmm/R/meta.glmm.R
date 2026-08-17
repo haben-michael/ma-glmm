@@ -167,24 +167,6 @@ dgp.poisson <- function(n,mu,tau2,params,re.distr=rnorm) {
     ## pr <- function(theta)plogis( mu+sqrt(tau2)*theta)
     ## rbinom(n,size=m,prob=pr(theta))
 }
-integrand.mode.poisson <- function(xi, paramsi, mu, tau2) {
-    ## browser()
-    z <- 0
-    for (j in 1:20) {
-        lambda <- paramsi[,"T"] *
-            exp(mu + sqrt(tau2) * z)
-        f <- sqrt(tau2) * (xi - lambda) - z
-        fp <- -1 - tau2 * lambda
-        z.new <- z - f / fp
-        if (abs(z.new - z) < tol) {
-            break
-        }
-        z <- z.new
-    }
-    mode <- z.new
-    return(mode)
-}
-var.map.poisson <- function(zi,paramsi,mu,tau2)paramsi[,'T']*exp(mu+sqrt(tau2)*zi)
 
 
 
@@ -298,12 +280,12 @@ ks.study <- function(pmf.derivs.fun,ks.fun,params,mu,tau2,n.GH=1e2,debug=FALSE) 
         units.mat <- sapply(GH$theta.grid,function(thetai)pmf.deriv.fun(beta=beta,params=params,theta=thetai,x=supp.x))
         colSums(GH$w * t(units.mat))
     })
-    k.vals <- sapply(seq_along(ks.fun), function(i) {
-        k.fun <- ks.fun[[i]]
-        args <- attr(k.fun,'args')
-        k.unit <- do.call(k.fun, pmf.derivs.unit[args])
-        k.val <- sum( k.unit )
-    })
+    ## k.vals <- sapply(seq_along(ks.fun), function(i) {
+    ##     k.fun <- ks.fun[[i]]
+    ##     args <- attr(k.fun,'args')
+    ##     k.unit <- do.call(k.fun, pmf.derivs.unit[args])
+    ##     k.val <- sum( k.unit )
+    ## })
     ks.unit <- sapply(seq_along(ks.fun), function(i) {
         k.fun <- ks.fun[[i]]
         args <- attr(k.fun,'args')
@@ -579,9 +561,86 @@ meta.glmm <- function(x,params,model.str,GH=NULL,n.GH=50,logtau2.bounds=c(-20,3)
         loglik=loglik,
         params=params,
         par.start=par.start,
-        logtau2.bounds=logtau2.bounds)
+        logtau2.bounds=logtau2.bounds,
+        integrand.mode=integrand.mode,
+        var.map=var.map)
     return(out)
 }
+
+## support for adaptive GH
+meta.glmm <- function(x,params,model.str,GH=NULL,n.GH=50,adaptive=TRUE,logtau2.bounds=c(-20,3),pmf.derivs.fun=NULL,...) {
+    if(is.null(GH)&&!adaptive) {
+        GH <- fastGHQuad::gaussHermiteData(n.GH)
+        GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+        names(GH)[which(names(GH)=='x')] <- 'theta.grid'
+    }
+    ## assign cond.pmf,dgp,etc
+    cond.pmf <- switch(model.str,
+                       'bn-prop' = cond.pmf.binomial.prop, 'hn'=cond.pmf.hyperg, 'pn'=cond.pmf.poisson, 'bn-irr'=cond.pmf.binomial.irr)
+    integrand.mode <- switch(model.str,
+                       'bn-prop' = integrand.mode.binomial.prop, 'hn'=integrand.mode.hyperg, 'pn'=integrand.mode.poisson, 'bn-irr'=integrand.mode.binomial.irr)
+    var.map <- switch(model.str,
+                       'bn-prop' = var.map.binomial.prop, 'hn'=var.map.hyperg, 'pn'=var.map.poisson, 'bn-irr'=var.map.binomial.irr)
+    dgp <- switch(model.str,
+                  'bn-prop' = dgp.binomial.prop, 'hn'=dgp.hyperg, 'pn'=dgp.poisson, 'bn-irr'=dgp.binomial.irr)
+    par.start <- switch(model.str,
+                        'bn-prop' = par.start.binomial.prop, 'hn'=par.start.hyperg, 'pn'=par.start.poisson, 'bn-irr'=par.start.binomial.irr)
+    par.start <- par.start(x,params) # clean up, bring par.start here
+    GH.LR <- function(xi, paramsi, mu, tau2, n.GH=20) {
+        ## browser()
+        rule <- fastGHQuad::gaussHermiteData(n.GH)
+        mode <- integrand.mode(xi,paramsi,mu,tau2)
+        scale <- (1 + tau2 * var.map(mode,paramsi, mu, tau2))^(-1 / 2)
+        theta <- mode + sqrt(2) * scale * rule$x
+        w <- sqrt(2) * scale *
+            rule$w *
+            exp(rule$x^2) *
+            dnorm(theta)
+        return(list(w=w,theta.grid=theta))
+}
+    loglik.unit <- function(mu,tau2,xi,paramsi) {
+        ## browser()
+        ## print(xi); print(paramsi); print(mu);print(tau2)
+        if(adaptive)
+            GH <- GH.LR(xi,paramsi,mu,tau2,n.GH)
+        if(log(tau2)<logtau2.bounds[1] || log(tau2)>logtau2.bounds[2]) {
+            ## warning('tau2 boundary  hit, returning minimum negative')
+            return(-.Machine$double.xmax)
+        }
+        likelihood <- sum(GH$w*cond.pmf(xi,GH$theta.grid,mu,tau2,paramsi))
+        ## print(c(mu,tau2,log(likelihood),paramsi))
+        ## print(tau2)
+        return(log(likelihood))
+    }
+    loglik <- function(mu,tau2) {
+        out <- sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE])))
+        ## print(out)        
+        ## if(is.nan(out))browser()
+        if(is.nan(out))out <- -1e10#-.Machine$double.xmax
+        return(out)
+    }
+    ## compute full mle
+    ## browser()
+    start.val <- loglik(par.start[1],par.start[2])
+    if(is.nan(start.val) || !is.finite(start.val))browser()
+    fit.full <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2])),method='BFGS',...)
+    if(fit.full$convergence != 0L)warning('full fit convergence failure')
+    mle.full <- fit.full$par
+    mu.mle.full <- mle.full[1]; tau2.mle.full <- exp(mle.full[2])
+    out <- list(
+        model.str=model.str,
+        mle.full=c(mu=unname(mu.mle.full),tau2=unname(tau2.mle.full)),
+        GH=GH,n.GH=n.GH,
+        loglik=loglik,
+        params=params,
+        par.start=par.start,
+        logtau2.bounds=logtau2.bounds,
+        integrand.mode=integrand.mode,
+        var.map=var.map)
+    return(out)
+}
+
+
 LR.meta.glmm <- function(meta.glmm.fit,mu.null) {
     ## browser()
     loglik <- meta.glmm.fit$loglik
@@ -678,3 +737,5 @@ confint.meta.glmm <- function(meta.glmm.fit,alpha=.05,plot=TRUE,debug=FALSE,bart
     if(debug) out <- c(out,profile.fit$debug)
     return(out)
 }
+
+
