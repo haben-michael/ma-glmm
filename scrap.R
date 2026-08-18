@@ -8,6 +8,8 @@ TODO
 6. add stijnen tables along with r package
 7. logsumexp agh nodes in make_quad
 8. names. var.map -> cond.var.map. param -> par.
+9. liao & rosen amstat -- algo for hyperg
+10. newton step doesnt need to compute var map anew? esp for hyperg
 
 ## DEBUGGING
 

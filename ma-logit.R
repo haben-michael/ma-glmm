@@ -2446,13 +2446,23 @@ pmf.derivs.fun <- lapply(filelist, function(file) {
         .cond.pmf.hyperg(x=x,m1=m.T,m2=m.C,n=s,odds=odds) 
         ## BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)      
     }
+    ## factMoment <- function(k,params,odds) {
+    ##     ## print(params)
+    ##     m.T <- params['m.T']
+    ##     m.C <- params['m.C']
+    ##     s <- params['s']
+    ##     supp.x <- max(0,s-m.C):min(s,m.T)
+    ##     sum ( apply(outer(supp.x, 0:(k-1), `-`), 1, prod) * pmf(supp.x,params,odds) )
+    ## }
+    ## vectorize in odds ratio
     factMoment <- function(k,params,odds) {
         ## print(params)
         m.T <- params['m.T']
         m.C <- params['m.C']
         s <- params['s']
         supp.x <- max(0,s-m.C):min(s,m.T)
-        sum ( apply(outer(supp.x, 0:(k-1), `-`), 1, prod) * pmf(supp.x,params,odds) )
+        ## sum ( apply(outer(supp.x, 0:(k-1), `-`), 1, prod) * pmf(supp.x,params,odds) )
+        apply(outer(supp.x, 0:(k-1), `-`), 1, prod)%*%outer(supp.x,odds,function(xi,oddsi)pmf(xi,params,oddsi)) |> c()
     }
     pmf.deriv <- 
         str.to.fun(mma.str,
@@ -3089,9 +3099,9 @@ CI <- confint.meta.glmm(meta.glmm.fit,grid=list(offset=3,size=10),mc.cores=5,bar
 
 source('utils.R')
 ks.fun <- readRDS('ks-fun.rds')
-pmf.derivs.fun.poisson <- readRDS('pmf-derivs-fun-poisson.rds')
+pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
 pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
-pmf.derivs.fun.hyperg <- readRDS('pmf-derivs-fun-hyperg.rds')
+pmf.derivs.fun.hn <- readRDS('pmf-derivs-fun-hyperg.rds')
 ## integrand.mode.poisson <- function(yi, paramsi, mu, tau2, tol=1e-10) {
 ##     ## browser()
 ##     z <- 0
@@ -3120,7 +3130,56 @@ pmf.derivs.fun.hyperg <- readRDS('pmf-derivs-fun-hyperg.rds')
 ##     tau2.start <- if(tau2.DL>0L)tau2.DL else var(y.nn)/1e4
 ##     return(c(mu=mu.fe,tau2=tau2.start))
 ## }
-nn.transform.poisson <- function(y,params) {
+nn.transform.hn <- function(y,params) {
+    cells <- data.frame(y.1.T=y, y.1.C =params[,'s']-y)
+    cells <- within(cells, {
+        y.0.T <- params[,'m.T']-y.1.T;
+        y.0.C <- params[,'m.C']-y.1.C
+    })
+    idx.cc <- apply(cells,1,function(v)any(v==0L))
+    cells[idx.cc,] <- cells[idx.cc,]+.5
+    y.nn <- with(cells, log(y.1.T/y.0.T) - log(y.1.C/y.0.C))
+    sigma2.nn <- with(cells, 1/y.1.T + 1/y.0.T + 1/y.1.C + 1/y.0.C)
+    return(data.frame(y=y.nn,sigma2=sigma2.nn))
+}
+moment.map.hn <- function(zi, paramsi, mu, tau2) {
+    eta <- mu+sqrt(tau2)*zi
+    supp.y <- paramsi['y.min']:paramsi['y.max']
+    log.pr <- lchoose(paramsi['m.T'],supp.y) + lchoose(paramsi['m.C'],paramsi['s']-supp.y) + supp.y*eta
+    log.pr <- log.pr - max(log.pr)
+    pr <- exp(log.pr); pr <- pr/sum(pr)
+    fnchy.mean <- sum(pr*supp.y)
+    fnchy.var <- sum(pr*(supp.y-fnchy.mean)^2)
+    out <- c(first=fnchy.mean,second=fnchy.var)
+    }
+newton.step.hn <- function(zi, yi, paramsi, mu, tau2) {
+    ## browser()
+    ## eta <- mu+sqrt(tau2)*zi
+    ## supp.y <- paramsi['y.min']:paramsi['y.max']
+    ## log.pr <- lchoose(paramsi['m.T'],supp.y) + lchoose(paramsi['m.C'],paramsi['s']-supp.y) + supp.y*eta
+    ## log.pr <- log.pr - max(log.pr)
+    ## pr <- exp(log.pr); pr <- pr/sum(pr)
+    ## fnchy.mean <- sum(pr*supp.y)
+    ## fnchy.var <- sum(pr*(supp.y-fnchy.mean)^2)
+    moments <- moment.map.hn(zi,paramsi,mu,tau2)
+    deriv <- sqrt(tau2)*(yi-moments['first'])-zi
+    hess  <- -tau2*moments['second']-1
+    out <-  - deriv / hess    
+    ## omega <- exp(mu+sqrt(tau2)*zi)
+    ## supp.y <- paramsi['y.min']:paramsi['y.max']
+    ## P <- sapply(0:2, function(m) sum(choose(paramsi['m.T'],supp.y) * choose(paramsi['m.C'],paramsi['s']-supp.y)*omega^supp.y*supp.y^m))
+    ## deriv <- sqrt(tau2)*(yi-P[1+1]/P[0+1])-zi
+    ## hess  <- -tau2*(P[2+1]/P[0+1]-(P[1+1]/P[0+1])^2)-1
+    ## out <-  - deriv / hess
+    return(out)
+}
+var.map.hn <- function(zi,paramsi,mu,tau2) {
+    omega <- exp(mu+sqrt(tau2)*zi)
+    supp.y <- paramsi['y.min']:paramsi['y.max']
+    P <- sapply(0:2, function(m) sum(choose(paramsi['m.T'],supp.y) * choose(paramsi['m.C'],paramsi['s']-supp.y)*omega^supp.y*supp.y^m))
+    hess  <- P[2+1]/P[0+1]-(P[1+1]/P[0+1])^2
+}
+nn.transform.pn <- function(y,params) {
     y.cc <- y; y.cc[y.cc=0L] <-  y.cc[y.cc=0L]+.5
     y.nn <- log(y.cc)/params[,'T']
     sigma2.nn <- 1/y.cc
@@ -3132,12 +3191,12 @@ nn.transform.poisson <- function(y,params) {
 ##     hess <- -1 - tau2 * lambda
 ##     return(structure(unname(c(deriv,hess)), names=c('first','second')))
 ## }
-newton.step.poisson <- function(zi, yi, paramsi, mu, tau2) {
+newton.step.pn <- function(zi, yi, paramsi, mu, tau2) {
     lambda <- paramsi["T"] * exp(mu + sqrt(tau2) * zi)
     out <- (sqrt(tau2)*(yi-lambda) - zi) / (tau2*lambda+1)
     return(out)
 }
-var.map.poisson <- function(zi,paramsi,mu,tau2)paramsi['T']*exp(mu+sqrt(tau2)*zi)
+var.map.pn <- function(zi,paramsi,mu,tau2)paramsi['T']*exp(mu+sqrt(tau2)*zi)
 nn.transform.bn.prop <- function(y,params) {
     y.1 <- y
     y.0 <- params[,'m'] - y
@@ -3166,24 +3225,35 @@ model <- function(model.str) {
     out <- switch(model.str,
                   'bn-prop' = list(
                       cond.pmf = cond.pmf.bn.prop,
-                      ## cond.pmf.derivs = cond.pmf.derivs.bn.prop,
                       newton.step = newton.step.bn.prop,
                       dgp = dgp.bn.prop,
                       nn.transform = nn.transform.bn.prop,
-                      ## par.start = par.start.bn.prop,
-                      ## integrand.mode = integrand.mode.bn.prop,
                       var.map = var.map.bn.prop,
                       pmf.derivs.fun = pmf.derivs.fun.bn.prop
                   ),
                   'pn' = list(
-                      cond.pmf = cond.pmf.poisson,
-                      newton.step = newton.step.poisson,
-                      dgp = dgp.poisson,
-                      nn.transform = nn.transform.poisson,
-                      ## par.start = par.start.poisson,
-                      ## integrand.mode = integrand.mode.poisson,
-                      var.map = var.map.poisson,
-                      pmf.derivs.fun = pmf.derivs.fun.poisson
+                      cond.pmf = cond.pmf.pn,
+                      newton.step = newton.step.pn,
+                      dgp = dgp.pn,
+                      nn.transform = nn.transform.pn,
+                      var.map = var.map.pn,
+                      pmf.derivs.fun = pmf.derivs.fun.pn
+                  ),
+                  'hn' = list(
+                      cond.pmf = cond.pmf.hn,
+                      newton.step = newton.step.hn,
+                      dgp = dgp.hn,
+                      nn.transform = nn.transform.hn,
+                      var.map = var.map.hn,
+                      pmf.derivs.fun = pmf.derivs.fun.hn
+                  ),
+                  'bn-irr' = list(
+                      cond.pmf = cond.pmf.bn.irr,
+                      newton.step = newton.step.bn.irr,
+                      dgp = dgp.bn.irr,
+                      nn.transform = nn.transform.bn.irr,
+                      var.map = var.map.bn.irr,
+                      pmf.derivs.fun = pmf.derivs.fun.bn.irr
                   )
                   )
     return(out)
@@ -3192,13 +3262,13 @@ ks.study <- function(paramsi,mu,tau2,quad,pmf.derivs.fun,debug=FALSE)  {
     beta <- c(tau2,mu)
     ## browser()
     pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
-        ## browser()
         supp.y <-  paramsi['y.min']:paramsi['y.max']
         ## units.mat <- sapply(quad.rule$z,function(zi)pmf.deriv.fun(beta=beta,params=params,theta=zi,x=supp.y))
         ## colSums(quad.rule$wt * t(units.mat))
         quad.rules <- lapply(supp.y, function(yi)quad(yi,paramsi,mu,tau2))
         nodes.mat <- sapply(quad.rules,`[[`,'wt')
-        units.mat <- sapply(seq_along(supp.y), function(i)pmf.deriv.fun(beta=beta,params=paramsi,theta=quad.rules[[i]]$z,supp.y[i]))
+        ## browser()
+        units.mat <- sapply(seq_along(supp.y), function(i)pmf.deriv.fun(beta=beta,params=paramsi,theta=quad.rules[[i]]$z,x=supp.y[i]))
         colSums(nodes.mat*units.mat)
     })
     ks.unit <- sapply(seq_along(ks.fun), function(i) {
@@ -3247,6 +3317,7 @@ make.quad <- function(integrand.mode,var.map,n.GH,adaptive=TRUE) {
         }
     } else {
         out <- function(yi,paramsi,mu,tau2) {
+        ## browser()
             mode <- integrand.mode(yi,paramsi,mu,tau2)
             scale <- (1 + tau2 * var.map(mode,paramsi, mu, tau2))^(-1 / 2)
             z <- mode + sqrt(2) * scale * GH$x
@@ -3274,6 +3345,7 @@ make.loglik <- function(cond.pmf,params,y,quad) {
         return(log(likelihood))
     }
     loglik <- function(mu,tau2) {
+        ## browser()
         ## print(c(mu,tau2))
         out <- sum(sapply(seq_along(y),function(i)loglik.unit(mu,tau2,y[i],params[i,])))
         ## ## print(out)        
@@ -3295,21 +3367,20 @@ make.profile.LR <- function(loglik,mle,par.start,logtau2.bounds) {
 }
 make.integrand.mode <- function(newton.step, tol=1e-10) {
     integrand.mode <- function(yi, paramsi, mu, tau2) {
-        z <- 0
+        zi <- 0 #!!!!!!!!
+        ## browser()
         for (j in 1:20) { #!!!!
-            ## browser()
-            ## derivs <- model$cond.pmf.derivs(z, yi, paramsi, mu, tau2)
-            ## z.new <- z - derivs['first'] / derivs['second']
-            z.new <- z + newton.step(z, yi, paramsi, mu, tau2)
-            ## if(!is.finite(z.new))browser()
-            ## print(z.new)
-            ## print(c(z.new,z))
-            if (abs(z.new - z) < tol) {
+            zi.new <- zi + newton.step(zi, yi, paramsi, mu, tau2)
+            if(!is.finite(zi.new))browser()
+            ## 1+1
+            ## print(zi.new)
+            ## print(c(zi.new,zi))
+            if (abs(zi.new - zi) < tol) {
                 break
             }
-            z <- z.new
+            zi <- zi.new
         }
-        mode <- z.new
+        mode <- zi.new
         return(mode)
     }
     return(integrand.mode)
@@ -3319,6 +3390,7 @@ make.integrand.mode <- function(newton.step, tol=1e-10) {
 ##     p <- plogis(mu+sqrt(tau2)*zi)
 ##     sqrt(tau2)*( yi-paramsi['m']*p )
 ##     }
+## curve(cond.pmf.hyperg(yi,x,mu,tau2,paramsi)*dnorm(x),-5,5)
 mle <- function(loglik,par.start,logtau2.bounds=c(-20,3),...) {
     ## browser()
     fit <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2])),method='BFGS',...)
@@ -3334,6 +3406,7 @@ mle <- function(loglik,par.start,logtau2.bounds=c(-20,3),...) {
     out <- list(mle=c(mu=mu.mle,tau2=tau2.mle), status=fit$convergence)
 }
 profile <- function(mu.grid,profile.LR,mle,bartlett.C=NULL,mc.cores=1) {
+    ## browser()
     profile.fits <- lapply(mu.grid, function(mu.null)profile.LR(mu.null))
     LR.profile <- sapply(profile.fits,`[[`,'LR')
     tau2.grid <- sapply(profile.fits,`[[`,'mle.null')['tau2',]
@@ -3380,7 +3453,6 @@ confint <- function(mu.grid, profile, alpha=.05, plot=TRUE,...) {
     return(out)
 }
 meta.glmm <- function(y,params,model.str,n.GH,adaptive,logtau2.bounds,...) {
-    ## browser()
     model <- model(model.str)
     integrand.mode <- make.integrand.mode(model$newton.step)
     quad <- make.quad(integrand.mode,model$var.map,n.GH=n.GH,adaptive=adaptive)
@@ -3393,6 +3465,8 @@ meta.glmm <- function(y,params,model.str,n.GH,adaptive,logtau2.bounds,...) {
         tau2.DL <- max(0L, (Q - (length(y)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
         c(mu=mu.fe,tau2=tau2.DL)
     })
+    if(par.start['tau2']==0L)par.start['tau2'] <- var(y) #!!!!!!!!!
+    ## browser()
     mle0 <- mle(loglik,par.start,logtau2.bounds,...)$mle
     profile.LR <- make.profile.LR(loglik,mle0,par.start0,logtau2.bounds=logtau2.bounds)
     bartlett.C <- make.bartlett.C(params,quad,model$pmf.derivs.fun)
@@ -3403,8 +3477,8 @@ confint.meta.glmm <- function(meta.glmm.fit,alpha=.05,plot=TRUE,debug=FALSE,bart
     ## browser()
     mle0 <- meta.glmm.fit$mle
     mu.grid <- seq(mle0['mu']-mu.grid$offset*sqrt(mle0['tau2']),mle0['mu']+mu.grid$offset*sqrt(mle0['tau2']),len=mu.grid$size)    
-    profile <- profile(mu.grid,meta.glmm.fit$profile.LR,mle0,meta.glmm.fit$bartlett.C)
-    confint(mu.grid=mu.grid, profile=rbind(LR=profile$LR,LR.bartlett=profile$LR.bartlett), alpha=alpha, plot=plot,...)
+    profile0 <- profile(mu.grid,meta.glmm.fit$profile.LR,mle0,if(bartlett)meta.glmm.fit$bartlett.C else NULL)
+    confint(mu.grid=mu.grid, profile=rbind(LR=profile0$LR,LR.bartlett=profile0$LR.bartlett), alpha=alpha, plot=plot,...)
 }
 ## stijnen.vi <- read.table('stijnen-table-VI.txt')
 ## n.GH <- 30
@@ -3414,32 +3488,11 @@ confint.meta.glmm <- function(meta.glmm.fit,alpha=.05,plot=TRUE,debug=FALSE,bart
 ## mu.null <- 0
 ## tau2.null <- 1
 ## mod <- model('pn')
-## integrand.mode <- function(yi, paramsi, mu, tau2, tol=1e-10) {
-##     z <- 0
-##     for (j in 1:20) { #!!!!
-##         ## browser()
-##         derivs <- mod$cond.pmf.derivs(z, yi, paramsi, mu, tau2)
-##         z.new <- z - derivs['first'] / derivs['second']
-##         if (abs(z.new - z) < tol) {
-##             break
-##         }
-##         z <- z.new
-##     }
-##     mode <- z.new
-##     return(mode)
-## }
 ## quad <- make.quad(integrand.mode,mod$var.map,n.GH=n.GH,adaptive=TRUE)
 ## ## quad(x[1],params[1,],mu.null,tau2.null)
 ## loglik <- make.loglik(mod$cond.pmf,params,y,quad)
 ## ## loglik(mu.null,tau2.null)
 ## nn.data <- mod$nn.transform(y,params)
-## par.start <- with(nn.data, {
-##     w.fe <- 1/sigma2
-##     mu.fe <- y %*% w.fe / sum(w.fe)    
-##     Q <- w.fe%*%(y-c(mu.fe))^2
-##     tau2.DL <- max(0L, (Q - (length(y)-1)) / (sum(w.fe)-sum(w.fe^2)/sum(w.fe)))
-##     c(mu=mu.fe,tau2=tau2.DL)
-## })
 ## ## par.start <- mod$par.start(y,params)
 ## mle0 <- mle(loglik,par.start)$mle
 ## profile.LR <- make.profile.LR(loglik,mle0,par.start,logtau2.bounds=c(-20,3))
@@ -3453,6 +3506,7 @@ confint.meta.glmm <- function(meta.glmm.fit,alpha=.05,plot=TRUE,debug=FALSE,bart
 ## profiled <- rbind(LR=profiled$LR,LR.bartlett=profiled$LR.bartlett)
 ## confint(mu.grid=mu.grid,profile=profiled)
 ## using constructor/convenience functions:
+## poisson
 ## stijnen.vi <- read.table('stijnen-table-VI.txt')
 ## n.GH <- 30
 ## y <- stijnen.vi$Y1
@@ -3462,10 +3516,75 @@ confint.meta.glmm <- function(meta.glmm.fit,alpha=.05,plot=TRUE,debug=FALSE,bart
 ## tau2.null <- 1
 ## fit <- meta.glmm(y,params,'pn',n.GH=50,adaptive=TRUE,logtau2.bounds=c(-20,3))
 ## confint.meta.glmm(fit,mc.cores=5)
+## binomial-prop:
+## stijnen.1 <- read.table('stijnen-table-I.txt')
+## stijnen.1 <- stijnen.1[-15,] # get rid of uninformative study
+## y <- stijnen.1$Y1
+## ms <- stijnen.1$n1
+## params <- cbind(m=ms,y.min=0,y.max=ms)
+## start <- Sys.time()
+## fit <- meta.glmm(y,params,'bn-prop',n.GH=1e1,adaptive=TRUE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
+## CIs <- confint.meta.glmm(fit,mc.cores=5)
+## print(CIs)
+## print(Sys.time() - start)
+## hyperg
 stijnen.1 <- read.table('stijnen-table-I.txt')
 stijnen.1 <- stijnen.1[-15,] # get rid of uninformative study
 y <- stijnen.1$Y1
-ms <- stijnen.1$n1
-params <- cbind(m=ms,y.min=0,y.max=ms)
-fit <- meta.glmm(y,params,'bn-prop',n.GH=10,adaptive=TRUE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
-confint.meta.glmm(fit,mc.cores=5)
+s <- with(stijnen.1, Y0+Y1)
+m.T <- stijnen.1$n1
+m.C <- stijnen.1$n0
+n.GH <- 20
+## supp.x <- max(0,s-m.C):min(s,m.T)
+params <- cbind(m.T=m.T,m.C=m.C,s=s,y.min=pmax(0,s-m.C),y.max=pmin(s,m.T))
+fit <- meta.glmm(y,params,'hn',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
+CIs <- confint.meta.glmm(fit,mc.cores=5,bartlett=FALSE,mu.grid=list(offset=1.5,size=10))
+
+## model0 <- model('hn')
+integrand.mode.hn <- make.integrand.mode(newton.step.hn)
+quad <- make.quad(integrand.mode.hn,var.map.hn,n.GH=n.GH,adaptive=TRUE)
+## quad(x[1],params[1,],mu.null,tau2.null)
+loglik <- make.loglik(cond.pmf.hyperg,params,y,quad)
+## loglik(mu.null,tau2.null)
+## nn.data <- nn.transform.hn(y,params)
+## par.start <- mod$par.start(y,params)
+
+
+dat <- escalc(measure = "OR", 
+              ai = Y1, n1i = n1,   # Treatment events and sample sizes
+              ci = Y0, n2i = n0,   # Control events and sample sizes
+              data = stijnen.1)
+fit.dl <- rma(yi = yi, vi = vi, data = dat, method = "DL")
+par.start <- structure(c(fit.dl$beta,fit.dl$tau2),names=c('mu','tau2'))
+par.start['tau2'] <- 1e-5#.19^2
+print(mle(loglik,par.start))
+
+par.start['tau2'] <- .19^2
+print(mle(loglik,par.start))
+par.start['tau2'] <- var(y)
+print(mle(loglik,par.start))
+
+
+params <- c(m.T = 116, m.C = 117, s = 3, y.min = 0, y.max = 3)
+odds <- runif(5)
+k <- 2
+pmf <- function(x,params,odds) {
+    m.T <- params['m.T']
+    m.C <- params['m.C']
+    s <- params['s']
+    .cond.pmf.hyperg(x=x,m1=m.T,m2=m.C,n=s,odds=odds) 
+    ## BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)      
+}
+factMoment <- function(k,params,odds) {
+    ## print(params)
+    m.T <- params['m.T']
+    m.C <- params['m.C']
+    s <- params['s']
+    supp.x <- max(0,s-m.C):min(s,m.T)
+    ## sum ( apply(outer(supp.x, 0:(k-1), `-`), 1, prod) * pmf(supp.x,params,odds) )
+    apply(outer(supp.x, 0:(k-1), `-`), 1, prod)%*%outer(supp.x,odds,function(xi,oddsi)pmf(xi,params,oddsi)) |> c()
+}
+
+apply(outer(supp.x, 0:(k-1), `-`), 1, prod)%*%outer(supp.x,odds,function(xi,oddsi)pmf(xi,params,oddsi))
+
+

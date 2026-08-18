@@ -398,19 +398,28 @@ sas.invert.params <- function(target.skew, target.kurt) {
 
 ## my version. dotted version matches biasedUrn's call syntax.
 .cond.pmf.hyperg <- function(x,m1,m2,n,odds) {
+    ## print(c(length(x),length(m1),length(m2),length(n),length(odds)))
+    ## if(length(x)==6&&length(odds)==10)browser()
     ## m.T <- params[,'m.T']
     ## m.C <- params[,'m.C']
     ## s <- params[,'s']
+    ## print(c(length(odds),length(x)))
     numer <- choose(m1,x)*choose(m2,n-x)*odds^x
     supp.x <- max(0,n-m2):min(n,m1)
     denom <- rowSums(  outer(odds,supp.x,function(oddsj,xj)choose(m1,xj)*choose(m2,n-xj)*oddsj^xj ) )
     numer / denom
 }
-cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
-    m.T <- params[,'m.T']
-    m.C <- params[,'m.C']
-    s <- params[,'s']
+cond.pmf.hn <- cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+    if(is.null(dim(params))) {
+        m.T <- params['m.T'];m.C <- params['m.C'];   s <- params['s']
+    } else {
+        m.T <- params[,'m.T'];m.C <- params[,'m.C']; s <- params[,'s']
+        }
+    ## m.T <- params[,'m.T']
+    ## m.C <- params[,'m.C']
+    ## s <- params[,'s']
     odds <- exp(mu+sqrt(tau2)*theta)
+    ## browser()
     out <- .cond.pmf.hyperg(x=x,m1=m.T,m2=m.C,n=s,odds=odds)
     ## print(out)
     return(out)
@@ -446,7 +455,7 @@ cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
 ##     denom <- rowSums(  outer(theta,supp,function(thetaj,xj)choose(m.T,xj)*choose(m.C,s-xj)*exp((mu+sqrt(tau2)*thetaj)*xj) ) )
 ##     numer / denom
 ## }
-dgp.hyperg <- function(n,mu,tau2,params,re.distr=rnorm) {
+dgp.hn <- dgp.hyperg <- function(n,mu,tau2,params,re.distr=rnorm) {
     m.T <- params[,'m.T']
     m.C <- params[,'m.C']
     s <- params[,'s']
@@ -490,12 +499,12 @@ par.start.poisson <- function(x,params) {
     return(c(mu=mu.fe,tau2=tau2.start))
 }
 
-cond.pmf.poisson <- function(x,theta,mu,tau2,params) {
+cond.pmf.pn <- cond.pmf.poisson <- function(x,theta,mu,tau2,params) {
     T <- if(is.null(dim(params))) params['T'] else params[,'T']
     lambda <- T*exp(mu+sqrt(tau2)*theta)
     dpois(x,lambda=lambda)
 }
-dgp.poisson <- function(n,mu,tau2,params,re.distr=rnorm) {
+dgp.pn <- dgp.poisson <- function(n,mu,tau2,params,re.distr=rnorm) {
     T <- params[,'T']
     theta <- re.distr(n)
     lambda <- T*exp(mu+sqrt(tau2)*theta)
@@ -550,14 +559,14 @@ par.start.binomial.irr <- function(x,params) {
     tau2.start <- if(tau2.DL>0L)tau2.DL else max(1,var(y.nn))/1e4
     return(c(mu=mu.fe,tau2=tau2.start))
 }
-cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params) {
+cond.pmf.bn.irr <- cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params) {
     T.t <- params[,'T.t']
     T.c <- params[,'T.c']
     s <- params[,'s']
     pr <- function(theta)plogis(log(T.t/T.c) + mu+sqrt(tau2)*theta)
     dbinom(x,size=s,prob=pr(theta))
 }
-dgp.binomial.irr <- function(n,mu,tau2,params,re.distr=rnorm) {
+dgp.bn.irr <- dgp.binomial.irr <- function(n,mu,tau2,params,re.distr=rnorm) {
     T.t <- params[,'T.t']
     T.c <- params[,'T.c']
     s <- params[,'s']
