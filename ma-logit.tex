@@ -137,6 +137,9 @@ we re-visit the data analyses of ((stijnen)), finding ... .
 % during which events are counted. see ((data anlaysis section)) for
 % concrete examples.[[maybe better if notation can b eintroduced in the
 % course of the 4 examples...]]
+
+\subsection{Statistical models}
+
 We consider the random effects model for a meta-analysis consisting of $\n$ studies. % in all casea a random effect models variation between the effects of
 % the studies. this random effect is modelled as gaussian
 In this model, a Gaussian random variable models the effects $\re_1,\ldots,\re_n,$ of the individual studies in the meta-analysis,
@@ -146,7 +149,7 @@ In this model, a Gaussian random variable models the effects $\re_1,\ldots,\re_n
 The target of inference in the meta-analysis is $\munull$, with
 $\tausqnull$ a nuisance parameter. The distribution of the
 data given the random effect depends on the type of
-analysis being conducted. Following ((stijnen)) we consider four types of analyses, determined by whether the studies included are single-arm or two-arm trials, and whether the estimand of the meta-analysis is a proportion or incidence rate.
+analysis being conducted. Following ((stijnen)) we consider four types of analyses, determined by whether the studies included are single-arm or two-arm trials, and whether the estimand is based on proportions or incidence.
 \begin{enumerate}
 \item Single arm, proportions. Each study reports the number of events $\Y_i$ and total number of trials $\m_i$.  The statistical model is binomial
 \begin{align}
@@ -210,7 +213,7 @@ distribution  under the null hypothesis, by Wilks' Theorem. Relying on this asym
 for $\munull$ can be formed by inverting the test statistic.
 
 
-% 2b. bartlett correction
+\subsection{Bartlett correction}
 
 Under a range of conditions [[citations]] the mean of a correctly specified LR statistic ((ref)) admits an expansion in integral powers of $1/\n$ 
 \begin{align}
@@ -229,7 +232,7 @@ has a mean agreeing with that of a chi-squared random variable up to order $O(1/
 % \end{align}
 The work of ((lawley and bartlett)) shows further that, under
 appropriate conditions, all other moments, and so also the entire
-distribution, agree with a chi-squared up to order
+distribution, also agree with a chi-squared up to order
 $O(1/\n^2)$. % that this mean bias
 % reduction in fact removes the 1/n bias from ((ref LR expansion)) as
 % well, i.e., the chi squared approximation.
@@ -237,9 +240,42 @@ $O(1/\n^2)$. % that this mean bias
 % random variable is $O(1/\n^2)$.
 As with ((ref lr statistic)), the
 adjusted statistic may be inverted to obtain CIs and
-p-values. [[mention C depends on parameters, or maybe make explicit in
-the notation]]
+p-values. [[mention b depends on parameters, or maybe make explicit in
+the notation, and that 1/n2 rate can be achieved when these are estimated by root-n consistent estiamtros such as the mle's.]]
 
+lawley ((cite)) provides a formula for the correction ((ref)) as sums
+and products of the components of the inverse Fisher information for
+((ref likelihood)) and certain tensors [[k terms]]. Being a small set
+of sums and products this formula does not introduce numerical or
+computational difficulties that aren't already present in the basic
+tensor components, and we focus here on the basic components. To this end, let $D_r$ denote partial differentiation with respect to a
+sequence of the parameters $\effect$ and $\tau^2$ given by $r$. For
+example, $D_{\mu,\tau^2}\sum_{i=1}^n\log L_i(\effect,\tau^2\mid \Y_i)$
+denotes the off-diagonal term of the observed information matrix for
+((ref total likelihood)). Define $\k_r=\k_r^{(0)}=\E D_r \sum_{i=1}^n\log L_i(\effect,\tau^2\mid \Y_i)$ and
+$\k_r^{(s)} = D_s \k_r$. In this notation, for example, the Fisher information
+matrix has components
+$\k_{\mu,\mu}, \k_{\mu,\tau^2}, \k_{\tau^2,\tau^2}$. Lawley's formula
+for the Bartlett correction requires all terms $\k_r$ where $r$
+is of length 2, 3, or 4, and all terms $\k_r^{(s)}$ where $r$ is of
+length $3$ and $s$ of length $1$ or $r$ is of length $2$ and $s$ of
+length $1$ or $2$. Taking into account permutation symmetry of the
+order of differentiation, there are $35$ such terms in a model with one parameter of interest and one nuisance paramter.
+
+By linearity of expectation and differentiation, it suffices to
+compute the terms $\k_r^{(s)}$ for the unit log-likelihoods
+$\log L_i(\effect,\tau^2\mid \Y_i), i=1,\ldots,\n$.\comment{Since
+  meta-analysis data is typically non-identically distributed, the
+  tensor components ((k)) must be computed separately for each study.}
+Let us consider a single study from the meta-analysis, dropping the
+subscript $i$ from the conditional PMFs and likelihoods. Then the general tensor component needed for the computation of Bartlett's correction is
+\begin{align}
+  k_r^{(s)} 
+  &=  \sum_y D_s\left( \left(D_r \log\int f(y|\z)\phi(\z)d\z\right)  \int \w_k f(y|\z)\phi(\z)d\z\right)  
+\end{align}
+The outer sum is taken over the support of $\Y$.
+
+\subsection{Assumptions}
 
 Among the assumptions underlying the above development we focus on two
 prominent ones. The first is correct specification of the likelihood,
@@ -265,62 +301,100 @@ has been done since 80s ((cite cordeiro)), is not pointless.]] }
 
 [[add a third issue. say at outset 2 issues are really issues with the lr test generally, and the 3rd is about the bartlett correction. wilks theorem applies to interior points. when tau2=0 ie fixed effects model, not applicable. some simulations have suggested does not affect inference for mu, but difficult to see this can be so in general, since inference for tau2 is known to be off ((self,liang)) at the boundary and mu and tau2 are not orthogonal in our models. means for lr test must check tau2 interior is reasonable eg examining the mle, or perhaps computing a fixed effects compute the fixed effects LR CI. [[with iv method can think of re model as a generalization of the fe, if the data is actually fixed effects CIs are valid there is just a loss of power. in the case of the lr, the random effects procedure is different from the fixed effects procedure.]]
 
-\section{Method}
+\section{Computing the tensor components ((k))}
 \label{sec:method}
 
-lawley ((cite)) provides a formula for the correction ((ref)) as sums
-and products of the components of the inverse Fisher information for
-((ref likelihood)) and certain tensors [[k terms]]. Being a small set
-of sums and products this formula does not introduce numerical or
-computational difficulties that aren't already present in the basic
-tensor components, and we focus here on the basic components.[[omit it [[is not of direct interest
-here]]. Let $D_r$ denote partial differentiation with respect to a
-sequence of the parameters $\effect$ and $\tau^2$ given by $r$. For
-example, $D_{\mu,\tau^2}\sum_{i=1}^n\log L_i(\effect,\tau^2\mid \Y_i)$
-denotes the off-diagonal term of the observed information matrix for
-((ref total likelihood)). Define $\k_r=\k_r^{(0)}=\E D_r \sum_{i=1}^n\log L_i(\effect,\tau^2\mid \Y_i)$ and
-$\k_r^{(s)} = D_s \k_r$. In this notation the Fisher information
-matrix has components
-$\k_{\mu,\mu}, \k_{\mu,\tau^2}, \k_{\tau^2,\tau^2}$, for example. Lawley's formula
-for the Bartlett correction requires all terms $\k_r$ where $r$
-is of length 2, 3, or 4, and all terms $\k_r^{(s)}$ where $r$ is of
-length $3$ and $s$ of length $1$ or $r$ is of length $2$ and $s$ of
-length $1$ or $2$. Taking into account permutation symmetry of the
-order of differentiation, there are $35$ such terms in a model with one parameter of interest and one nuisance paramter.
 
-By linearity of expectation and differentiation, it suffices to
-compute the terms $\k_r^{(s)}$ for the unit log-likelihoods
-$\log L_i(\effect,\tau^2\mid \Y_i), i=1,\ldots,\n$.\comment{Since
-meta-analysis data is typically non-identically distributed, the
-tensor components ((k)) must be computed separately for each study.} Let us
-consider a single study, dropping the subscript $i$ from the
-conditional PMFs and likelihoods. To compute the tensor
-component ((ref)) for the unit likelihood ((ref)), we approximate the
-integral by a quadrature rule. Since all the likelihoods ((ref))
-involve integrating against a Gaussian, Gauss-Hermite quadrature is a
-natural choice[[, and for the sake of simplicity we adopt here a
-non-adaptive variant]]. This and similar methods ((cite stats paper)) consist in weights
-$\w_1,\ldots,\w_{\nGH}$ and nodes in the domain of integration
-$\z_1,\ldots,\z_{\nGH}$ allowing the Gaussian integral of smooth integrands
-like ((ref)) to be approximated by a weighted sum,
-\begin{align}
- L(\re,\tau^2 | \Y) =  \int_{-\infty}^\infty f(\Y|\z)\phi(\z)d\z
-  \approx  \sum_{j}\w_j  f(\Y|\z_j)
-\end{align}
-The number of nodes $\nGH$ controls the quality of the approximation and introduces a tuning parameter into the proposed method. A higher-order partial derivative of the log-likelihood may be approximated by
-   $D_r \log L(\effect,\tau^2 | \Y) \approx  D_r \log\sum_{j} \w_j  f(\Y|\z_j)$, and its expectation  may be approximated by another quadrature
-\begin{align}
-  \k_r &=  \sum_\y  \left(D_r \log L(\effect,\tau^2 | \y)\right)  \int f(y|\z)\phi(\z)d\z\\
-  &\approx  \sum_\y  \left(D_r \log L(\effect,\tau^2 | \y)\right) \sum_k \w_k f(\y|\z_k)\\
-       &\approx  \sum_\y  \left(D_r \log  \sum_j \w_j f(\y|\z_j)\right)  \sum_k \w_k f(\y|\z_k)
-\end{align}
-The outer sum is taken over the support of $\Y$, which is a finite set in all the models considered here other than the Poisson model. The Poisson model requires a truncation rule, an additional tuning parameter discussed further below.
-% expression ((...)) approximates k terms of the form ((inner only)). k terms of the form ((inner and outer)) may be approximated by 
-The general tensor component needed for the computation of the Bartlett correction factor is then approximated as
+\subsection{Quadrature}
+
+% lawley ((cite)) provides a formula for the correction ((ref)) as sums
+% and products of the components of the inverse Fisher information for
+% ((ref likelihood)) and certain tensors [[k terms]]. Being a small set
+% of sums and products this formula does not introduce numerical or
+% computational difficulties that aren't already present in the basic
+% tensor components, and we focus here on the basic components.[[omit it [[is not of direct interest
+% here]]. Let $D_r$ denote partial differentiation with respect to a
+% sequence of the parameters $\effect$ and $\tau^2$ given by $r$. For
+% example, $D_{\mu,\tau^2}\sum_{i=1}^n\log L_i(\effect,\tau^2\mid \Y_i)$
+% denotes the off-diagonal term of the observed information matrix for
+% ((ref total likelihood)). Define $\k_r=\k_r^{(0)}=\E D_r \sum_{i=1}^n\log L_i(\effect,\tau^2\mid \Y_i)$ and
+% $\k_r^{(s)} = D_s \k_r$. In this notation the Fisher information
+% matrix has components
+% $\k_{\mu,\mu}, \k_{\mu,\tau^2}, \k_{\tau^2,\tau^2}$, for example. Lawley's formula
+% for the Bartlett correction requires all terms $\k_r$ where $r$
+% is of length 2, 3, or 4, and all terms $\k_r^{(s)}$ where $r$ is of
+% length $3$ and $s$ of length $1$ or $r$ is of length $2$ and $s$ of
+% length $1$ or $2$. Taking into account permutation symmetry of the
+% order of differentiation, there are $35$ such terms in a model with one parameter of interest and one nuisance paramter.
+
+% By linearity of expectation and differentiation, it suffices to
+% compute the terms $\k_r^{(s)}$ for the unit log-likelihoods
+% $\log L_i(\effect,\tau^2\mid \Y_i), i=1,\ldots,\n$.\comment{Since
+% meta-analysis data is typically non-identically distributed, the
+% tensor components ((k)) must be computed separately for each study.} Let us
+% consider a single study, dropping the subscript $i$ from the
+% conditional PMFs and likelihoods.
+
+To compute the tensor component ((ref)), we approximate the integrals
+by a quadrature rule. Since all the likelihoods ((ref)) involve
+integrating against a Gaussian, Gauss-Hermite quadrature is a natural
+choice. This and similar methods ((cite biometrics paper)) provide
+weights $\w_1,\ldots,\w_{\nGH}$ and nodes $\z_1,\ldots,\z_{\nGH}$ in
+the domain of integration allowing the Gaussian integral of smooth
+integrands such as appear in ((ref)) to be approximated by a weighted
+sum,
 \begin{align}
     k_r^{(s)} 
       &\approx  \sum_y D_s\left( \left(D_r \log\sum_{j} \w_j  f(y|\z_j)\right)  \sum_k \w_k f(y|\z_k)\right)
 \end{align}
+The number of nodes $\nGH$ controls the quality of the approximation
+and introduces a tuning parameter into the proposed method. A further
+tuning parameter is whether fixed or adaptive GH is to be used. fixed
+GH uses the same choice of nodes irrespective of the integrand, eg
+always centered at $0$, namely, the roots of ... . on the other hand,
+adaptive GH transforms the nodes to take into account of the mode and
+scale of the integrand. fixed appears fine in our experience when the
+pmf has a support concentrated not too far from $0$. however for the
+poisson model above, with unbounded support, and possibly for the
+other models ((ref)) when the support is large though bounded,
+adaptive may be preferable. [[maybe give poisson example in data anlaysis, and cite to it]]. the increase in computation cost to
+compute the mode and support may be offset by the reduced number of
+nodes to obtain a comparable approximation to fixed GH. The main
+difficulty with adaptive is that the mode and scale of the integrand,
+and therefore also the AGH weights and nodes, typically depend on the
+parameters mu,tau2, complicating the partial differentiation.
+
+intremediate approach: we ignore this dependence, leading to an
+approximation intermediate in quality beween fixed and adaptive
+GH. this means that using adaptive over fixed GH is advantageous only
+when the mode and scfale of hte likelihood doesnt change to much under
+differentiation. when we do so, however, the cost of adaptive GH
+becomes very cheap. the only integrand for which adaptive GH needs to
+be computed are o fthe form condpmf phi. as all the cond pmfs belong
+to the exponential family, these are strictly log-concave and
+unimodal, and the mode maybe obtained efficiently using Newton's
+method. with mode given by the solution to: and scale by: .
+
+% \begin{align}
+%  L(\re,\tau^2 | \Y) =  \int_{-\infty}^\infty f(\Y|\z)\phi(\z)d\z
+%   \approx  \sum_{j}\w_j  f(\Y|\z_j)
+% \end{align}
+% The number of nodes $\nGH$ controls the quality of the approximation and introduces a tuning parameter into the proposed method. A higher-order partial derivative of the log-likelihood may be approximated by
+%    $D_r \log L(\effect,\tau^2 | \Y) \approx  D_r \log\sum_{j} \w_j  f(\Y|\z_j)$, [[in adaptive GH, the weights depend on mu,tau2 as well, though we ignore this dependence in carrying out the differentiation. amounts to assuming the mode and scale of the derivaqtive is the same as the original integrand. still better than fixed.maybe just state when introducing weights they are assumed fixed wrt mu,tau2, and this will be discussed furtehr below.]] and its expectation  may be approximated by another quadrature
+% \begin{align}
+%   \k_r &=  \sum_\y  \left(D_r \log L(\effect,\tau^2 | \y)\right)  \int f(y|\z)\phi(\z)d\z\\
+%   &\approx  \sum_\y  \left(D_r \log L(\effect,\tau^2 | \y)\right) \sum_k \w_k f(\y|\z_k)\\
+%        &\approx  \sum_\y  \left(D_r \log  \sum_j \w_j f(\y|\z_j)\right)  \sum_k \w_k f(\y|\z_k)
+% \end{align}
+% The outer sum is taken over the support of $\Y$, which is a finite set in all the models considered here other than the Poisson model. The Poisson model requires a truncation rule, an additional tuning parameter discussed further below.
+% % expression ((...)) approximates k terms of the form ((inner only)). k terms of the form ((inner and outer)) may be approximated by 
+% The general tensor component needed for the computation of the Bartlett correction factor is then approximated as
+% \begin{align}
+%     k_r^{(s)} 
+%       &\approx  \sum_y D_s\left( \left(D_r \log\sum_{j} \w_j  f(y|\z_j)\right)  \sum_k \w_k f(y|\z_k)\right)
+% \end{align}
+
+\subsection{Differentiation}
 
 Carrying the differentiations ((ref above display)) through yields
 rational expressions in derivatives of the weighted sums
@@ -357,89 +431,125 @@ $ \frac{d}{d\lambda} f_{\lambda}(\y\mid \Z) = f_{\lambda}(\y-1\mid \Z)
 - f_{\lambda}(\y\mid \Z), \y\ge 1, $ yield, for model ((ref
 poisson/incidence rate model)),
 \begin{align}
-  \F_{11}(\y) &= \sum_j\w_j \frac{d^2}{d\mu d\tau^2} f_{\lambda}(\y\mid \z_j)\\
+  \F_{11}(\y) &= \sum_j\w_j \frac{d^2}{d\mu d\tau^2} f_{\lambda(\effect,\tau^2)}(\y\mid \z_j)\\
               &= \frac{d\lambda}{d\mu} \frac{d\lambda}{d\tau^2}\F_{00}(\y-2)
                 +( \frac{d^2\lambda}{d\mu d\tau^2} - 2 \frac{d\lambda}{d\mu} \frac{d\lambda}{d\tau^2}) \F_{00}(\y-1)
                 + \frac{d\lambda}{d\mu} \frac{d\lambda}{d\tau^2} \F_{00}(\y),\qquad \y\ge 2
 \end{align}
 
 In summary. the approach is, for each of the $\n$ studies in the
-meta-analysis: evaluate the 15 terms $\F_{jk}(\y)$ using only routines
+meta-analysis: evaluate the 15 terms $\F_{jk}(\y)$ [[for y in support for the ith study, or truncated in case of poisson]] using only routines
 for the conditional PMF (Poisson, binomial, or hypergeometric) and
 basic arithmetic, and then compute the ((35)) k terms using only the
-computed 15 ((F)) terms and basic arithmetic.
+computed 15 ((F)) terms and basic arithmetic. 
 
 
-further implementation
-details.
-two hyperparameters for poisson. speed issues with hyperg. also the grid size for profile curve--this is present already with the LR statistic.
+% further implementation
+% details.
+% two hyperparameters for poisson. speed issues with hyperg. also the grid size for profile curve--this is present already with the LR statistic.
+
+
+\subsection{Tuning parameters}
+\begin{enumerate}
+\item fixed vs adaptive
+\item n.GH, poisson truncation point. follow usual approach with profile based LR, where examination of the profile curve guides.
+\item mu grid. for the computation of a CI based on the profile
+  likelihood, calculations described in ((ref differentiatoin
+  section)) must then be repeated over a grid of $\mu$ values.
+\end{enumerate}
 
 
 \section{Simulation}
 \label{sec:simulation}
 
 we examine by simulation the rate at which the LR and
-Bartlett-corrected LR statistics converge to the reference chi-squared distribution under the models ((ref)). The purpose is three-fold: 1. to investigate whether the quadrature approximations used by the proposed method are sufficient, 2. to investigate whether the bartlett correction is effective as applied to this type of lattice data, as there are few theoretical results here, and 3. to assess the robustness the of the proposed method to deviations from the assumed Gaussian model for the random effect.[[add tau2 boundary issue here]]
+Bartlett-corrected LR statistics converge to the reference chi-squared distribution under the four models ((ref)). The purpose is three-fold: 1. to investigate whether the quadrature approximations used by the proposed method are sufficient, 2. to investigate whether the bartlett correction is effective as applied to this type of lattice data, as there are few theoretical results here, and 3. to assess the robustness the of any improvement in the rate offered by the corrected statistic to deviations from the assumed Gaussian model for the random effect.[[add tau2 boundary issue here]]
 
-rate of convergence is estimated as follows. for sizes
-$\n=5,\ldots,15$, $B=\n^4$ meta-analysis of size $\n$ are sampled and
-the ((LR)) and ((LR-bartlett)) are computed.  maximum distance of the
-empirical CDFs of the $B$ ((LR)) and $B$ ((LR-bartlett)) statistics to
-a chi-squared distribution with df=1 is then recorded. ((actually prob
-integral transformation is applied, then distnace to uniform. should
-be the same.)) the rate of convergence of this sequence of max
-distances to $0$ is then approximated by the slope coefficient from
-regressing their logs against the log of $\n$. With $B=\n^4$ ((need to
-introduce B notation?)) replicates, the monte carlo error of the
-empirical CDFs is expected to be $O(1/\n^2)$, which is the same order as the ideal bartlett-corrected rate of convergence. the process of obtaining a rate estimate is then repeated $100$ times, with the median reported in ((the figures. or if using a table, get mean and sd too)).
-
-to make the simulation results relevant, the synthetic meta-analyses are constructed to resemble the data of the stijnen tables ((data analysis)). the true munull and tausqnull are taken to be the mle's for the data obtained by stijnen et al. the distributional parameters, e.g., number of trials mi in the ((bin-prop model)) or total number of events s in the ((hyperg or bn-irr models)) are obtained by sampling with replacement from the stijnen tables.
+\subsection{Design}
+to make the simulation results relevant, the synthetic meta-analyses are constructed to resemble the data of the stijnen tables ((data analysis)). the true munull and tausqnull are taken to be the mle's for the data obtained by stijnen et al. the distributional parameters are obtained by sampling with replacement from the stijnen tables. e.g., for the control-arm ((bn-prop)) model, a meta-analysis of size $\n$ is sampled by 1. sampling with replacement $\n$ trial sizes $\C{\m}$ from the  $18$ control arm study sizes in ((ref nw18 data set)), 2. sampling $\n$ effects $\Y$ under the binomial likelihood ((ref)) with the sampled trial sizes and the parameters $(\munull,\tausqnull)=(...)$ taken from the MLE calculations of ((stijnen2010)).[[e.g., number of trials mi in the ((bin-prop model)) or total number of events s in the ((hyperg or bn-irr models)) ]] meta-analyses of sizes $5,\ldots,15,$ are sampled in this manner, and the rate of convergence of the observed kolmogorov-smirnov distanc to a chi-squared is estimated. ((see other ma paper for details on rate estimation)).
 
 robustness of the gaussianity assumption is examined by perturbing a
-normal to a skewed distribution. the skew was chosen since the leading
-term in CLT-type approximations is based on it. the sinh-asinch model
-was used to obtain the perturbned gaussian distributions.
+normal to a skewed distribution ((cite pusey-jones paper)). the skew
+was chosen since it drives the first-order error in CLT-type
+approximations.%  the sinh-asinch model was used to obtain the
+% perturbned gaussian distributions.
 
-((add mle approximation info. concession to hardware limitation. like using n4 rather than n5 mc reps.))
+((add mle approximation info. concession to hardware limitation. like
+using n4 rather than n5 mc reps.)) the practical reason is to avoid
+the prohibitive computational cost of re-calculating the bartlett
+calculation for each of the $\n^4$ monte carlo replicates. the
+justification are the results of [[barndorff and cox]] that plugging
+in root-n consistent eestimators into the bartlett correction term
+b(mu,tau2) only introduces an O(1/n2) error.
+
+
+details.(put in appendix? or maybe just cite to other ma sim section?) rate of convergence is estimated as follows. For sizes
+$\n=5,\ldots,15$, $B=\n^4$ meta-analysis datasets of size $\n$ are
+sampled, and the ((LR)) and ((LR-bartlett)) statitsics are computed.
+maximum distance of the empirical CDFs of the $B$ ((LR)) and $B$
+((LR-bartlett)) statistics to a chi-squared distribution with df=1 is
+then recorded. ((actually prob integral transformation is applied,
+then distnace to uniform. should be the same.)) the rate of
+convergence of this sequence of max distances to $0$ is then
+approximated by the slope coefficient from regressing their logs
+against the log of $\n$. With $B=\n^4$ ((need to introduce B
+notation?)) replicates, the monte carlo error of the empirical CDFs is
+expected to be $O(1/\n^2)$, which is the same order as the ideal
+bartlett-corrected rate of convergence. this rate estimate is then
+sharpened by taking the median across $100$ replicates under this
+process. [[this approach is taken as a concession to the computational
+cost of forming $B > \n^4$ monte carlo repetitions.]]  [[repeating this
+process of obtaining a rate estimate is then repeated $100$ times,
+with the median reported in ((the figures. or if using a table, get
+mean and sd too)).]]
+
+\subsection{Results}
+
 
 \section{Data analysis}
 \label{sec:data-analysis}
-We revisit the example data analyses of ((stijnen2010)). Each of the models ((ref)) is applied to 1 or 2 meta-analyses and a 95\% confidence interval is calculated using  the corrected and uncorrected profile LR. The results are presented in Table \ref{tab:data-analysis}.
-
-
-((issue with bad data table in stijnen mentioned by metafor guy.))
+We revisit the example data analyses of ((stijnen2010)). Meta-analyses
+are carried out under the models ((ref)) and 95\% confidence intervals
+for the underlying effect $\munull$ are calculated using the corrected
+and uncorrected profile LR. The results are presented in Table
+\ref{tab:data-analysis}.
 
 \subsection{Proportions}
 ((niel-wiese 2007)) carries out a meta-analysis on the efficacy of an
-anti-infection treatment for catheters. The meta-analysis consists of
-17 studies, ignoring a study with no events in either arm, which does
-not contrubute to the likelihoods ((ref)).  Each of the 17 included
+anti-infection treatment for catheters. Each of the 18 included
 studies reports, for treatment and control arms, the total number of
 patients in the study and number of those who developed a
-catheter-related infection.
+catheter-related infection ((ref Table. should mention this
+incorporates the corrections mentioned by metafor guy.)).% The
+% meta-analysis consists of 17 studies, ignoring a study with no events
+% in either arm, which does not contrubute to the likelihoods ((ref)).
 
-we use the binomial-prpo model ((ref)) to obtain CIs the log odds of
-infection in each arm separately and the hyperg model ((ref)) to
-obtain a CI for the log-odd ratio across the arms. in all three cases,
-the CI using the bartlett corrected profile likelihood is wider than
-the uncorrected CI, but only slightly so, with the endpoints differing
-only in the hundredth's place. This agreement may reflect the moderate
-sample size of the the meta-analysis at 17 studies.
+We apply the binomial-prpo model ((ref)) to obtain CIs for the log
+odds of infection in each arm separately and the hyperg model ((ref))
+to obtain a CI for the log-odd ratio across the arms. In all three
+cases, the CI using the bartlett corrected profile likelihood is only
+slightly wider than the uncorrected, with the endpoints differing only
+in the hundredth's place or less. This agreement may reflect the
+moderate sample size of the the meta-analysis at 17--18 studies.[[effectively 17 for hn model due to double zero study]].
 
 [[give sample plot]]
 
 \subsection{Incidence}
 
-niel-weise ((2008)) carries a meta-analysis of 9 studies also on the
-efficiacy of an anti-infection treatment for catheters. each of the 9
+niel-weise ((2008)) also carries out a meta-analysis on the efficiacy
+of an anti-infection treatment for catheters. Each of the 9 included
 studies reports, for each arm, the number of catheter-related
 infections observed in a population as well as the total
 ``catheter-days'', the sum over the population of the number of days
 each subject used a catheter.
 
-We use the poisson-normal model ((ref)) to obtain CIs for the log incidence rate in each arm, and the binomial-irr model ((ref)) to obtain CIs for the log-incidence-rate ratio. For this smaller meta-analysis the difference between the corrected and uncorrected CIs is more dramatic.
+We use the poisson-normal model ((ref)) to obtain CIs for the log
+incidence rate in each arm, and the binomial-irr model ((ref)) to
+obtain a CI for the log-incidence-rate ratio. For this smaller
+meta-analysis the difference between the corrected and uncorrected CIs
+is more dramatic.
 
-[[give sample plot. maybe mention difficulties in poisson calculation.]]
+[[give sample plot. maybe give poisson model with adaptive and non-adaptive GH. cite latter in method/tuning parameter section.]]
 
 \begin{table}[htbp]
 \centering
@@ -449,28 +559,33 @@ We use the poisson-normal model ((ref)) to obtain CIs for the log incidence rate
 \midrule
 
 \multirow{2}{*}{log odds} 
-  & stijnen-1, control arm & [-3.94, -2.92] & [-3.96, -2.90] & $+4.9\%$ \\
-  & stijnen-1, treatment arm & [-5.57, -4.13] & [-5.61, -4.11] & $+3.9\%$ \\
+  & stijnen-1, control arm & [-3.93, -2.92] & [-3.93, -2.90] & $+2.2\%$ \\
+  & stijnen-1, treatment arm & [-5.57, -4.13] & [-5.58, -4.12] & $+1.7\%$ \\
 \cmidrule(lr){1-5}
 
 log-odds ratio
-  & stijnen-1 & [-2.22, -0.71] & [-2.25, -0.68] & $+4.5\%$ \\
+  & stijnen-1 & [-2.21, -0.71] & [-2.25, -0.68] & $+5.1\%$ \\
 \midrule
 
 \multirow{2}{*}{log IR} 
-  & stijnen-6, control arm & [0.92, 1.88] & [0.84, 2.51] & $+75.0\%$ \\
-  & stijnen-6, treatment arm & [0.13, 1.51] & [-0.18, 1.94] & $+52.3\%$ \\
+  & stijnen-6, control arm & [0.90, 1.90] & [0.85, 1.95] & $+10.6\%$ \\
+  & stijnen-6, treatment arm & [0.10, 1.55] & [0.03, 1.62] & $+9.8\%$ \\
 \cmidrule(lr){1-5}
 
 log-IR ratio
-  & stijnen-6 & [-1.05, -0.01] & [-1.12, 0.05] & $+11.2\%$ \\
+  & stijnen-6 & [-1.05, -0.01] & [-1.12, 0.05] & $+11.3\%$ \\
 
 \bottomrule
 \end{tabular}
-\caption{Comparison of confidence intervals.}
+\caption{Standard and Bartlett-corrected confidence intervals for the
+  example meta-analysis datasets considered by ((stijnen)). There is
+  little advantage in Bartlett correction for the meta-analyses [[nw87
+  data]], which consists of 18 studies. There is a greater difference
+  for the meta-analyses based on [[nw88 data]], which has half as many studies, including a loss of
+  significance at the nominal level $\alpha=.05$ for the log-IR ratio
+  study.[[switch first and second columns]]}
 \label{tab:data-analysis}
 \end{table}
-
 
 \section{Conclusion}
 \label{sec:conclusion}

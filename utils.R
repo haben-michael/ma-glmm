@@ -397,7 +397,8 @@ sas.invert.params <- function(target.skew, target.kurt) {
 
 
 ## my version. dotted version matches biasedUrn's call syntax.
-.cond.pmf.hyperg <- function(x,m1,m2,n,odds) {
+## check liao rosen. rewrite using logsumexp.
+.cond.pmf.hyperg <- function(x,m1,m2,n,odds,log=FALSE) {
     ## print(c(length(x),length(m1),length(m2),length(n),length(odds)))
     ## if(length(x)==6&&length(odds)==10)browser()
     ## m.T <- params[,'m.T']
@@ -407,9 +408,10 @@ sas.invert.params <- function(target.skew, target.kurt) {
     numer <- choose(m1,x)*choose(m2,n-x)*odds^x
     supp.x <- max(0,n-m2):min(n,m1)
     denom <- rowSums(  outer(odds,supp.x,function(oddsj,xj)choose(m1,xj)*choose(m2,n-xj)*oddsj^xj ) )
-    numer / denom
+    ## numer / denom
+    out <- if(log) log(numer)-log(denom) else numer / denom #!!!!!!
 }
-cond.pmf.hn <- cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
+cond.pmf.hn <- cond.pmf.hyperg <- function(x,theta,mu,tau2,params,log=FALSE) {
     if(is.null(dim(params))) {
         m.T <- params['m.T'];m.C <- params['m.C'];   s <- params['s']
     } else {
@@ -420,7 +422,7 @@ cond.pmf.hn <- cond.pmf.hyperg <- function(x,theta,mu,tau2,params) {
     ## s <- params[,'s']
     odds <- exp(mu+sqrt(tau2)*theta)
     ## browser()
-    out <- .cond.pmf.hyperg(x=x,m1=m.T,m2=m.C,n=s,odds=odds)
+    out <- .cond.pmf.hyperg(x=x,m1=m.T,m2=m.C,n=s,odds=odds,log=log)
     ## print(out)
     return(out)
 }
@@ -499,10 +501,10 @@ par.start.poisson <- function(x,params) {
     return(c(mu=mu.fe,tau2=tau2.start))
 }
 
-cond.pmf.pn <- cond.pmf.poisson <- function(x,theta,mu,tau2,params) {
+cond.pmf.pn <- cond.pmf.poisson <- function(x,theta,mu,tau2,params,log=FALSE) {
     T <- if(is.null(dim(params))) params['T'] else params[,'T']
     lambda <- T*exp(mu+sqrt(tau2)*theta)
-    dpois(x,lambda=lambda)
+    dpois(x,lambda=lambda,log=log)
 }
 dgp.pn <- dgp.poisson <- function(n,mu,tau2,params,re.distr=rnorm) {
     T <- params[,'T']
@@ -515,11 +517,11 @@ dgp.pn <- dgp.poisson <- function(n,mu,tau2,params,re.distr=rnorm) {
 
 
 
-cond.pmf.bn.prop <- cond.pmf.binomial.prop <- function(x,theta,mu,tau2,params) {
+cond.pmf.bn.prop <- cond.pmf.binomial.prop <- function(x,theta,mu,tau2,params,log=FALSE) {
     ## m <- params[,'m']
     m <- if(is.null(dim(params))) params['m'] else params[,'m']
     pr <- function(theta)plogis(mu+sqrt(tau2)*theta)
-    dbinom(x,size=m,prob=pr(theta))
+    dbinom(x,size=m,prob=pr(theta),log=log)
     ## integrand <- function(theta)pr(theta)^xi*(1-pr(theta))^(mi-xi)
 }
 dgp.bn.prop <- dgp.binomial.prop <- function(n,mu,tau2,params,re.distr=rnorm) {
@@ -559,12 +561,18 @@ par.start.binomial.irr <- function(x,params) {
     tau2.start <- if(tau2.DL>0L)tau2.DL else max(1,var(y.nn))/1e4
     return(c(mu=mu.fe,tau2=tau2.start))
 }
-cond.pmf.bn.irr <- cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params) {
-    T.t <- params[,'T.t']
-    T.c <- params[,'T.c']
-    s <- params[,'s']
+cond.pmf.bn.irr <- cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params,log=FALSE) {
+    ## browser()
+    if(is.null(dim(params))) {
+        T.t <- params['T.t']; T.c <- params['T.c'];   s <- params['s']
+    } else {
+        T.t <- params[,'T.t']; T.c <- params[,'T.c'];   s <- params[,'s']
+    }
+    ## T.t <- params[,'T.t']
+    ## T.c <- params[,'T.c']
+    ## s <- params[,'s']
     pr <- function(theta)plogis(log(T.t/T.c) + mu+sqrt(tau2)*theta)
-    dbinom(x,size=s,prob=pr(theta))
+    dbinom(x,size=s,prob=pr(theta),log=log)
 }
 dgp.bn.irr <- dgp.binomial.irr <- function(n,mu,tau2,params,re.distr=rnorm) {
     T.t <- params[,'T.t']
@@ -725,7 +733,7 @@ LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-3,3),par.sta
         return(log(likelihood))
     }
     loglik <- function(mu,tau2,x,params,GH) {
-        out <- sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,,drop=FALSE],GH)))
+        out <- sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,],GH)))
         ## print(out)        
         ## if(is.nan(out))browser()
         if(is.nan(out))out <- -1e10#-.Machine$double.xmax

@@ -1,15 +1,16 @@
 TODO
 
-1. x to y
-2. --move supp.x into params in ks.study
-3. --rename GH$x to GH$theta.grid
-4. T.t vs T.T variable name incosnistencyx
-5. debug data is too big. pass switch not to get it.
+1. DONE x to y
+2. DONE move supp.x into params in ks.study
+3. DONE rename GH$x to GH$theta.grid
+4. DONE T.t vs T.T variable name incosnistencyx
+5. DONE debug data is too big. pass switch not to get it.
 6. add stijnen tables along with r package
-7. logsumexp agh nodes in make_quad
-8. names. var.map -> cond.var.map. param -> par.
-9. liao & rosen amstat -- algo for hyperg
-10. newton step doesnt need to compute var map anew? esp for hyperg
+7. OK logsumexp agh nodes in make_quad
+8. OK names. var.map -> cond.var.map. param -> par.
+9. liao & rosen amstat -- algo for hyperg. log=TRUE version.
+10. DONE newton step doesnt need to compute var map anew? esp for hyperg
+
 
 ## DEBUGGING
 
@@ -1040,3 +1041,69 @@ ONE TIME
 ##   return(fn)
 ## })
 ## saveRDS(pmf.derivs.clean,file=filename,compress=FALSE)
+
+
+
+
+## DEBUGGING HN ROUTINES DURING SECOND REFACTORING
+
+## model0 <- model('hn')
+integrand.mode.hn <- make.integrand.mode(newton.step.hn)
+quad <- make.quad(integrand.mode.hn,var.map.hn,n.GH=n.GH,adaptive=TRUE)
+## quad(x[1],params[1,],mu.null,tau2.null)
+loglik <- make.loglik(cond.pmf.hyperg,params,y,quad)
+## loglik(mu.null,tau2.null)
+## nn.data <- nn.transform.hn(y,params)
+## par.start <- mod$par.start(y,params)
+
+
+dat <- escalc(measure = "OR", 
+              ai = Y1, n1i = n1,   # Treatment events and sample sizes
+              ci = Y0, n2i = n0,   # Control events and sample sizes
+              data = stijnen.1)
+fit.dl <- rma(yi = yi, vi = vi, data = dat, method = "DL")
+par.start <- structure(c(fit.dl$beta,fit.dl$tau2),names=c('mu','tau2'))
+par.start['tau2'] <- 1e-5#.19^2
+print(mle(loglik,par.start))
+
+par.start['tau2'] <- .19^2
+print(mle(loglik,par.start))
+par.start['tau2'] <- var(y)
+print(mle(loglik,par.start))
+
+
+params <- c(m.T = 116, m.C = 117, s = 3, y.min = 0, y.max = 3)
+odds <- runif(5)
+k <- 2
+pmf <- function(x,params,odds) {
+    m.T <- params['m.T']
+    m.C <- params['m.C']
+    s <- params['s']
+    .cond.pmf.hyperg(x=x,m1=m.T,m2=m.C,n=s,odds=odds) 
+    ## BiasedUrn::dFNCHypergeo(x,m1=m.T,m2=m.C,n=s,odds=odds)      
+}
+factMoment <- function(k,params,odds) {
+    ## print(params)
+    m.T <- params['m.T']
+    m.C <- params['m.C']
+    s <- params['s']
+    supp.x <- max(0,s-m.C):min(s,m.T)
+    ## sum ( apply(outer(supp.x, 0:(k-1), `-`), 1, prod) * pmf(supp.x,params,odds) )
+    apply(outer(supp.x, 0:(k-1), `-`), 1, prod)%*%outer(supp.x,odds,function(xi,oddsi)pmf(xi,params,oddsi)) |> c()
+}
+
+apply(outer(supp.x, 0:(k-1), `-`), 1, prod)%*%outer(supp.x,odds,function(xi,oddsi)pmf(xi,params,oddsi))
+
+
+
+
+## DEBUG binomial irr AFTER SWITCHING TO ADAPTIVE GH. COULDNT FIX THE ISSUE: BFGS KEEPS GOING INTO 0 PROBABILITY REGIONS IN MAKES ITS STEPS. SWITCHED TO NELDER.
+
+params <- structure(c(320, 1536, 6760, 1344, 1599, 6760, 1599, 12012, 1344, 
+440, 1502, 6840, 1988, 1460, 6840, 1460, 10962, 1988, 5, 16, 
+32, 18, 16, 32, 16, 17, 18, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 16, 
+32, 18, 16, 32, 16, 17, 18), dim = c(9L, 5L), dimnames = list(
+    NULL, c("T.t", "T.c", "s", "y.min", "y.max")))
+loglik <- make.loglik(cond.pmf.binomial.irr,params,y=c(2L, 7L, 18L, 1L, 10L, 15L, 7L, 8L, 5L),quad)
+par.start <- c(mu=-0.1339093,tau2=  0.0114727 )
+mle(loglik,par.start,control=list(trace=10))
