@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2019/dev/Debian) (preloaded format=pdflatex 2026.5.28)  20 AUG 2026 11:36
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2019/dev/Debian) (preloaded format=pdflatex 2026.5.28)  23 AUG 2026 19:32
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -995,48 +995,75 @@ LaTeX Font Info:    Try loading font information for U+msb on input line 69.
 
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-) [1
+)
+Overfull \hbox (2.70386pt too wide) in paragraph at lines 82--83
+[]\OT1/cmr/m/sc/12 Keywords: Meta-analysis, Bartlett cor-rec-tion, Gen-er-al-iz
+ed lin-ear mixed
+ []
+
+[1
 
 {/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
 
 Package amsmath Warning: Foreign command \atopwithdelims;
 (amsmath)                \frac or \genfrac should be used instead
-(amsmath)                 on input line 162.
+(amsmath)                 on input line 171.
 
 [2]
-LaTeX Font Info:    Try loading font information for U+bbm on input line 221.
+LaTeX Font Info:    Try loading font information for U+bbm on input line 230.
  (/usr/share/texlive/texmf-dist/tex/latex/bbm-macros/ubbm.fd
 File: ubbm.fd 1999/03/15 V 1.2 Font definition for bbm font - TH
 ) [3] [4]
-[5] [6] [7] [8]
+[5] [6] [7] (./figs/rate-table.tex
+Overfull \hbox (21.9617pt too wide) in paragraph at lines 3--20
+ [][] 
+ []
+
+)
+<./figs/sim-tau2.png, id=42, 481.8pt x 481.8pt>
+File: ./figs/sim-tau2.png Graphic file (type png)
+<use ./figs/sim-tau2.png>
+Package pdftex.def Info: ./figs/sim-tau2.png  used on input line 635.
+(pdftex.def)             Requested size: 240.8994pt x 240.8994pt.
+ [8] [9 <./figs/sim-tau2.png>]
+Overfull \hbox (31.78625pt too wide) in paragraph at lines 744--761
+ [][] 
+ []
+
+[10] [11]
 No file ma-logit.bbl.
-[9] (./ma-logit.aux) ) 
+[12] (./ma-logit.aux)
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+
+ ) 
 Here is how much of TeX's memory you used:
- 27834 strings out of 494485
- 554373 string characters out of 6175792
- 564940 words of memory out of 5000000
- 31132 multiletter control sequences out of 15000+600000
- 549542 words of font info for 90 fonts, out of 8000000 for 9000
+ 27868 strings out of 494485
+ 554821 string characters out of 6175792
+ 569017 words of memory out of 5000000
+ 31152 multiletter control sequences out of 15000+600000
+ 551966 words of font info for 101 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
- 55i,10n,63p,1101b,532s stack positions out of 5000i,500n,10000p,200000b,80000s
- </home/haben/.texlive2018/texmf-var/fonts/pk/ljfour/publ
-ic/bbm/bbm12.600pk></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
-m/cmbx12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmcs
-c10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pf
-b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></us
-r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share
-/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texliv
-e/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf
--dist/fonts/type1/public/amsfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/f
-onts/type1/public/amsfonts/cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/ty
-pe1/public/amsfonts/cm/cmr6.pfb></usr/share/texlive/texmf-dist/fonts/type1/publ
-ic/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfo
-nts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm
-/cmsy8.pfb>
-Output written on ma-logit.pdf (9 pages, 174466 bytes).
+ 55i,13n,63p,794b,548s stack positions out of 5000i,500n,10000p,200000b,80000s
+ </home/haben/.texlive2018/texmf-var/fonts/pk/ljfour/public/bbm/bbm12.600pk><
+/usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb></usr/s
+hare/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx8.pfb></usr/share/te
+xlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmcsc10.pfb></usr/share/texlive
+/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share/texlive/texmf
+-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb></usr/share/texlive/texmf-dist/
+fonts/type1/public/amsfonts/cm/cmmi6.pfb></usr/share/texlive/texmf-dist/fonts/t
+ype1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/fonts/type1/pu
+blic/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmr12.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/
+cm/cmr17.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6
+.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></u
+sr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/sha
+re/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/share/texl
+ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb>
+Output written on ma-logit.pdf (12 pages, 215881 bytes).
 PDF statistics:
- 94 PDF objects out of 1000 (max. 8388607)
- 68 compressed objects within 1 object stream
+ 113 PDF objects out of 1000 (max. 8388607)
+ 80 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 13 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 18 words of extra memory for PDF output out of 10000 (max. 10000000)
 

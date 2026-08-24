@@ -8,8 +8,13 @@ TODO
 6. add stijnen tables along with r package
 7. OK logsumexp agh nodes in make_quad
 8. OK names. var.map -> cond.var.map. param -> par.
-9. liao & rosen amstat -- algo for hyperg. log=TRUE version.
+9. fog or liao & rosen -- algo for hyperg. log=TRUE version.
 10. DONE newton step doesnt need to compute var map anew? esp for hyperg
+
+longer term:
+           1. implement my own optim/optimize using newtons algo.
+2. implement a profile function returning s3 compatible with confint
+3. implement intelligent root-finder in that profile
 
 
 ## DEBUGGING
@@ -1107,3 +1112,84 @@ params <- structure(c(320, 1536, 6760, 1344, 1599, 6760, 1599, 12012, 1344,
 loglik <- make.loglik(cond.pmf.binomial.irr,params,y=c(2L, 7L, 18L, 1L, 10L, 15L, 7L, 8L, 5L),quad)
 par.start <- c(mu=-0.1339093,tau2=  0.0114727 )
 mle(loglik,par.start,control=list(trace=10))
+
+
+
+
+
+
+## debugging difference between adaptive and non adaptive. issue was newton-raphson overshoot. implemented bisection method.
+
+
+source('models.R')
+source('./meta.glmm/R/meta.glmm.R')
+stijnen.1 <- read.table('stijnen-table-I.txt')
+y <- stijnen.1$Y0
+ms <- stijnen.1$n0
+params <- cbind(m=ms,y.min=0,y.max=ms)
+n.GH <- 1e2
+adaptive <- TRUE
+cond.pmf <- cond.pmf.bn.prop
+quad <- make.quad(moment.map.bn.prop,cond.pmf.bn.prop,n.GH=n.GH,adaptive=adaptive,adaptive.tol=1e-10)
+loglik <- make.loglik(cond.pmf.bn.prop,params,y,quad)
+loglik.unit <- get('loglik.unit',environment(loglik))
+mu <- -4.5
+tau2 <- 2
+i <- 9
+yi <- y[i]; paramsi <- params[i,]
+loglik.unit(mu,tau2,yi,paramsi)
+
+
+integrand.mode <- get('integrand.mode',environment(quad))
+integrand <- function(z)cond.pmf(yi,z,mu,tau2,paramsi)*dnorm(z)
+curve(integrand,-10,10)
+newton.step <- get('newton.step',environment(integrand.mode))
+zi <- 0 #!!!!!!!!
+## browser()
+for (j in 1:20) { #!!!!
+    zi.new <- zi + newton.step(zi, yi, paramsi, mu, tau2)
+    ## if(!is.finite(zi.new))browser()
+    ## 1+1
+    print(zi.new)
+    ## print(c(zi.new,zi))
+    if (abs(zi.new - zi) < adaptive.tol) {
+        break
+    }
+    zi <- zi.new
+}
+mode <- zi.new
+
+mode <- integrand.mode(yi,paramsi,mu,tau2)
+## scale <- (1 + tau2 * var.map(mode,paramsi, mu, tau2))^(-1 / 2)
+var.star <- moment.map(mode,paramsi,mu,tau2)['second']
+scale <- (1 + tau2 * var.star)^(-1 / 2)
+z <- mode + sqrt(2) * scale * GH$x
+## wt <- sqrt(2) * scale * 
+##     GH$w *
+##     exp(GH$x^2) *
+##     dnorm(z)
+wt <- 1/sqrt(pi) * scale * 
+    GH$w *
+    exp(GH$x^2 - z^2/2)                       
+return(list(z=z,wt=wt,log.wt=log(wt)))
+
+
+
+
+rule <- quad(yi,paramsi,mu,tau2)
+lsummands <- rule$log.wt + cond.pmf(yi,rule$z,mu,tau2,paramsi,log=TRUE)
+max.lsummands <- max(lsummands)
+out <- max.lsummands + log(sum(exp(lsummands - max.lsummands)))
+
+
+
+par.start0 <- par.start(y,params,nn.transform.bn.prop)
+mle0 <- mle(loglik,par.start0)$mle
+profile.LR <- make.profile.LR(loglik,mle0,par.start,logtau2.bounds=c(-20,20))
+profile.LR(-4.5)
+
+
+tau2.grid <- seq(.1,2,length=10)
+vals <- sapply(tau2.grid,function(tau2)loglik(mu.null,tau2))
+plot(tau2.grid,vals)
+

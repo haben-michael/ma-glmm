@@ -22,7 +22,7 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 
 ns <- 5:15
 mu.null <- -1.353
-tau2.null <- .83^2
+tau2.null <- 3#.83^2
 model.str <- 'hn'
 n.GH <- 2e1
 stijnen.1 <- read.table('../../stijnen-table-I.txt')
@@ -32,10 +32,10 @@ stijnen.params <- with(as.data.frame(stijnen.params), cbind(stijnen.params,y.min
 mc.idx <- sample(nrow(stijnen.params),max(ns),replace=TRUE)
 mc.params <- stijnen.params[mc.idx,]
 model0 <- model(model.str)
-quad <- make.quad(model0$moment.map,n.GH=n.GH,adaptive=TRUE,adaptive.tol=1e-10)
+quad <- make.quad(model0$moment.map,model0$cond.pmf,n.GH=n.GH,adaptive=TRUE,adaptive.tol=1e-5)
 start <- Sys.time()
-by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
-## by.n <- sapply(seq_along(ns), function(i) {
+## by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
+by.n <- sapply(seq_along(ns), function(i) {
     ## repeat{
     cat('.')
     n <- ns[i]

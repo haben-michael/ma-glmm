@@ -3135,35 +3135,59 @@ source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
 
 stijnen.1 <- read.table('stijnen-table-I.txt')
-y <- stijnen.1$Y0
-ms <- stijnen.1$n0
+y <- stijnen.1$Y1
+ms <- stijnen.1$n1
 params <- cbind(m=ms,y.min=0,y.max=ms)
-n.GH <- 5
+n.GH <- 350
 start <- Sys.time()
-fit <- meta.glmm(y,params,'bn-prop',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
-CIs <- confint.meta.glmm(fit,mc.cores=5,method='BFGS')
+fit <- meta.glmm(y,params,'bn-prop',n.GH=n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
+CIs <- confint.meta.glmm(fit,mc.cores=5,bartlett=TRUE,plot=TRUE,mu.grid=list(offset=1,size=20),col=1)
 print(CIs)
 print(Sys.time() - start)
 
 
-
-
 ## varying n.GH
 stijnen.1 <- read.table('stijnen-table-I.txt')
-y <- stijnen.1$Y0
-ms <- stijnen.1$n0
+## y <- stijnen.1$Y0
+## ms <- stijnen.1$n0
+y <- stijnen.1$Y1
+ms <- stijnen.1$n1
 params <- cbind(m=ms,y.min=0,y.max=ms)
-## n.GH <- 5
-n.GHs <- 3:10
+n.GHs <- seq(1e2,6e2,by=100)
+## n.GHs <- seq(10,1e2,by=10)
 by.n.GH <- lapply(n.GHs, function(n.GH) {
+    print(n.GH)
     start <- Sys.time()
     fit <- meta.glmm(y,params,'bn-prop',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
-    CIs <- confint.meta.glmm(fit,mc.cores=5,method='BFGS',plot=FALSE)
+    CIs <- confint.meta.glmm(fit,mc.cores=parallel::detectCores()-2,,plot=FALSE)
     print(CIs)
     print(Sys.time() - start)
     return(CIs)
 })
+## save.image('bnprop diagnostic ctrl nonadaptive.RData')
+## save.image('bnprop diagnostic ctrl adaptive.RData')
+lapply(lapply(by.n.GH,`[[`,'CIs'),`[[`,'LR.bartlett')
 
+idx <- n.GHs %in% c(20,40,60,80)
+n.GHs[idx]
+lapply(lapply(by.n.GH,`[[`,'CIs'),`[[`,'LR.bartlett')[idx]
+
+idx <- n.GHs %in% c(50,150,250,350)
+n.GHs[idx]
+lapply(lapply(by.n.GH,`[[`,'CIs'),`[[`,'LR.bartlett')[idx]
+
+with(by.n.GH[[8]],plot(mu.grid,profile['LR',],type='l'))
+with(by.n.GH[[8]],lines(mu.grid,profile['LR.bartlett',],type='l',lty=2))
+alpha <- .05
+abline(h=qchisq(1-alpha,df=1))
+
+dd
+
+
+## converged CI for control group:
+##                              [[8]]
+##        CI.left  CI.right
+## [1,] -4.089781 -2.980016
 
 
 ## hyperg
@@ -3181,18 +3205,7 @@ params <- cbind(m.T=m.T,m.C=m.C,s=s,y.min=pmax(0,s-m.C),y.max=pmin(s,m.T))
 fit <- meta.glmm(y,params,'hn',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
 CIs <- confint.meta.glmm(fit,mc.cores=5,bartlett=TRUE,mu.grid=list(offset=1.5,size=10))
 
-## poisson
-source('models.R')
-source('./meta.glmm/R/meta.glmm.R')
-stijnen.vi <- read.table('stijnen-table-VI.txt')
-n.GH <- 30
-y <- stijnen.vi$Y0
-T <- stijnen.vi$T0/1000
-params <- cbind(T=T,y.min=0,y.max=1e2)
-mu.null <- 0
-tau2.null <- 1
-fit <- meta.glmm(y,params,'pn',n.GH=50,adaptive=TRUE,logtau2.bounds=c(-20,3))
-confint.meta.glmm(fit,mc.cores=5)
+
 
 ##  binomial-IRR
 source('models.R')
@@ -3208,3 +3221,65 @@ n.GH <- 15
 fit <- meta.glmm(y,params,'bn-irr',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
 CIs <- confint.meta.glmm(fit,mc.cores=5,bartlett=TRUE,mu.grid=list(offset=2,size=20))
 print(CIs)
+
+
+
+
+## poisson
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
+source('models.R')
+source('./meta.glmm/R/meta.glmm.R')
+stijnen.vi <- read.table('stijnen-table-VI.txt')
+n.GH <- 3e2
+y <- stijnen.vi$Y0
+T <- stijnen.vi$T0/1000
+params <- cbind(T=T,y.min=0,y.max=1e2)
+fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))
+confint.meta.glmm(fit,mc.cores=5,mu.grid=list(offset=1.5,size=10))
+
+## varyng n.GH and y.max
+## n.GH <- seq(100,400,by=100)
+## y.max <- seq(5.5e2,8e2,by=50)
+## pars <- expand.grid(n.GH=n.GH,y.max=y.max)
+n.GH <- c(10,20,30)
+y.max <- seq(1e2,4e2,by=1e2)#seq(1e2,3e2,by=50)
+pars <- expand.grid(n.GH=n.GH,y.max=y.max)
+CIs <- apply(pars, 1, function(par) {
+    print(par)
+    n.GH <- par['n.GH']; y.max <- par['y.max']
+    params <- cbind(T=T,y.min=0,y.max=y.max)
+    fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))
+    CI <- tryCatch({
+        fit <- confint.meta.glmm(fit,mc.cores=4,mu.grid=list(offset=1.5,size=10),plot=FALSE)
+        print(fit)
+        fit
+    },    error=function(e)NA)
+    return(CI)
+})
+
+
+
+## mat <- do.call(rbind,lapply(CIs[!is.na(CIs)],`[[`,'profile'))
+## matplot(CIs[[1]]$mu.grid,t(mat[rownames(mat)=='LR.bartlett',]),type='l',col=1)
+with(CIs[[8]],plot(mu.grid,profile['LR.bartlett',],type='l'))
+alpha <- .05
+abline(h=qchisq(1-alpha,df=1))
+
+
+## save.image('pn diagnostic--adaptive.RData')
+
+
+CIs.bartlett <- lapply(CIs,function(lst)if(length(lst)==1) NA else lst$CIs$LR.bartlett)
+with(CIs[pars$n.GH==400][[5]],plot(mu.grid,profile['LR.bartlett',],type='l'))
+abline(h=qchisq(1-.05,df=1))
+
+
+
+## target:
+##     6]]$LR.bartlett
+##        CI.left CI.right
+## [1,] 0.8484626 1.947699
+
+
+sapply(lapply(CIs[!is.na(CIs)],`[[`,'CIs'),`[[`,'LR.bartlett') |> t() |> round(3) |> apply(1,paste,collapse=',') matrix

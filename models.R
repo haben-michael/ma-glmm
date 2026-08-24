@@ -43,21 +43,36 @@
 
 ## cond.pmf.hyperg <- function(x,theta,mu,tau2,params)  <- sapply(theta, function(thetai) _cond.pmf.hyperg(x,thetai,mu,tau2,params)
 
+# ## my version. dotted version matches biasedUrn's call syntax.
+# ## check liao rosen [[update: fog is more recent]]. rewrite using logsumexp.
+# .cond.pmf.hyperg <- function(x,m1,m2,n,odds,log=FALSE) {
+#     numer <- choose(m1,x)*choose(m2,n-x)*odds^x
+#     supp.x <- max(0,n-m2):min(n,m1)
+#     denom <- rowSums(  outer(odds,supp.x,function(oddsj,xj)choose(m1,xj)*choose(m2,n-xj)*oddsj^xj ) )
+#     ## numer / denom
+#     out <- if(log) log(numer)-log(denom) else numer / denom #!!!!!!
+
+#     lnumer <- lchoose(m1,x) + lchoose(m2,n-x) + x*log(odds)
+#     ldenom.mat <-  outer(odds,supp.x,function(oddsj,xj)lchoose(m1,xj) + lchoose(m2,n-xj) + xj*log(oddsj) )
+#     lrowmaxes <- apply(ldenom.mat,1,max)
+#     ldenom  <- lrowmaxes + log(rowSums( ldenom.mat - lrowmaxes))
+#     out <- if(log) lnumer - ldenom else exp(lnumer-ldenom)
+
+# }
+
+## log scale version
 ## my version. dotted version matches biasedUrn's call syntax.
-## check liao rosen. rewrite using logsumexp.
+## check liao rosen [[update: fog is more recent]]. rewrite using logsumexp.
 .cond.pmf.hyperg <- function(x,m1,m2,n,odds,log=FALSE) {
-    ## print(c(length(x),length(m1),length(m2),length(n),length(odds)))
-    ## if(length(x)==6&&length(odds)==10)browser()
-    ## m.T <- params[,'m.T']
-    ## m.C <- params[,'m.C']
-    ## s <- params[,'s']
-    ## print(c(length(odds),length(x)))
-    numer <- choose(m1,x)*choose(m2,n-x)*odds^x
+    lnumer <- lchoose(m1,x) + lchoose(m2,n-x) + x*log(odds)
     supp.x <- max(0,n-m2):min(n,m1)
-    denom <- rowSums(  outer(odds,supp.x,function(oddsj,xj)choose(m1,xj)*choose(m2,n-xj)*oddsj^xj ) )
-    ## numer / denom
-    out <- if(log) log(numer)-log(denom) else numer / denom #!!!!!!
+    ldenom.mat <-  outer(odds,supp.x,function(oddsj,xj)lchoose(m1,xj) + lchoose(m2,n-xj) + xj*log(oddsj) )
+    lrowmaxes <- apply(ldenom.mat,1,max)
+    ldenom  <- lrowmaxes + log(rowSums( exp(ldenom.mat - lrowmaxes)))
+    out <- if(log) lnumer - ldenom else exp(lnumer-ldenom)
+    return(out)
 }
+
 cond.pmf.hn <- cond.pmf.hyperg <- function(x,theta,mu,tau2,params,log=FALSE) {
     if(is.null(dim(params))) {
         m.T <- params['m.T'];m.C <- params['m.C'];   s <- params['s']
@@ -233,8 +248,11 @@ nn.transform.bn.prop <- function(y,params) {
 ##     paramsi['m']*p*(1-p)
 ##     }
 moment.map.bn.prop <- function(zi, paramsi, mu, tau2) {
-    pr <- plogis(mu+sqrt(tau2)*zi)
-    out <- structure(unname(c(paramsi['m']*pr,  paramsi['m']*pr*(1-pr))), names=c('first','second'))
+    ## pr <- plogis(mu+sqrt(tau2)*zi)    
+    ## out <- structure(unname(c(paramsi['m']*pr,  paramsi['m']*pr*(1-pr))), names=c('first','second'))
+    logp <- plogis(mu+sqrt(tau2)*zi,log.p=TRUE)
+    logp.bar <- plogis(mu+sqrt(tau2)*zi,log.p=TRUE,lower.tail=TRUE)
+    out <- exp(structure(unname(c(log(paramsi['m'])+logp,  log(paramsi['m'])+logp+logp.bar)), names=c('first','second')))
     return(out)
     }
 

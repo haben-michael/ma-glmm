@@ -2,7 +2,7 @@ args <- commandArgs(trailingOnly=TRUE)
 skew <- as.numeric(args[1])
 kurt <- as.numeric(args[2])
 
-source('../../utils.R')
+source('../../../utils.R')
 ns <- 5:15
 
 sas.params <- sas.invert.params(skew,kurt)
@@ -11,9 +11,9 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 
 mu.null <- -3.5
 tau2.null <- .81
-ks.fun <- readRDS('../../ks-fun.rds')
-pmf.derivs.fun <- readRDS('../../pmf-derivs-fun-binomial-prop.rds')
-niel.weise <- read.table('../../niel-weise.txt')
+ks.fun <- readRDS('../../../ks-fun.rds')
+pmf.derivs.fun <- readRDS('../../../pmf-derivs-fun-binomial-prop.rds')
+niel.weise <- read.table('../../../niel-weise.txt')
 all.ms <- sample(niel.weise$n0,max(ns),replace=TRUE)
 
 by.n <- sapply(ns, function(n) {

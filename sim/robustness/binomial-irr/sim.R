@@ -13,7 +13,7 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 ## re.distr <- rnorm #!!!!
 
 mu.null <- -.476
-## tau2.null <- .35^2
+tau2.null <- .35^2
 ## mu.null <- 0#-.476
 ## tau2.null <- 1/2#.35^2
 ks.fun <- readRDS('../../../ks-fun.rds')

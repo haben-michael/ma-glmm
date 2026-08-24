@@ -1,0 +1,19 @@
+## visualization for bn-prop data anlaysis
+## binomial-prop:
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
+pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+pmf.derivs.fun.bn.irr <- readRDS('pmf-derivs-fun-binomial-irr.rds')
+pmf.derivs.fun.hn <- readRDS('pmf-derivs-fun-hyperg.rds')
+source('models.R')
+source('./meta.glmm/R/meta.glmm.R')
+stijnen.1 <- read.table('stijnen-table-I.txt')
+y <- stijnen.1$Y0
+ms <- stijnen.1$n0
+params <- cbind(m=ms,y.min=0,y.max=ms)
+n.GH <- 350
+start <- Sys.time()
+fit <- meta.glmm(y,params,'bn-prop',n.GH=n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
+CIs <- confint.meta.glmm(fit,mc.cores=5,bartlett=TRUE,plot=TRUE,mu.grid=list(offset=1,size=20),col=1)
+print(CIs)
+print(Sys.time() - start)
