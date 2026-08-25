@@ -17,22 +17,22 @@ niel.weise <- read.table('../../../niel-weise.txt')
 all.ms <- sample(niel.weise$n0,max(ns),replace=TRUE)
 
 by.n <- sapply(ns, function(n) {
-## repeat{
 ## by.n <- parallel::mclapply(ns,mc.cores=4,FUN= function(n) {
     cat('.')
     ms <- all.ms[1:n]
     params <- cbind(m=ms)
     ks <- lapply(ms, function(m) {
         supp.x <- 0:m
-        params <- c(m=m)
-        ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params,supp.x=supp.x,mu.null=mu.null,tau2.null=tau2.null,n.GH=1e2)    
+        params <- c(m=m,x.min=0,x.max=m)
+        ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=params,mu=mu.null,tau2=tau2.null,n.GH=1e2)$ks.df
     })
     k.vals.ma <- sapply(ks,function(df)df$k.val) |> rowSums()
     ks.df.ma <- data.frame(inner=ks[[1]]$inner, outer=ks[[1]]$outer,k.val=k.vals.ma)
     bartlett.C <- lawley(ks.df.ma,2) - lawley(ks.df.ma,1)
-    stats <- replicate(round(n^4), {
+    stats <- replicate(round(n^3), {
         x <- dgp.binomial.prop(n,mu.null,tau2.null,params,re.distr=re.distr)
-        LR <- LR.gaussian(x,params,mu.null,cond.pmf.binomial.prop,n.GH=1e2)$LR
+        par.start <- par.start.binomial.prop(x,params)
+        LR <- LR.gaussian(x,params,mu.null,cond.pmf.binomial.prop,par.start=par.start,n.GH=1e2)$LR
         LR.bartlett <- LR / (1+bartlett.C)
         c(LR=LR,LR.bartlett=LR.bartlett)
     })

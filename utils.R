@@ -715,7 +715,7 @@ lawley <- function(k.df,p) {
 
 
 ## pass in starting values for optim, stop starting with tau2.mle.redu
-LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-3,3),par.start=c(mu=0,tau2=1),n.GH=1e2,...) {
+LR.gaussian <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-20,3),par.start=c(mu=0,tau2=1),n.GH=1e2,...) {
     ## browser()
     GH <- fastGHQuad::gaussHermiteData(n.GH)
     GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)

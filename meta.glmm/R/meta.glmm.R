@@ -105,7 +105,7 @@ lawley <- function(k.df,p) {
 }
 make.bartlett.C <- function(params,quad,pmf.derivs.fun,debug=FALSE){
     bartlett.C <- function(mu,tau2) {
-        cat('.')
+        ## cat('.')
         ks.ma.fit <- ks.ma(params=params,mu=mu,tau2=tau2,quad=quad,pmf.derivs.fun=pmf.derivs.fun,debug=debug)
         ks.df <- ks.ma.fit$ks.df
         bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)

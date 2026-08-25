@@ -3242,8 +3242,8 @@ confint.meta.glmm(fit,mc.cores=5,mu.grid=list(offset=1.5,size=10))
 ## n.GH <- seq(100,400,by=100)
 ## y.max <- seq(5.5e2,8e2,by=50)
 ## pars <- expand.grid(n.GH=n.GH,y.max=y.max)
-n.GH <- c(10,20,30)
-y.max <- seq(1e2,4e2,by=1e2)#seq(1e2,3e2,by=50)
+n.GH <- c(5:10,100)
+y.max <- c(seq(1e2,4e2,by=1e2),1e3)#seq(1e2,3e2,by=50)
 pars <- expand.grid(n.GH=n.GH,y.max=y.max)
 CIs <- apply(pars, 1, function(par) {
     print(par)
@@ -3259,27 +3259,173 @@ CIs <- apply(pars, 1, function(par) {
 })
 
 
-
-## mat <- do.call(rbind,lapply(CIs[!is.na(CIs)],`[[`,'profile'))
-## matplot(CIs[[1]]$mu.grid,t(mat[rownames(mat)=='LR.bartlett',]),type='l',col=1)
-with(CIs[[8]],plot(mu.grid,profile['LR.bartlett',],type='l'))
-alpha <- .05
-abline(h=qchisq(1-alpha,df=1))
+## save.image('pn diagnostic--adaptive.RData'). culprit seems to be
+## using IV/D-L estimates. was preivously using
+## (mu.null,tau2.mle.redu), which does a lot better.
 
 
-## save.image('pn diagnostic--adaptive.RData')
-
-
-CIs.bartlett <- lapply(CIs,function(lst)if(length(lst)==1) NA else lst$CIs$LR.bartlett)
-with(CIs[pars$n.GH==400][[5]],plot(mu.grid,profile['LR.bartlett',],type='l'))
-abline(h=qchisq(1-.05,df=1))
+lapply(CIs[!is.na(CIs)],`[[`,'CIs') |> sapply(`[[`,'LR.bartlett')  |> sapply(function(elt)elt[1,]) |> t() |> round(4) |> apply(1,paste,collapse=',') |> matrix(nrow=length(unique(pars$n.GH)))
 
 
 
-## target:
-##     6]]$LR.bartlett
-##        CI.left CI.right
-## [1,] 0.8484626 1.947699
+
+## investigate why par.start with iV/DL doing worse than reduced mle
+source('utils.R')
+try.mle <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-20,3),n.GH=1e2,...) {
+    ## browser()
+    GH <- fastGHQuad::gaussHermiteData(n.GH)
+    GH$x <- sqrt(2)*GH$x; GH$w <- GH$w/sqrt(pi)
+    loglik.unit <- function(mu,tau2,xi,paramsi,GH) {
+        ## browser()
+        ## print(c(mu,tau2,xi,paramsi))
+        ## if(tau2>1e3)browser()
+        if(log(tau2)<logtau2.bounds[1] || log(tau2)>logtau2.bounds[2]) {
+            ## warning('tau2 boundary  hit, returning minimum negative')
+            return(-1e10)#     return(-.Machine$double.xmax)
+        }
+        likelihood <- sum(GH$w*cond.pmf(xi,GH$x,mu,tau2,paramsi))
+        ## print(c(mu,tau2,log(likelihood),paramsi))
+        ## print(tau2)
+        return(log(likelihood))
+    }
+    loglik <- function(mu,tau2,x,params,GH) {
+        out <- sum(sapply(seq_along(x),function(i)loglik.unit(mu,tau2,x[i],params[i,],GH)))
+        ## print(out)        
+        ## if(is.nan(out))browser()
+        if(is.nan(out))out <- -1e10#-.Machine$double.xmax
+        return(out)
+        }
+    logtau2.mle.redu <- optimize(function(logtau2)loglik(mu.null,exp(logtau2),x,params,GH),interval=logtau2.bounds,maximum=TRUE)$max
+    tau2.mle.redu <- exp(logtau2.mle.redu)
+    par.start <- c(mu=mu.null,tau2=tau2.mle.redu)
+    ## par.start <- par.start.binomial.prop(x,params)
+    ## print(par.start)
+    start.val <- loglik(par.start[1],par.start[2],x,params,GH)
+    if(is.nan(start.val) || !is.finite(start.val))browser()
+    fit.full <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2]),x,params,GH),method='BFGS',...)
+    if(fit.full$convergence != 0L)warning('full fit convergence failure')
+    mle.full <- fit.full$par
+    mle.full[2] <- exp(mle.full[2])
+    return(list(mle.full=mle.full,tau2.mle.redu=tau2.mle.redu))
+}
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun <- pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+source('models.R')
+source('./meta.glmm/R/meta.glmm.R')
+stijnen.1 <- read.table('stijnen-table-I.txt')
+y <- stijnen.1$Y1
+ms <- stijnen.1$n1
+## ms <- rep(20,n)
+mu.null <- -3.5
+tau2.null <- .81
+n <- 10
+params <- cbind(m=ms,y.min=0,y.max=ms)
+re.distr <- rnorm
+ms <- ms[1:n]
+params <- params[1:n,]
+n.GH <- 3e2
+source('utils.R')
+set.seed(10)
+pairs <- replicate(1e3, {
+    x <- dgp.binomial.prop(n,mu.null,tau2.null,params,re.distr=re.distr)
+    mle <- try.mle(x,params,mu.null,cond.pmf.binomial.prop,n.GH=1e2,logtau2.bounds=c(-20,3))$tau2.mle.redu
+    IV <- par.start.binomial.prop(x,params)['tau2']
+    c(mle,IV)
+})
+plot(pairs[1,],pairs[2,])
+abline(0,1)
+plot((pairs[1,]-pairs[2,])/pairs[2,])
+op <- par(mfrow=c(1,2))
+hist(pairs[1,]); abline(v=tau2.null,col=2); abline(v=mean(pairs[1,]),col=3)
+hist(pairs[2,]); abline(v=tau2.null,col=2); abline(v=mean(pairs[2,]),col=3)
+par(op)
 
 
-sapply(lapply(CIs[!is.na(CIs)],`[[`,'CIs'),`[[`,'LR.bartlett') |> t() |> round(3) |> apply(1,paste,collapse=',') matrix
+ks <- lapply(ms, function(m) {
+    supp.x <- 0:m
+    paramsi <- c(m=m,x.min=0,x.max=m)
+    ks.df.study <- ks.study(pmf.derivs.fun=pmf.derivs.fun,ks.fun=ks.fun,params=paramsi,mu=mu.null,tau2=tau2.null,n.GH=1e2)    
+})
+k.vals.ma <- sapply(ks,function(df)df$ks.df$k.val) |> rowSums()
+ks.df <- data.frame(inner=ks[[1]]$ks.df$inner, outer=ks[[1]]$ks.df$outer,k.val=k.vals.ma)
+k.22 <- ks.df[ks.df[,'inner']=='22'  & ks.df[,'outer']=='0','k.val']
+k.11 <- ks.df[ks.df[,'inner']=='11'  & ks.df[,'outer']=='0','k.val']
+k.12 <- ks.df[ks.df[,'inner']=='12'  & ks.df[,'outer']=='0','k.val']
+inf <- -matrix(c(k.11,k.12,k.12,k.22),nrow=2)
+vcov.hat <- solve(inf)
+z.stats <- replicate(1e2, {
+    x <- dgp.binomial.prop(n,mu.null,tau2.null,params,re.distr=re.distr)
+    mles <- try.mle(x,params,mu.null,cond.pmf.binomial.prop,n.GH=1e2,logtau2.bounds=c(-20,3))$mle.full
+    (rev(mles)-c(tau2.null,mu.null)) / sqrt(diag(vcov.hat))
+})
+op <- par(mfrow=c(1,2))
+qqnorm(z.stats['mu',]); abline(0,1)
+qqnorm(z.stats['tau2',]); abline(0,1)
+par(op)
+
+
+
+
+## gradient and hessian of loglik
+
+n.GH <- 1e2
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+integrate.quad <- function(f){
+    rule <- list(z=sqrt(2)*GH$x,wt=GH$w/sqrt(pi),log.wt=log(GH$w/sqrt(pi)))
+    sum(rule$wt * f(rule$z) )
+    }
+m <- 15
+yi <- 4
+paramsi <- c(m=m,y.min=0,y.max=m)
+mu <- 0
+tau2 <- 1
+eta <- function(z)mu+z*tau2
+L <- function(z)dbinom(yi,m,plogis(eta(z)))
+moment.1 <- function(paramsi,z,mu,tau2){  paramsi['m']*plogis(mu+sqrt(tau2)*z) }
+moment.2 <- function(paramsi,z,mu,tau2){
+    pr <- plogis(mu+sqrt(tau2)*z)
+    paramsi['m']*pr*(1-pr)
+}
+dL.eta <- function(z)L(z)*(yi-moment.1(paramsi,z,mu,tau2))
+d2L.eta <- function(z)L(z)*((yi-moment.1(paramsi,z,mu,tau2))^2 - moment.2(paramsi,z,mu,tau2))
+## moment.2(paramsi,z,mu,tau2)
+## dL.eta(4)
+integrate.quad(L)
+eta <- seq(-10,10,len=1e2)
+
+
+
+
+
+n.GH <- 1e1
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+m <- 15
+yi <- 4
+paramsi <- c(m=m,y.min=0,y.max=m)
+mu <- 0
+tau2 <- 1
+eta <- function(z,mu,tau2)mu+z*tau2
+f.eta <- function(eta)dbinom(yi,m,plogis(eta))
+moment.1 <- function(paramsi,eta) paramsi['m']*plogis(eta)
+moment.2 <- function(paramsi,eta)    paramsi['m']*plogis(eta)*plogis(eta,lower=FALSE)
+df.eta <- function(eta)f.eta(eta)*(yi-moment.1(paramsi,eta))
+d2f.eta <- function(eta)f.eta(eta)*((yi-moment.1(paramsi,eta))^2 - moment.2(paramsi,eta))
+## moment.2(paramsi,z,mu,tau2)
+## df.eta(4)
+## I <- function(f.eta,mu,tau2){
+##     rule <- list(z=sqrt(2)*GH$x,wt=GH$w/sqrt(pi),log.wt=log(GH$w/sqrt(pi)))
+##     sum(rule$wt * f.eta(eta(rule$z,mu,tau2)) )
+##     }
+I <- function(f.z){
+    rule <- list(z=sqrt(2)*GH$x,wt=GH$w/sqrt(pi),log.wt=log(GH$w/sqrt(pi)))
+    sum(rule$wt * f.z(rule$z) )
+}
+mus <- seq(-10,10,len=1e2)
+tau2s <- seq(0,10,len=1e2)
+mu0 <- -1; tau20 <- 1
+l <- function(mu,tau2)log(I(function(z)f.eta(eta(z,mu,tau2))))
+l(mu0,tau20)
+plot(mus, sapply(mus,function(mu)l(mu,tau20)),type='l')
+dl.eta <- function(mu,tau2)I(function(z)d2f.eta(eta(z,mu,tau2)))/ I(function(z)f.eta(eta(z,mu,tau2)))
+abline(a=l(mu0,tau20)-mu0*dl.eta(mu0,tau20),b= dl.eta(mu0,tau20))
+

@@ -291,12 +291,13 @@ Among the assumptions underlying the above development we focus on three
 prominent ones. The first two stem from assumptions of the  basic LR tests described in ((stijnen)), while the third is specific to Bartlett correction.
 
 \begin{enumerate}
-  \item The first is correct specification of the likelihood,
-in particular, gaussianity of the unobserved random effect. [[we refer
-to sitjnen to other modeling assumptions implicit in ((ref 1--4
-above)), such as ... . ]] While the LR test itself depends on
-gaussianity for valid inference ((citation showing effects of bad
-estimatio of tau2)), the Bartlett correction may be less robust to deviations.
+\item The Bartlett correction requires correct specification of the
+  likelihood, in particular, gaussianity of the unobserved random
+  effect. [[we refer to sitjnen to other modeling assumptions implicit
+  in ((ref 1--4 above)), such as ... . ]] While the LR test itself
+  depends on gaussianity for valid inference ((citation showing
+  effects of bad estimatio of tau2)), the Bartlett correction may be
+  less robust to deviations.
 
 \item Wilks' theorem, underlying the chi-squared approximation to the
   LR statistic ((ref )), applies to points in the interior of the
@@ -306,9 +307,9 @@ estimatio of tau2)), the Bartlett correction may be less robust to deviations.
   % concerned here with the more delicate question of rates.]]
   It is
   possible the coverage rate at a given meta-analysis sample size $\n$
-  looks unaffected, as has been suggested ((cite)), while the more
+  looks unaffected by low heterogeneity, as has been suggested ((cite)), while the more
   delicate rate analysis carried out here betrays an
-  impact. % It is difficult to imagine there would not
+  impact. After all, the LR test for $\tau^2$ is  known to be inconsistent at the boundary $\tau^2=0$ ((cite self-liang)) the parameters $(\mu,\tau^2)$ are dependent ((non-orthogonal)) in the models ((ref)).% It is difficult to imagine there would not
   % be an impact on the rate, since inference for $\tau^2$ is known to
   % be off at the boundary ((self,liang)) and $\effect$ and $\tau^2$ are
   % not orthogonal in models
@@ -317,16 +318,16 @@ estimatio of tau2)), the Bartlett correction may be less robust to deviations.
 % lr test must check tau2 interior is reasonable eg examining the mle,
 % or perhaps computing a fixed effects compute the fixed effects LR
 % CI. 
-[[this here or maybe in conclusion? conclusion is to be about relations bw fixed and random effects, and relation between LR and bartlett LR]]. with iv method can think of re model as a generalization of the
-fe, if the data is actually fixed effects CIs are valid there is just
-a loss of power. in the case of the lr, the random effects procedure
-is different from the fixed effects procedure.]]
+% [[this here or maybe in conclusion? conclusion is to be about relations bw fixed and random effects, and relation between LR and bartlett LR]]. with iv method can think of re model as a generalization of the
+% fe, if the data is actually fixed effects CIs are valid there is just
+% a loss of power. in the case of the lr, the random effects procedure
+% is different from the fixed effects procedure.]]
 
-\item the arguments under which the Bartlett correction
+\item The arguments under which the Bartlett correction
 delivers a $1/\n^2$ rate are usually justified by Cram\'er's condition
 for the underlying random variables. This condition excludes lattice
-variables, such as are considered here. Consequently, while Bartlett corrections have been derived for statistics based on lattice random variables since at least the 80s, their
-effectiveness does not rest on a firm theoretical foundation and in fact does not appear to be understood in much generality
+variables, such as are considered here. Consequently, while Bartlett corrections have been derived for statistics based on lattice random variables since at least the 1980s [[cite cordeiro]], their
+effectiveness does not rest on a firm theoretical foundation and in fact does not appear to be understood even in basic cases
 ((cite frydenberg re multinomial ngative result and gotze, and janson
 re positive result)).
 \end{enumerate}
@@ -388,12 +389,16 @@ sum,
     k_r^{(s)} 
       &\approx  \sum_y D_s\left( \left(D_r \log\sum_{j} \w_j  f(y|\z_j)\right)  \sum_k \w_k f(y|\z_k)\right)
 \end{align}
-As in ((ref exact version)), the outer sum is taken over the support
-of $\Y$, which is a finite set in all the models considered here other
-than the Poisson model. The Poisson model requires a truncation point
-for computation, which introduces a tuning parameter into the proposed
-method. The number of nodes $\nGH$ controls the quality of the
-approximation and introduces a further tuning parameter. 
+The weights and nodes of the quadrature  may in general depend on the unknown parameters
+$\effect$ and $\tau^2$. To simplify the above derivatives we assume
+they are constant with respect to the parameters, as discussed further
+below. The number of nodes $\nGH$ controls the quality of the
+approximation and introduces a tuning parameter into the proposed
+method.  As in ((ref exact version)), the outer sum is taken over the
+support of $\Y$, which is a finite set in all the models considered
+here other than the Poisson model. The Poisson model requires a
+truncation point for computation, which introduces a further tuning
+parameter.
 % \begin{align}
 %  L(\re,\tau^2 | \Y) =  \int_{-\infty}^\infty f(\Y|\z)\phi(\z)d\z
 %   \approx  \sum_{j}\w_j  f(\Y|\z_j)
@@ -436,7 +441,7 @@ computed for each study of a meta-analysis. % The latter computations
 % may be carried out in parallel when the meta-analysis consists of
 % stochatically independent studies, such as we consider
 % here.
-Furthermore, since the conditional PMFs only depend on the model
+However, since the conditional PMFs only depend on the model
 parameters $(\effect,\tau^2)$ through the PMF's distributional
 parameters, the derivatives $\F_{jk}(\y), 0\le j+k \le 4$, may be
 re-written as linear combinations [[linear for binomial and hyperg
@@ -456,15 +461,16 @@ poisson/incidence rate model)),
                 + \frac{d\lambda}{d\mu} \frac{d\lambda}{d\tau^2} \F_{00}(\y),\qquad \y\ge 2
 \end{align}
 
-In summary. the approach is, for each of the $\n$ studies in the
-meta-analysis: for each $\y$ in the effective support of study $i$
-evaluate the 15 terms $\F_{jk}(\y)$ [[these are vectors across y actually]] using only routines for the
-conditional PMF (Poisson, binomial, or hypergeometric) and basic
-arithmetic, and then compute the ((35)) k terms using only the
-computed 15 ((F)) terms and basic arithmetic. The 15 $\F_{jk}(\y)$
-terms can be computed in parallel, and once they are computed the 35
-((k)) terms can be computed in parallel. As the studies are
-independent the entire computation of the study-level Bartlett correction can be parallelized across the $\n$ studies, as well.
+The approach in brief is, for each of the $\n$ studies in the
+meta-analysis, 1. evaluate the 15 vectors
+$\F_{jk}(\y), \y\in \operatorname{supp}(\Y)$, with $\operatorname{supp}(\Y)$ truncated in the case of Poisson $\Y$,  using only off-the-shelf routines for
+the conditional PMF (Poisson, binomial, or hypergeometric) and basic
+arithmetic, 2. compute the 35 ((k)) terms using only the computed 15
+((F)) vectors and basic arithmetic. The 15 $\F_{jk}(\y)$ terms can be
+computed in parallel, and once they are computed the 35 ((k)) terms
+can be computed in parallel. As the studies are independent the entire
+computation of the study-level Bartlett correction can be parallelized
+across the $\n$ studies, as well.
 
 
 % further implementation
@@ -473,41 +479,26 @@ independent the entire computation of the study-level Bartlett correction can be
 
 
 \subsection{Tuning parameters}
+
+We discuss the main choices made in applying the proposed method to a
+give dataset: the number of nodes to be used in the quadrature rule,
+whether the nodes should be chosen using a fixed or adaptive rule,
+and, in the case of the Poisson-normal model, the truncation point for
+the support.
+
 \begin{enumerate}
-\item The main tuning parametr of the proposed method is $\nGH$, the
-  number of nodes in the quadrature aproximation. check CIs for
-  convergence. can be aided by visual inspection of the profile
-  curves. visual examination recommended for any profile CI anyway to
-  ensure the curve is approximately convex, [[other reasons]]. cite
-  example in data analysis.
 
-\item fixed vs adaptive.  A further setting is whether fixed or
-  adaptive GH is to be used. fixed GH uses the same choice of nodes
-  irrespective of the integrand, namely, the roots of ..., which are
-  centered at. on the other hand, adaptive GH transforms the nodes to
-  take into account of the mode and scale of the integrand. difference
-  in performance: poisson case, or other situations. where support
-  points are far from 0. fixed nodes only grow at root-n rate so very
-  many are needed to capture the effect of those support points.
-  computational tradeoff: adaptive requrise the mode and scale of the
-  integrand must be recomputed on each call, but typically requires
-  fewer nodes ((cite table)). furthermore, since the rule depends on
-  the parametes mu,tau2 thorugh the mode and scale, the derivatives in
-  ((ref k formula)) hit the weights and nodes as well, and become much
-  more complicated. [[actually incompatible with method derived above]] intremediate approach, adopted above: we ignore
-  this dependence, leading to an approximation intermediate in quality
-  beween fixed and adaptive GH. this means that using adaptive over
-  fixed GH is advantageous only when the mode and scfale of hte
-  likelihood doesnt change to much under differentiation. when we do
-  so, however, the cost of adaptive GH becomes very cheap. the only
-  integrand for which adaptive GH needs to be computed are of the form
-  condpmf phi. as all the cond pmfs belong to the exponential family,
-  these integrands are strictly log-concave and unimodal, and the mode
-  maybe obtained efficiently using Newton's
-  method.% with mode given by the
-  % solution to: and scale by: .
+  
+  % each step of Newton-Raphson
+  % when computing the difference in performance: poisson case, or other
+  % situations. where support points are far from 0. fixed nodes only
+  % grow at root-n rate so very many are needed to capture the effect of
+  % those support points.  computational tradeoff: adaptive requrise the
+  % mode and scale of the integrand must be recomputed on each call, but
+  % typically requires fewer nodes ((cite table)). % with mode given by the
+  % % solution to: and scale by: .
 
-integrations applied to moments of variable, including exponential. premise of fixed rule nodes and weights are good enough for all functions and moments.
+% integrations applied to moments of variable, including exponential. premise of fixed rule nodes and weights are good enough for all functions and moments.
 
 
 % fixed appears fine in our experience when the
@@ -523,15 +514,60 @@ integrations applied to moments of variable, including exponential. premise of f
 % and therefore also the AGH weights and nodes, typically depend on the
 % parameters mu,tau2, complicating the partial differentiation.
 
+\item The main tuning parameter of the proposed method is $\nGH$, the
+  number of nodes in the quadrature aproximation. We propose tuning this parameter heuristically, by examining the stability of the CI under a range of choices. Typical choices used in the datasets below, leading to apparent convergence at up to $.001$ absolute error in the endpoints, are 100--200 nodes for fixed rule quadrature and 10--30 for adaptive rule quadrature.% a heuristic method, checking the CIs for stability . can be aided by visual inspection of the profile
+  % curves. visual examination recommended for any profile CI anyway to
+  % ensure the curve is approximately convex, [[other reasons]]. cite
+  % example in data analysis.
 
-\item In the case of the Poisson-normal model, the number of support
-  points to include. once a GH rule has been chosen, can choose the
-  truncation point is large enough that the weighted tails are as
-  small as desired. however it is difficult to know in general what is
-  negligible for a given data set, and moreover the truncation point
-  often influences the choice of GH rule.  for the Poisson-normal
-  model we therefore suggest examining a matrix of CIs varying both
-  parameters to identify the limiting CI.
+\item Two broad variants fo GH quadrature are fixed and
+  adaptive. Fixed GH uses the same choice of nodes irrespective of the
+  integrand, namely, the roots of ..., which are centered at. On the
+  other hand, adaptive GH transforms the nodes to take into account
+  the mode and scale of the integrand. The drawback is the cost of
+  numerically estimating the mode and scale of the integrand ((ref))
+  repeatedly. For example, computing the MLEs of ((ref likleihood)) by
+  Newton-Raphson requires evaluating the integral ((ref)) at a
+  sequence of values $(\effect,\tau^2)$, and under adaptive quadrature
+  each such evaluation requires estimating the mode and scale of a new
+  integrand, leading to nested optimizations. This cost is somewhat
+  mitigated by the fewer nodes generally required by adaptive
+  quadrature ((ref table or fig for bn-prop)).
+
+  A further difficulty with adaptive quadrature is conceptual. Since
+  the adaptive nodes and weights depend on the parametes
+  $(\effect,\tau^2)$ through the mode and scale, they are subject to
+  the derivatives in ((ref k formula)), which is incompatible with the
+  assumptions of the proposed method. Ignoring this dependence
+  generally leads to an approximation intermediate in quality beween
+  fixed and adaptive GH. [[this means that using adaptive over fixed
+  GH is advantageous only when the mode and scale of hte likelihood
+  doesnt change to much under differentiation.]] However, this
+  simplified approach leads to efficient implementation of adaptive
+  GH. The only type of integrand for which a mode must be computed is
+  of the form ((cite likelihood equation)). As all the conditional
+  PMFs belong to the exponential family, these integrands are strictly
+  log-concave and unimodal, and the mode and scale maybe obtained
+  quickly using Newton-Raphson.
+
+  In most of the data analysis examples in Section
+  \ref{sec:data-analysis}, there is little difference in performance
+  between CIs returned by fixed and adaptive quadrature. In general
+  one expects adaptive quadrature to be valuable when the support of
+  $\Y$ ranges far from $0$, where fixed rule nodes are
+  centered. Consistent with this heuristic, the Poisson-normal model
+  benefits heavily from adaptive quadrature ((ref picture or table)).
+
+\item Since the Poisson-normal model has infinite support,
+  implementation of the proposed method requires a truncation
+  point. Once a GH rule has been chosen, one can choose the truncation
+  point large enough that the weighted tails are as small as
+  desired. However, it may difficult to know in general what is
+  ignorable for a given data set, and moreover the truncation point
+  often influences the choice of $\nGH$.  [[maybe given example of higher oscillation obsreved in pn data analysis]] For the Poisson-normal model
+  we therefore suggest examining a matrix of CIs varying both
+  parameters to identify the limiting CI. See Section
+  \ref{sec:data-analysis} for an example.
 
   % follow usual approach with profile based LR, where examination of the profile curve guides.
 % \item mu grid. for the computation of a CI based on the profile
@@ -552,7 +588,7 @@ correction is effective as applied to this type of lattice data, as
 there are few theoretical results here, and 3. to assess the
 robustness the of any improvement in the rate offered by Bartlett
 correction to deviations from the assumed non-degenerate Gaussian
-model for the random effect. results are given in table ... and figure ... 
+model for the random effect. results are given in Table \ref{tab:simulation} and Figure \ref{fig:simulation:tau2}.
 
 \subsection{Design}
 To make the simulation results relevant, the simulated meta-analyses
@@ -562,19 +598,19 @@ effect $\munull$ and heterogeneity $\tausqnull$ are taken to be the
 MLEs for the data obtained by ((stijnen et al.)), and the
 distributional parameters are obtained by sampling with replacement
 from the ((stijnen tables)). For example, for the control-arm
-((bn-prop)) model, a simulated meta-analysis of size $\n$ is drawn by
-1. sampling with replacement $\n$ trial sizes $\C{\m}$ from the $18$
-control arm study sizes given by column ... of Table ...((ref nw18 data set)), 2. sampling $\n$
+((bn-prop)) model, a simulated meta-analysis of size $\n$ is drawn by,
+first, sampling with replacement $\n$ trial sizes $\C{\m}$ from the $18$
+control arm study sizes given by column ... of Table ...((ref nw18 data set)); and second, sampling $\n$
 effects $\Y$ under the binomial likelihood ((ref)) using the sampled
 trial sizes and the parameters $(\munull,\tausqnull)=(...)$ taken from
 the MLE calculations of ((stijnen2010)). Meta-analyses of sizes
 $5,\ldots,15,$ are sampled in this manner, and the rate of convergence
 of the empirical Kolmogorov-Smirnov distance to a chi-squared
-distribution is estimated. ((see other ma paper for details on rate
+distribution is estimated using $\n^4$ monte carlo repetitions at each sample size $\n$. ((see other ma paper for details on rate
 estimation)).
 
 Robustness of the gaussianity assumption is examined by perturbing a
-normal to a skewed distribution ((cite pusey-jones paper)). the skew
+normal to a skewed distribution ((cite pusey-jones paper)). The skew
 was chosen to test robustness since it drives the first-order error in
 CLT-type approximations. Robustness against non-degeneracy of the
 random effect, $\tausqnull>0$, is studied in particular cases
@@ -587,9 +623,8 @@ $b=b(\munull,\tausqnull)$ [[perturbed by a Gaussian with SD
 $1/\sqrt\n$??]]. In practice the MLE would be used. The practical
 reason is to avoid the prohibitive computational cost of
 re-calculating the Bartlett calculation for each of the $\n^4$ monte
-carlo replicates ((this no. of mc reps wasnt actually mentioned
-yet)). The justification is the result of [[barndorff and cox]] that
-plugging in $\sqrt\n-$consistent estimators into the Bartlett
+carlo replicates. The justification is the result of [[barndorff and cox]] that
+plugging $\sqrt\n-$consistent estimators into the Bartlett
 correction term $b(\mu,\tau^2)$, itself $O(1/\n)$, only introduces an $O(1/\n^2)$ error.
 
 
@@ -615,17 +650,26 @@ mean and sd too)).]]}
 
 \subsection{Results}
 
-table ... shows that when the assumptions on RE are met, the bartlett rate of 1/n2 appears
-to be achieved, with the excepton of the bn-irr model. lr rate also
-achieves 1/n rate. as skew increases, the rate deterioriates for both
-statistics. generally lr has a slower rate than the bartlett
+Table \ref{tab:simulation} shows that when the model assumptions are
+met, the standard LR rate of $1/\n$ and the Bartlett-corrected rate of
+$1/\n^2$ appear to be achieved by three of the four models ((ref)). As
+skew increases, the rate deterioriates for both
+statistics. [[generally lr has a slower rate than the bartlett
 throughout, but for the largest skew tested and the bn-prop model, the
 bartlett corrected statistic shows a worse rate than the
-uncorrected. we therefore conclude that the quadrature approximations
-are sufficient and that skew affects the convergence of both corrected
-and uncorrected LR statistics. 
+uncorrected.]] we therefore conclude that, at lest in these three
+models, the quadrature approximations are sufficient and that skew
+affects the convergence of both corrected and uncorrected LR
+statistics.
 
-The bn-irr model is the exception, showing a rate closer to 1/n than 1/n2 even in the idealized skew-free setting. this appears to be due to low heterogeneity. we vary the tau2 used to generate the data. rather than the mle (...) we examine tau2= ... . the results are presented in figure ... . the figure shows the 1/n2 rate being achieved as tau2 grows to ... . ((same for 1/n rate of LR stat?)) we therefore conclude that the advantage of Bartlett correction can be diminished by low heterogeneity.
+The ((bn-irr)) model is the exception, showing a rate closer to $1/\n$
+than $1/\n^2$ under Bartlett correction even in the idealized
+skew-free setting. This failure appears to be due to low
+heterogeneity. Rather than Stijnen's MLE (...) we examine the effect
+of using ((tau2= ... )). The results, presented in Fig. \ref{fig:simulation:tau2}, shows the
+$1/\n^2$ rate being achieved as $\tau^2$ grows to ... . ((same for 1/n
+rate of LR stat?)) we therefore conclude that the advantage of
+Bartlett correction can be diminished by low heterogeneity.
 
 
 \input{./figs/rate-table.tex}
@@ -633,8 +677,8 @@ The bn-irr model is the exception, showing a rate closer to 1/n than 1/n2 even i
 \begin{figure}
   \centering
   \includegraphics[scale=.5]{./figs/sim-tau2.png}
-  \label{fig:simulation-tau2}
   \caption{The effect of varying the heterogeneity parameter $\tau^2$. The data is simulated based on ((nw2009)) and the binomial-normal model for incidence rate ratios.}
+  \label{fig:simulation:tau2}
 \end{figure}
 
 \section{Data analysis}
@@ -658,49 +702,51 @@ incorporates the corrections mentioned by metafor guy.)).% The
 We apply the binomial-prpo model ((ref)) to obtain CIs for the log
 odds of infection in each arm separately and the hyperg model ((ref))
 to obtain a CI for the log-odd ratio across the arms. In all three
-cases, the CI using the bartlett corrected profile likelihood is only
+cases, the CI using the Bartlett-corrected profile likelihood is only
 slightly wider than the uncorrected, with the endpoints differing only
 in the hundredth's place or less. This agreement may reflect the
 moderate sample size of the the meta-analysis at 17--18 studies.[[effectively 17 for hn model due to double zero study]].
 
 [[give sample plot]]
-\begin{table}[htbp]
-\centering
-\begin{tabular}{c c c c c}
-\toprule
-\multicolumn{2}{c}{\textbf{Adaptive}} & \phantom{abc} & \multicolumn{2}{c}{\textbf{Non-adaptive}} \\
-\cmidrule(lr){1-2} \cmidrule(lr){4-5}
-\textbf{$\nGH$} & \textbf{Confidence Interval} && \textbf{$\nGH$} & \textbf{Confidence Interval} \\
-\midrule
-20 & [-3.8510, -3.1246] && 50  & [-4.1635, -2.8695] \\
-40 & [-4.0891, -2.9751]        && 150 & [-4.0966, -2.9570] \\
-60 & [-4.0920, -2.9799]        && 250 & [-4.0901, -2.9795] \\
-80 & [-4.0900, -2.9802]        && 350 & [-4.0898, -2.9800] \\
-\bottomrule
-% \multicolumn{5}{l}{\footnotesize $^\ast$ At these $B$ parameters, the method produced multiple disjoint intervals; only the primary interval is shown.}
-\end{tabular}
-\caption{Comparison of the convergence of CIs using adaptive and fixed Gauss-Hermite rules. The meta-analysis data is the control arm of ((nw07)), analyzed under the single-arm binomial model ((ref)).}
-\label{tab:CI-convergence}
-\end{table}
+% \begin{table}[htbp]
+% \centering
+% \begin{tabular}{c c c c c}
+% \toprule
+% \multicolumn{2}{c}{\textbf{Adaptive}} & \phantom{abc} & \multicolumn{2}{c}{\textbf{Non-adaptive}} \\
+% \cmidrule(lr){1-2} \cmidrule(lr){4-5}
+% \textbf{$\nGH$} & \textbf{Confidence Interval} && \textbf{$\nGH$} & \textbf{Confidence Interval} \\
+% \midrule
+% 20 & [-3.8510, -3.1246] && 50  & [-4.1635, -2.8695] \\
+% 40 & [-4.0891, -2.9751]        && 150 & [-4.0966, -2.9570] \\
+% 60 & [-4.0920, -2.9799]        && 250 & [-4.0901, -2.9795] \\
+% 80 & [-4.0900, -2.9802]        && 350 & [-4.0898, -2.9800] \\
+% \bottomrule
+% % \multicolumn{5}{l}{\footnotesize $^\ast$ At these $B$ parameters, the method produced multiple disjoint intervals; only the primary interval is shown.}
+% \end{tabular}
+% \caption{Comparison of the convergence of CIs using adaptive and fixed Gauss-Hermite rules. The meta-analysis data is the control arm of ((nw07)), analyzed under the single-arm binomial model ((ref)).}
+% \label{tab:CI-convergence}
+% \end{table}
 
 \subsection{Incidence}
 
-niel-weise ((2008)) also carries out a meta-analysis on the efficiacy
+niel-weise ((2008)) presents another meta-analysis on the efficiacy
 of an anti-infection treatment for catheters. Each of the 9 included
 studies reports, for each arm, the number of catheter-related
 infections observed in a population as well as the total
-``catheter-days'', the sum over the population of the number of days
+``catheter-days'', the sum over the study population of the number of days
 each subject used a catheter.
 
-We use the poisson-normal model ((ref)) to obtain CIs for the log
+We apply the Poisson-normal model ((ref)) to obtain CIs for the log
 incidence rate in each arm, and the binomial-irr model ((ref)) to
 obtain a CI for the log-incidence-rate ratio. For this smaller
 meta-analysis the difference between the corrected and uncorrected CIs
-is more dramatic. These differences include a loss of significance at
+is more dramatic, the corrected CIs being about $10\%$ larger. These differences include a loss of significance at
 the nominal level $\alpha=.05$ for the log-IR ratio study.
 
-[[give sample plot. maybe give poisson model with adaptive and non-adaptive GH. cite latter in method/tuning parameter section.]]
+as an example of determining the bartlett ci, Table \ref{tab:data-analysis:pn-matrix} presents a matrix of ci's for the pn model as its two tuning parameters are varied. Taking $\nGH=10$ adaptive nodes and $\y_{max}=400$ support points is sufficient for a CI with endpoints within $1/1000$ of the converged value, where $\nGH=100$ adaptive nodes and $\y_{max}=1000$ is assumed to produce the converged value.
 
+% [[give sample plot. maybe give poisson model with adaptive and non-adaptive GH. cite latter in method/tuning parameter section.]]
+%
 
 [[update bn-prop trt analysis!!]]
 \begin{table}[htbp]
@@ -743,9 +789,9 @@ log-IR ratio
 \centering
 \begin{tabular}{c c c c c c}
 \toprule
-& \multicolumn{5}{c}{\textbf{Integration Cutoff ($y_{\max}$)}} \\
+& \multicolumn{5}{c}{\textbf{Poisson support cutoff ($y_{\max}$)}} \\
 \cmidrule(lr){2-6}
-\textbf{$n_{\text{GH}}$} & \textbf{100} & \textbf{200} & \textbf{300} & \textbf{400} & \textbf{1000}$^\dagger$ \\
+\textbf{$n_{\text{GH}}$} & \textbf{100} & \textbf{200} & \textbf{300} & \textbf{400} & \textbf{1000} \\
 \midrule
 5   & [0.9526, 1.7905] & [0.9585, 1.7592] & [0.9573, 1.7459] & [0.9568, 1.7407] & [0.9565, 1.7366] \\
 6   & [0.8713, 1.9132] & [0.8704, 1.9206] & [0.8684, 1.9236] & [0.8675, 1.9250] & [0.8669, 1.9282] \\
@@ -754,12 +800,12 @@ log-IR ratio
 9   & [0.8512, 1.9486] & [0.8531, 1.9471] & [0.8513, 1.9460] & [0.8505, 1.9456] & [0.8499, 1.9469] \\
 10  & [0.8496, 1.9512] & [0.8518, 1.9486] & [0.8500, 1.9473] & [0.8492, 1.9468] & [0.8486, 1.9479] \\
 \midrule
-100$^\dagger$ & [0.8495, 1.9503] & [0.8516, 1.9482] & [0.8499, 1.9470] & [0.8491, 1.9465] & \textbf{[0.8485, 1.9477]} \\
+100 & [0.8495, 1.9503] & [0.8516, 1.9482] & [0.8499, 1.9470] & [0.8491, 1.9465] & \textbf{[0.8485, 1.9477]} \\
 \bottomrule
-\multicolumn{6}{l}{\footnotesize $^\dagger$ Large parameter values serving as ground truth benchmarks.}
+% \multicolumn{6}{l}{\footnotesize $^\dagger$ Large parameter values serving as ground truth benchmarks.}
 \end{tabular}
-\caption{Convergence of Bartlett-corrected LR confidence intervals across Gauss-Hermite nodes ($n_{\text{GH}}$) and cutoff values ($y_{\max}$).}
-\label{tab:ci-convergence-gh}
+\caption{Convergence of the Bartlett-corrected CI for the Poisson-normal mode as its two tuning parameters are varied. [[add vertical line before last column]]}
+\label{tab:data-analysis:pn-matrix}
 \end{table}
 
 
@@ -775,18 +821,18 @@ not met, our inferences are the same as using the uncorrected
 statistic. we have seen this is not quite the case. when the skew of the random effect is sufficiently far from $0$, the rate of the bartlett corrected sttaistic can be worse than
 the uncorrected statistic. Presumably a random effect sufficiently far from a Gaussian in other respects can also lead to this situation.
 
-moreover, we have seen a similar qualification to the use of the basic
-LR statitsic,though it is not the focus of this paper. that is, it
-does not seem that the LR statistic is always better for RE inference
-than invese-variance weighting. applying the IV method when the the
-heterogeneity parameter $\tausqnull$ is in fact $0$ does not by itself
-lead to an inconsistent test, though there may be a loss of
-power. however we have seen ((ref simulations)) that the convergence
-rate of the LR test (corrected or not) as the heterogeneity parameter
-approaches $0$ can exceed $0$, indicating inconsistency, at least as
-judged by the sample sizes considered here. This conclusion is however,
-consistent with our a priori expectation: [[maybe put self liang,
-nonorthogonality down here]]. ((however compare: ...give contrary results))
+moreover, we note in passing that a similar qualification is
+applicable to the use of the basic LR statitsic relative to the
+traditional IV test. it does not seem that the LR statistic is always
+better for RE inference than invese-variance weighting. Whereas the
+random-effects IV test includes the fixed-effects model as a sub-case,
+$\tau^2\ge 0$, the random-effects $\tau^2>0$ LR test is distinct from
+the fixed-effects $\tau^2=0$ LR test. Whereas applying the
+random-effects IV test to zero heterogeneity does may lead to a loss
+of power but does not by itself lead to an inconsistent test, whereas
+we have seen ((ref simulations)) that the convergence rate of the LR
+test (corrected or not) as the heterogeneity parameter approaches $0$
+can exceed $0$, indicating inconsistency. 
 
 
 

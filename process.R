@@ -195,7 +195,8 @@ lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
 ## save.path <- './sim/robustness/binomial-irr/'
 ## save.path <- './sim/robustness/binomial-irr-tau2/'
 ## save.path <- './sim/robustness/hyperg/'
-save.path <- './sim/260819/'
+## save.path <- './sim/260819/'
+save.path <- './sim/bn-prop/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -233,9 +234,11 @@ for(i in seq_along(tau2.nulls))
 legend('bottomright',col=col,lty=1,legend=paste0('tau2=',tau2.nulls))
 ## dev.off()
 
+
+
 ## generate table
 
-rate.sims<- lapply( c(bn.prop='./sim/robustness/binomial-prop/',
+rate.sims<- lapply( c(bn.prop='./sim/bn-prop/',
              pn='./sim/robustness/poisson/',
              bn.irr='./sim/robustness/binomial-irr/'),
           function(save.path) {
@@ -262,9 +265,10 @@ rate.sims<- lapply( c(bn.prop='./sim/robustness/binomial-prop/',
           })
 rate.sims <- lapply(rate.sims,function(df)do.call(data.frame,df))
 ## temp filler vals!!!!!!!!!
-rate.sims['bn.irr'] <- rate.sims['hyperg'] <- rate.sims[2]
-rate.sims$bn.prop <- rbind(rate.sims$bn.prop[1:2,],rate.sims$bn.prop)
-rate.sims$bn.prop[1:2,'skew'] <- 0.2
+## rate.sims['bn.irr'] <-
+    ## rate.sims['hyperg'] <- rate.sims[2]
+## rate.sims$bn.prop <- rbind(rate.sims$bn.prop[1:2,],rate.sims$bn.prop)
+## rate.sims$bn.prop[1:2,'skew'] <- 0.2
 rate.sims <- lapply(rate.sims,function(df)df[df$skew>=0,])
 
 ## # 1. Combine median and SD
