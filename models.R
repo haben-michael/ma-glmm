@@ -251,7 +251,7 @@ moment.map.bn.prop <- function(zi, paramsi, mu, tau2) {
     ## pr <- plogis(mu+sqrt(tau2)*zi)    
     ## out <- structure(unname(c(paramsi['m']*pr,  paramsi['m']*pr*(1-pr))), names=c('first','second'))
     logp <- plogis(mu+sqrt(tau2)*zi,log.p=TRUE)
-    logp.bar <- plogis(mu+sqrt(tau2)*zi,log.p=TRUE,lower.tail=TRUE)
+    logp.bar <- plogis(mu+sqrt(tau2)*zi,log.p=TRUE,lower.tail=FALSE)
     out <- exp(structure(unname(c(log(paramsi['m'])+logp,  log(paramsi['m'])+logp+logp.bar)), names=c('first','second')))
     return(out)
     }

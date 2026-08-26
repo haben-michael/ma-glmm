@@ -196,7 +196,8 @@ lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
 ## save.path <- './sim/robustness/binomial-irr-tau2/'
 ## save.path <- './sim/robustness/hyperg/'
 ## save.path <- './sim/260819/'
-save.path <- './sim/bn-prop/'
+## save.path <- './sim/bn-prop/'
+save.path <- './sim/bn-irr/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))

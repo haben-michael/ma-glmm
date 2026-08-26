@@ -3368,43 +3368,18 @@ par(op)
 
 ## gradient and hessian of loglik
 
+
 n.GH <- 1e2
 GH <- fastGHQuad::gaussHermiteData(n.GH)
-integrate.quad <- function(f){
-    rule <- list(z=sqrt(2)*GH$x,wt=GH$w/sqrt(pi),log.wt=log(GH$w/sqrt(pi)))
-    sum(rule$wt * f(rule$z) )
-    }
 m <- 15
 yi <- 4
 paramsi <- c(m=m,y.min=0,y.max=m)
-mu <- 0
-tau2 <- 1
-eta <- function(z)mu+z*tau2
-L <- function(z)dbinom(yi,m,plogis(eta(z)))
-moment.1 <- function(paramsi,z,mu,tau2){  paramsi['m']*plogis(mu+sqrt(tau2)*z) }
-moment.2 <- function(paramsi,z,mu,tau2){
-    pr <- plogis(mu+sqrt(tau2)*z)
-    paramsi['m']*pr*(1-pr)
-}
-dL.eta <- function(z)L(z)*(yi-moment.1(paramsi,z,mu,tau2))
-d2L.eta <- function(z)L(z)*((yi-moment.1(paramsi,z,mu,tau2))^2 - moment.2(paramsi,z,mu,tau2))
-## moment.2(paramsi,z,mu,tau2)
-## dL.eta(4)
-integrate.quad(L)
-eta <- seq(-10,10,len=1e2)
-
-
-
-
-
-n.GH <- 1e1
-GH <- fastGHQuad::gaussHermiteData(n.GH)
-m <- 15
-yi <- 4
-paramsi <- c(m=m,y.min=0,y.max=m)
-mu <- 0
-tau2 <- 1
-eta <- function(z,mu,tau2)mu+z*tau2
+eta <- function(z,mu,tau2)mu+z*sqrt(tau2)
+deta.mu <- function(z,mu,tau2)1
+d2eta.mu <- function(z,mu,tau2)0
+deta.tau2 <- function(z,mu,tau2)z/2/sqrt(tau2)
+d2eta.tau2 <- function(z,mu,tau2)-z/4/sqrt(tau2)^3
+d2eta.mu.tau2 <- function(z,mu,tau2)0
 f.eta <- function(eta)dbinom(yi,m,plogis(eta))
 moment.1 <- function(paramsi,eta) paramsi['m']*plogis(eta)
 moment.2 <- function(paramsi,eta)    paramsi['m']*plogis(eta)*plogis(eta,lower=FALSE)
@@ -3422,10 +3397,396 @@ I <- function(f.z){
 }
 mus <- seq(-10,10,len=1e2)
 tau2s <- seq(0,10,len=1e2)
-mu0 <- -1; tau20 <- 1
+mu0 <- 0; tau20 <- .7
 l <- function(mu,tau2)log(I(function(z)f.eta(eta(z,mu,tau2))))
-l(mu0,tau20)
+## l(mu0,tau20)
 plot(mus, sapply(mus,function(mu)l(mu,tau20)),type='l')
-dl.eta <- function(mu,tau2)I(function(z)d2f.eta(eta(z,mu,tau2)))/ I(function(z)f.eta(eta(z,mu,tau2)))
-abline(a=l(mu0,tau20)-mu0*dl.eta(mu0,tau20),b= dl.eta(mu0,tau20))
+dl.mu <- function(mu,tau2)I(function(z)df.eta(eta(z,mu,tau2))*deta.mu(z,mu,tau2))/ I(function(z)f.eta(eta(z,mu,tau2)))
+abline(a=l(mu0,tau20)-mu0*dl.mu(mu0,tau20),b= dl.mu(mu0,tau20))
+plot(tau2s, sapply(tau2s,function(tau2)l(mu0,tau2)),type='l')
+dl.tau2 <- function(mu,tau2)I(function(z)df.eta(eta(z,mu,tau2))*deta.tau2(z,mu,tau2)) / I(function(z)f.eta(eta(z,mu,tau2)))
+abline(a=l(mu0,tau20)-tau20*dl.tau2(mu0,tau20),b= dl.tau2(mu0,tau20))
+d2l.mu <- function(mu,tau2) (I(function(z)d2f.eta(eta(z,mu,tau2))*deta.mu(z,mu,tau2)^2 + df.eta(eta(z,mu,tau2))*d2eta.mu(z,mu,tau2))*I(function(z)f.eta(eta(z,mu,tau2))) - I(function(z)df.eta(eta(z,mu,tau2))*deta.mu(z,mu,tau2))^2 ) / I(function(z)f.eta(eta(z,mu,tau2)))^2
+plot(mus, sapply(mus,function(mu)l(mu,tau20)),type='l')
+approx <- function(mu)l(mu0,tau20) + dl.mu(mu0,tau20)*(mu-mu0) + 1/2*d2l.mu(mu0,tau20)*(mu-mu0)^2 
+lines(mus, sapply(mus,approx),col=2)
+d2l.tau2 <- function(mu,tau2) (I(function(z)d2f.eta(eta(z,mu,tau2))*deta.tau2(z,mu,tau2)^2 + df.eta(eta(z,mu,tau2))*d2eta.tau2(z,mu,tau2))*I(function(z)f.eta(eta(z,mu,tau2))) - I(function(z)df.eta(eta(z,mu,tau2))*deta.tau2(z,mu,tau2))^2 ) / I(function(z)f.eta(eta(z,mu,tau2)))^2
+plot(tau2s, sapply(tau2s,function(tau2)l(mu0,tau2)),type='l')
+approx <- function(tau2)l(mu0,tau20) + dl.tau2(mu0,tau20)*(tau2-tau20) + 1/2*d2l.tau2(mu0,tau20)*(tau2-tau20)^2 
+lines(tau2s, sapply(tau2s,approx),col=2)
+d2l.mu.tau2 <- function(mu,tau2) (I(function(z)d2f.eta(eta(z,mu,tau2))*deta.tau2(z,mu,tau2)*deta.mu(z,mu,tau2) + df.eta(eta(z,mu,tau2))*d2eta.mu.tau2(z,mu,tau2))*I(function(z)f.eta(eta(z,mu,tau2))) - I(function(z)df.eta(eta(z,mu,tau2))*deta.tau2(z,mu,tau2))^2 ) / I(function(z)f.eta(eta(z,mu,tau2)))^2
+## d2l.mu.tau2(mu0,tau20)
+
+
+
+
+
+
+## reparametrize eta -> mu,tau2 to be compatible with current model
+## routines
+
+n.GH <- 1e2
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+m <- 15
+yi <- 4
+paramsi <- c(m=m,y.min=0,y.max=m)
+eta <- function(z,mu,tau2)mu+z*sqrt(tau2)
+deta.mu <- function(z,mu,tau2)1
+d2eta.mu <- function(z,mu,tau2)0
+deta.tau2 <- function(z,mu,tau2)z/2/sqrt(tau2)
+d2eta.tau2 <- function(z,mu,tau2)-z/4/sqrt(tau2)^3
+d2eta.mu.tau2 <- function(z,mu,tau2)0
+## f.eta <- function(eta)dbinom(yi,m,plogis(eta))
+f.eta <- function(z,mu,tau2)dbinom(yi,m,plogis(eta(z,mu,tau2)))
+## moment.1 <- function(paramsi,eta) paramsi['m']*plogis(eta)
+## moment.2 <- function(paramsi,eta)    paramsi['m']*plogis(eta)*plogis(eta,lower=FALSE)
+moment.1 <- function(z,mu,tau2,paramsi) paramsi['m']*plogis(eta(z,mu,tau2))
+moment.2 <- function(z,mu,tau2,paramsi) {eta0 <- eta(z,mu,tau2);   paramsi['m']*plogis(eta0)*plogis(eta0,lower=FALSE)}
+df.eta <- function(z,mu,tau2)f.eta(z,mu,tau2)*(yi-moment.1(z,mu,tau2,paramsi))
+d2f.eta <- function(z,mu,tau2)f.eta(z,mu,tau2)*((yi-moment.1(z,mu,tau2,paramsi))^2 - moment.2(z,mu,tau2,paramsi))
+I <- function(f.z){
+    rule <- list(z=sqrt(2)*GH$x,wt=GH$w/sqrt(pi),log.wt=log(GH$w/sqrt(pi)))
+    sum(rule$wt * f.z(rule$z) )
+}
+mus <- seq(-10,10,len=1e2)
+tau2s <- seq(0,10,len=1e2)
+mu0 <- 0; tau20 <- .7
+l <- function(mu,tau2)log(I(function(z)f.eta(z,mu,tau2)))
+## l(mu0,tau20)
+plot(mus, sapply(mus,function(mu)l(mu,tau20)),type='l')
+dl.mu <- function(mu,tau2)I(function(z)df.eta(z,mu,tau2)*deta.mu(z,mu,tau2))/ I(function(z)f.eta(z,mu,tau2))
+abline(a=l(mu0,tau20)-mu0*dl.mu(mu0,tau20),b= dl.mu(mu0,tau20))
+plot(tau2s, sapply(tau2s,function(tau2)l(mu0,tau2)),type='l')
+dl.tau2 <- function(mu,tau2)I(function(z)df.eta(z,mu,tau2)*deta.tau2(z,mu,tau2)) / I(function(z)f.eta(z,mu,tau2))
+abline(a=l(mu0,tau20)-tau20*dl.tau2(mu0,tau20),b= dl.tau2(mu0,tau20))
+d2l.mu <- function(mu,tau2) (I(function(z)d2f.eta(z,mu,tau2)*deta.mu(z,mu,tau2)^2 + df.eta(z,mu,tau2)*d2eta.mu(z,mu,tau2))*I(function(z)f.eta(z,mu,tau2)) - I(function(z)df.eta(z,mu,tau2)*deta.mu(z,mu,tau2))^2 ) / I(function(z)f.eta(z,mu,tau2))^2
+plot(mus, sapply(mus,function(mu)l(mu,tau20)),type='l')
+approx <- function(mu)l(mu0,tau20) + dl.mu(mu0,tau20)*(mu-mu0) + 1/2*d2l.mu(mu0,tau20)*(mu-mu0)^2 
+lines(mus, sapply(mus,approx),col=2)
+d2l.tau2 <- function(mu,tau2) (I(function(z)d2f.eta(z,mu,tau2)*deta.tau2(z,mu,tau2)^2 + df.eta(z,mu,tau2)*d2eta.tau2(z,mu,tau2))*I(function(z)f.eta(z,mu,tau2)) - I(function(z)df.eta(z,mu,tau2)*deta.tau2(z,mu,tau2))^2 ) / I(function(z)f.eta(z,mu,tau2))^2
+plot(tau2s, sapply(tau2s,function(tau2)l(mu0,tau2)),type='l')
+approx <- function(tau2)l(mu0,tau20) + dl.tau2(mu0,tau20)*(tau2-tau20) + 1/2*d2l.tau2(mu0,tau20)*(tau2-tau20)^2 
+lines(tau2s, sapply(tau2s,approx),col=2)
+d2l.mu.tau2 <- function(mu,tau2) (I(function(z)d2f.eta(z,mu,tau2)*deta.tau2(z,mu,tau2)*deta.mu(z,mu,tau2) + df.eta(z,mu,tau2)*d2eta.mu.tau2(z,mu,tau2))*I(function(z)f.eta(z,mu,tau2)) - I(function(z)df.eta(z,mu,tau2)*deta.tau2(z,mu,tau2))^2 ) / I(function(z)f.eta(z,mu,tau2))^2
+d2l.mu.tau2(mu0,tau20)
+
+
+
+## encapsulate
+source('models.R')
+source('./meta.glmm/R/meta.glmm.R')
+n.GH <- 1e2
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+eta <- function(z,mu,tau2)mu+z*sqrt(tau2)
+deta.mu <- function(z,mu,tau2)1
+d2eta.mu <- function(z,mu,tau2)0
+deta.tau2 <- function(z,mu,tau2)z/2/sqrt(tau2)
+d2eta.tau2 <- function(z,mu,tau2)-z/4/sqrt(tau2)^3
+d2eta.mu.tau2 <- function(z,mu,tau2)0
+moment.1 <- function(z,mu,tau2,paramsi) paramsi['m']*plogis(eta(z,mu,tau2))
+moment.2 <- function(z,mu,tau2,paramsi) {eta0 <- eta(z,mu,tau2);   paramsi['m']*plogis(eta0)*plogis(eta0,lower=FALSE)}
+moment.map <- moment.map.bn.prop
+moment.map <- function(z, paramsi, mu, tau2) {
+    logp <- plogis(mu+sqrt(tau2)*z,log.p=TRUE) |> unname()
+    logp.bar <- plogis(mu+sqrt(tau2)*z,log.p=TRUE,lower.tail=FALSE) |> unname()
+    out <- exp(structure(unname(c(log(paramsi['m'])+logp,  log(paramsi['m'])+logp+logp.bar)), names=c('first','second')))
+    return(out)
+}
+mean.map <- function(z, paramsi, mu, tau2) {
+    logp <- plogis(mu+sqrt(tau2)*z,log.p=TRUE) 
+    out <- exp(log(paramsi['m'])+logp)
+    out <- unname(out)
+    return(out)
+    }
+var.map <- function(z, paramsi, mu, tau2) {
+    logp <- plogis(mu+sqrt(tau2)*z,log.p=TRUE) 
+    logp.bar <- plogis(mu+sqrt(tau2)*z,log.p=TRUE,lower.tail=FALSE) 
+    out <- exp(log(paramsi['m'])+logp+logp.bar)
+    out <- unname(out)
+    return(out)
+    }
+cond.pmf <- cond.pmf.binomial.prop
+## above to be supplied by model, applies to any study in the model
+derivs.study <- function(yi,paramsi,mu,tau2) {
+    ## browser()
+    ## f.eta <- function(z,mu,tau2)dbinom(yi,paramsi['m'],plogis(eta(z,mu,tau2)))
+    f.eta <- function(z,mu,tau2)cond.pmf(x=yi,theta=z,mu=mu,tau2=tau2,params=paramsi,log=FALSE)
+    ## df.eta <- function(z,mu,tau2)f.eta(z,mu,tau2)*(yi-moment.1(z,mu,tau2,paramsi))
+    df.eta <- function(z,mu,tau2)f.eta(z,mu,tau2)*(yi-mean.map(z,paramsi,mu,tau2))
+    ## d2f.eta <- function(z,mu,tau2)f.eta(z,mu,tau2)*((yi-moment.1(z,mu,tau2,paramsi))^2 - moment.2(z,mu,tau2,paramsi))
+    d2f.eta <- function(z,mu,tau2)f.eta(z,mu,tau2)*((yi-moment.1(z,mu,tau2,paramsi))^2 -var.map(z,paramsi,mu,tau2))
+    I <- function(f.z){
+        rule <- list(z=sqrt(2)*GH$x,wt=GH$w/sqrt(pi),log.wt=log(GH$w/sqrt(pi)))
+        sum(rule$wt * f.z(rule$z) )
+    }
+    l <- function(mu,tau2)log(I(function(z)f.eta(z,mu,tau2)))
+    dl.mu <- function(mu,tau2)I(function(z)df.eta(z,mu,tau2)*deta.mu(z,mu,tau2))/ I(function(z)f.eta(z,mu,tau2))
+    dl.tau2 <- function(mu,tau2)I(function(z)df.eta(z,mu,tau2)*deta.tau2(z,mu,tau2)) / I(function(z)f.eta(z,mu,tau2))
+    d2l.mu <- function(mu,tau2) (I(function(z)d2f.eta(z,mu,tau2)*deta.mu(z,mu,tau2)^2 + df.eta(z,mu,tau2)*d2eta.mu(z,mu,tau2))*I(function(z)f.eta(z,mu,tau2)) - I(function(z)df.eta(z,mu,tau2)*deta.mu(z,mu,tau2))^2 ) / I(function(z)f.eta(z,mu,tau2))^2
+    d2l.tau2 <- function(mu,tau2) (I(function(z)d2f.eta(z,mu,tau2)*deta.tau2(z,mu,tau2)^2 + df.eta(z,mu,tau2)*d2eta.tau2(z,mu,tau2))*I(function(z)f.eta(z,mu,tau2)) - I(function(z)df.eta(z,mu,tau2)*deta.tau2(z,mu,tau2))^2 ) / I(function(z)f.eta(z,mu,tau2))^2
+    d2l.mu.tau2 <- function(mu,tau2) (I(function(z)d2f.eta(z,mu,tau2)*deta.tau2(z,mu,tau2)*deta.mu(z,mu,tau2) + df.eta(z,mu,tau2)*d2eta.mu.tau2(z,mu,tau2))*I(function(z)f.eta(z,mu,tau2)) - I(function(z)df.eta(z,mu,tau2)*deta.tau2(z,mu,tau2))*I(function(z)df.eta(z,mu,tau2)*deta.mu(z,mu,tau2)) ) / I(function(z)f.eta(z,mu,tau2))^2
+    objective <- l(mu,tau2)
+    gradient <- c(dl.mu(mu,tau2),dl.tau2(mu,tau2))
+    hessian <- {hess.11 <- d2l.mu(mu,tau2); hess.12 <- d2l.mu.tau2(mu,tau2); hess.22 <- d2l.tau2(mu,tau2); matrix(c(hess.11,hess.12,hess.12,hess.22),nrow=2)}
+    return(list(objective=objective,gradient=gradient,hessian=hessian))
+}
+## ks.fun <- readRDS('ks-fun.rds')
+## pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+stijnen.1 <- read.table('stijnen-table-I.txt')
+y <- stijnen.1$Y0
+ms <- stijnen.1$n0
+params <- cbind(m=ms,y.min=0,y.max=ms)
+## mu <- 0; tau2 <- 1
+theta <- c(mu=0,tau2=1)
+## theta <- c(mu=-4.8,tau2=.83)
+## theta <- c(mu=-3.97,tau2=.24)
+theta <- par.start(y,params,nn.transform.bn.prop)
+## theta <- c(mu = -7.40722632338218, tau2 = 24.2754804611624)
+tol <- 1e-7
+for(i in 1:20) {
+    derivs <- lapply(seq_along(y), function(i)derivs.study(y[i],params[i,],theta['mu'],theta['tau2']))
+    grad <- sapply(derivs,`[[`,'gradient') |> rowSums()
+    hess <- Reduce(`+`,lapply(derivs,`[[`,'hessian'))
+    step <-  - solve(hess)%*%grad
+    theta.new <-  theta + c(step)
+    if(max(abs(theta-theta.new))<tol)break
+    theta <- theta.new
+    dput(theta)
+}
+
+theta.start <- par.start(y,params,nn.transform.bn.prop)
+theta.start <- c(mu=-4.8,tau2=.83)
+obj <- function(theta)sum(sapply(seq_along(y), function(i)derivs.study(y[i],params[i,],theta['mu'],theta['tau2'])$obj))
+optim(theta.start,obj,method='Nelder')
+
+require(nloptr)
+obj <- function(theta)-sum(sapply(seq_along(y), function(i)derivs.study(y[i],params[i,],theta[1],theta[2])$obj))
+fit <- nloptr(
+    x0     = c(0, 1),
+    eval_f = obj,
+    lb     = c(-Inf, 0),
+    ub     = c( Inf, Inf),
+    opts   = list(
+        algorithm = "NLOPT_LN_BOBYQA",
+        xtol_abs  = 1e-8,
+        ftol_abs  = 1e-8,
+        maxeval   = 1e5
+    )
+)
+mu.hat   <- fit$solution[1]
+tau.hat  <- fit$solution[2]
+tau2.hat <- tau.hat^2
+c(mu = mu.hat, tau2 = tau2.hat, logLik = -fit$objective)
+res_mle <- metafor::rma.glmm(
+  measure = "PLO", 
+  xi = Y1, 
+  ni = n1, 
+  data = stijnen.1,
+  model = "UM.FS", # Unconditional model with fixed study effects / random intercept
+  method = "ML"    # Maximum Likelihood
+)
+# Extract mu (beta) and tau2
+mle_estimates <- c(
+  mu   = as.numeric(res_mle$beta),
+  tau2 = as.numeric(res_mle$tau2)
+)
+print(mle_estimates)
+
+
+
+## speeding up
+
+source('models.R')
+source('./meta.glmm/R/meta.glmm.R')
+## stijnen.1 <- read.table('stijnen-table-I.txt')
+## y <- stijnen.1$Y0
+## ms <- stijnen.1$n0
+## params <- cbind(m=ms,y.min=0,y.max=ms)
+n.GH <- 5e2
+GH <- fastGHQuad::gaussHermiteData(n.GH)
+eta.map <- function(z, paramsi, mu, tau2) {
+    eta <- mu+z*sqrt(tau2)
+    grad <- cbind(mu=1,tau2=z/2/sqrt(tau2))
+    hessian <- cbind(mu2=0, mu.tau2=0, tau22=-z/4/sqrt(tau2)^3)
+    return(list(eta=eta,grad=grad,hessian=hessian))
+}
+cond.pmf <- cond.pmf.binomial.prop
+moment.map <- function(z, paramsi, mu, tau2) {
+    logp <- plogis(mu+sqrt(tau2)*z,log.p=TRUE) |> unname()
+    logp.bar <- plogis(mu+sqrt(tau2)*z,log.p=TRUE,lower.tail=FALSE) |> unname()
+    cbind(log(paramsi['m'])+logp, +logp.bar)
+    out <- log(paramsi['m'])+logp
+    out <- unname(out)
+    out <- exp( cbind(mean=out,var=out+logp.bar) )
+    ## out <- exp(structure(unname(c(log(paramsi['m'])+logp,  log(paramsi['m'])+logp+logp.bar)), names=c('first','second')))
+    return(out)
+}
+## max(abs(moment.map(rule$z,paramsi,mu,tau2)[,'mean']-mean.map(rule$z,paramsi,mu,tau2)))
+## yi <- y[1]
+## paramsi <- params[1,]
+## mu <- 0
+## tau2 <- 1
+derivs.study <- function(yi,paramsi,mu,tau2) {
+    rule <- list(z=sqrt(2)*GH$x,wt=GH$w/sqrt(pi),log.wt=log(GH$w/sqrt(pi)))
+    moments <- moment.map(rule$z,paramsi,mu,tau2)
+    eta.derivs <- eta.map(rule$z,paramsi,mu,tau2)
+    f.eta.z <- cond.pmf(x=yi,theta=rule$z,mu=mu,tau2=tau2,params=paramsi,log=FALSE)
+                                        #f.eta(rule$z,mu,tau2)
+    ## df.eta.z <- df.eta(rule$z,mu,tau2)
+    df.eta.z <- f.eta.z*(yi-moments[,'mean'])
+    deta.mu.z <- eta.derivs$grad[,'mu']#deta.mu(rule$z,mu,tau2)
+    deta.tau2.z <- eta.derivs$grad[,'tau2']#deta.tau2(rule$z,mu,tau2)
+    ## d2f.eta.z <- d2f.eta(rule$z,mu,tau2)
+    d2f.eta.z <- f.eta.z*( (yi-moments[,'mean'])^2 - moments[,'var'] )
+    d2eta.mu.z <- eta.derivs$hessian[,'mu2']#d2eta.mu(rule$z,mu,tau2)
+    d2eta.tau2.z <- eta.derivs$hessian[,'tau22']#d2eta.tau2(rule$z,mu,tau2)
+    d2eta.mu.tau2.z <- eta.derivs$hessian[,'mu.tau2']#d2eta.mu.tau2(rule$z,mu,tau2)
+    I.f <- f.eta.z%*%rule$wt#I(function(z)f.eta(z,mu,tau2))
+    I.f.mu <- rule$wt%*%(df.eta.z*deta.mu.z)#I(function(z)df.eta(z,mu,tau2)*deta.mu(z,mu,tau2))
+    I.f.tau2 <- rule$wt%*%(df.eta.z*deta.tau2.z)#I(function(z)df.eta(z,mu,tau2)*deta.tau2(z,mu,tau2))
+    dl.mu <- I.f.mu / I.f
+    dl.tau2 <- I.f.tau2 / I.f
+    d2l.mu <- (rule$wt%*%(d2f.eta.z*deta.mu.z^2 + df.eta.z*d2eta.mu.z) * I.f - I.f.mu^2 ) / I.f^2
+    d2l.tau2 <- ( rule$wt%*%(d2f.eta.z*deta.tau2.z^2 + df.eta.z*d2eta.tau2.z) *I.f - I.f.tau2^2 ) /I.f^2
+    d2l.mu.tau2 <- (rule$wt%*%(d2f.eta.z*deta.tau2.z*deta.mu.z + df.eta.z*d2eta.mu.tau2.z)*I.f - I.f.mu*I.f.tau2 ) / I.f^2
+    ## objective <- l(mu,tau2)
+    gradient <- c(dl.mu,dl.tau2)
+    hessian <- matrix(c(d2l.mu,d2l.mu.tau2,d2l.mu.tau2,d2l.tau2),nrow=2)
+    list(gradient=gradient,hessian=hessian)
+}
+data <- structure(c(3, 0, 6, 1, 2, 6, 4, 5, 136, 177, 117, 35, 64, 180,69, 117), dim = c(8L, 2L), dimnames = list(NULL, c("y", "m")))
+y <- data[,'y']; m <- data[,'m']
+params <- cbind(m=m,y.min=0,y.max=m)
+tol <- 1e-7
+theta <- par.start(y,params,nn.transform.bn.prop)
+for(i in 1:20) {
+    derivs <- lapply(seq_along(y), function(i)derivs.study(y[i],params[i,],theta['mu'],theta['tau2']))
+    grad <- sapply(derivs,`[[`,'gradient') |> rowSums()
+    hess <- Reduce(`+`,lapply(derivs,`[[`,'hessian'))
+    print(hess)
+    step <-  - solve(hess)%*%grad
+    theta.new <-  theta + c(step)
+    ## if(theta.new['tau2']<0)browser()
+        print(theta.new)
+    while(theta.new['tau2']<0) {
+        print(theta.new)
+        step <- step/2
+        theta.new  <- theta+c(step)
+        print(theta.new)
+    }
+    if(max(abs(theta-theta.new))<tol)break
+    theta <- theta.new
+    ## dput(theta)
+}
+
+try.mle <- function(y,params,par.start, tol=1e-7){
+    ## browser()
+    theta <- par.start
+    for(i in 1:20) {
+        derivs <- lapply(seq_along(y), function(i)derivs.study(y[i],params[i,],theta['mu'],theta['tau2']))
+        grad <- sapply(derivs,`[[`,'gradient') |> rowSums()
+        hess <- Reduce(`+`,lapply(derivs,`[[`,'hessian'))
+        step <-  - solve(hess)%*%grad
+        theta.new <-  theta + c(step)
+        ## if(theta.new['tau2']<0)browser()
+        while(theta.new['tau2']<0) {
+            step <- step/2
+            theta.new  <- theta+c(step)
+            ## print(theta.new)
+            }
+        if(max(abs(theta-theta.new))<tol)break
+        theta <- theta.new
+        ## dput(theta)
+    }
+    return(theta)
+}
+
+
+
+
+
+
+## stijnen.1 <- read.table('stijnen-table-I.txt')
+## y <- stijnen.1$Y1
+## ms <- stijnen.1$n1
+## params <- cbind(m=ms,y.min=0,y.max=ms)
+## ## mu <- 0; tau2 <- 1
+## theta <- c(mu=0,tau2=1)
+## ## theta <- c(mu=-4.8,tau2=.83)
+## ## theta <- c(mu=-3.97,tau2=.24)
+## par.start0 <- par.start(y,params,nn.transform.bn.prop)
+## mle(y,params,par.start0)
+## set.seed(1)
+skew <- kurt <- 0
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+sas.params <- sas.invert.params(skew,kurt)
+re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
+## RNGkind("L'Ecuyer-CMRG")#!!!!!!
+## set.seed(1)#!!!!!!!!!
+## re.distr <- rnorm #!!!!
+## tau2.null <- 1/2
+ns <- 5:15
+mu.null <- -3.5
+tau2.null <- .81
+model.str <- 'bn-prop'
+n.GH <- 3e2
+stijnen.1 <- read.table('stijnen-table-I.txt')
+y <- stijnen.1$Y0
+ms <- stijnen.1$n0
+stijnen.params <- cbind(m=ms,y.min=0,y.max=ms)
+mc.idx <- sample(nrow(stijnen.params),max(ns),replace=TRUE)
+mc.params <- stijnen.params[mc.idx,]
+model0 <- model(model.str)
+quad <- make.quad(model0$moment.map,model0$cond.pmf,n.GH=n.GH,adaptive=FALSE,adaptive.tol=1e-5)
+start <- Sys.time()
+by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
+## by.n <- sapply(seq_along(ns), function(i) {
+    ## repeat{
+    cat('.')
+    n <- ns[i]
+    params <- mc.params[1:n,]
+    bartlett.C <- make.bartlett.C(params,quad,model0$pmf.derivs.fun)
+    bartlett.C0 <- bartlett.C(mu.null,tau2.null)$bartlett.C
+    stats <- replicate(round(n^3), {
+        ## browser()
+        y <- model0$dgp(n,mu.null,tau2.null,params,re.distr=re.distr)
+        ## dput(cbind(y,params[,'m']))
+        loglik <- make.loglik(model0$cond.pmf,params,y,quad)
+        ## logtau2.mle.null <- optimize(function(logtau2)loglik(mu.null,exp(logtau2)),interval=c(-20,3),maximum=TRUE)$max
+        ## tau2.mle.null <- exp(logtau2.mle.null)
+        ## par.start0 <- c(mu=mu.null+rnorm(1)/sqrt(n),tau2=tau2.mle.null)
+        ## par.start0 <- par.start(y,params,nn.transform.bn.prop)
+        ## mle0 <- try.mle(y,params,par.start0)
+        ## print(mle0)
+        ## mle0 <- mle(loglik,par.start0,method='BFGS')$mle
+        obj <- function(par)-loglik(par[1],par[2])
+        fit <- nloptr::nloptr(
+                           x0     = c(0, 1),
+                           eval_f = obj,
+                           lb     = c(-Inf, 0),
+                           ub     = c( Inf, Inf),
+                           opts   = list(
+                               algorithm = "NLOPT_LN_BOBYQA",
+                               xtol_abs  = 1e-8,
+                               ftol_abs  = 1e-8,
+                               maxeval   = 1e5
+                           )
+                       )
+        mle0 <- c(mu=fit$solution[1],tau2=fit$solution[2])
+        profile.LR <- make.profile.LR(loglik,mle0,par.start0,logtau2.bounds=c(-20,3))
+        LR <- profile.LR(mu.null)$LR
+        LR.bartlett <- LR / (1+bartlett.C0)
+        c(LR=LR,LR.bartlett=LR.bartlett)
+    })
+    ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
+    ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
+    means <- rowMeans(stats-1)
+    c(ks=ks,means=means)
+})
+by.n <- simplify2array(by.n)
+print(Sys.time() - start)
+plot(ns,by.n['ks.LR',],type='l',ylim=range(by.n[1:2,]))
+lines(ns,by.n['ks.LR.bartlett',],col=2)
+apply(by.n[1:2,],1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
 

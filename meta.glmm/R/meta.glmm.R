@@ -253,17 +253,24 @@ make.profile.LR <- function(loglik,mle,par.start,logtau2.bounds) {
 mle <- function(loglik,par.start,logtau2.bounds=c(-20,3),...) {
     ## browser()
     ## print(par.start)
-    fit <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2])),...)
-    ## fit <- optim(
-    ##     par = c(par.start['mu'], log(par.start['tau2'])),
-    ##     fn = function(par) -loglik(par[1], exp(par[2])),
-    ##     method = 'L-BFGS-B',
-    ##     lower = c(-Inf, logtau2.bounds[1]),
-    ##     upper = c( Inf, logtau2.bounds[2]),
-    ##     ...
-    ## )
-    mu.mle <- unname(fit$par[1]); tau2.mle <- unname(exp(fit$par[2]))
-    out <- list(mle=c(mu=mu.mle,tau2=tau2.mle), status=fit$convergence)
+    ## fit <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2])),...)
+        ## mle0 <- mle(loglik,par.start0,method='BFGS')$mle
+    obj <- function(par)-loglik(par[1],par[2])
+    fit <- nloptr::nloptr(
+                       x0     = par.start,
+                       eval_f = obj,
+                       lb     = c(-Inf, 0),
+                       ub     = c( Inf, Inf),
+                       opts   = list(
+                           algorithm = "NLOPT_LN_BOBYQA",
+                           xtol_abs  = 1e-8,
+                           ftol_abs  = 1e-8,
+                           maxeval   = 1e5
+                       )
+                   )
+    out <-  list(mle=c(mu=fit$solution[1],tau2=fit$solution[2]), status=fit$status)
+    ## mu.mle <- unname(fit$par[1]); tau2.mle <- unname(exp(fit$par[2]))
+    ## out <- list(mle=c(mu=mu.mle,tau2=tau2.mle), status=fit$convergence)
 }
 profile <- function(mu.grid,profile.LR,mle,bartlett.C=NULL,mc.cores=1) {
     ## browser()
