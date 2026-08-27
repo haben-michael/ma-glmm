@@ -22,16 +22,16 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 
 ns <- 5:15
 mu.null <- -.476
-tau2.null <- .35^2
+## tau2.null <- .35^2
 model.str <- 'bn-irr'
 n.GH <- 2e1
 stijnen.6 <- read.table('../../stijnen-table-VI.txt')
-stijnen.params <- with(stijnen.6, cbind(T.t=T1,T.c=T0,s=Y0+Y1,y.min=0,y.max=Y0+Y1))
+stijnen.params <- with(stijnen.6, cbind(T.T=T1,T.C=T0,s=Y0+Y1,y.min=0,y.max=Y0+Y1))
 mc.idx <- sample(nrow(stijnen.params),max(ns),replace=TRUE)
 mc.params <- stijnen.params[mc.idx,]
 model.str <- 'bn-irr'
 model0 <- model(model.str)
-quad <- make.quad(model0$moment.map,model0$cond.pmf,n.GH=n.GH,adaptive=FALSE,adaptive.tol=1e-7)
+quad <- make.quad(model0$moment.map,model0$cond.pmf,n.GH=n.GH,adaptive=TRUE,adaptive.tol=1e-7)
 start <- Sys.time()
 ## by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
 by.n <- sapply(seq_along(ns), function(i) {
@@ -43,15 +43,15 @@ by.n <- sapply(seq_along(ns), function(i) {
     bartlett.C0 <- bartlett.C(mu.null,tau2.null)$bartlett.C
     stats <- replicate(round(n^4), {        
         y <- model0$dgp(n,mu.null,tau2.null,params,re.distr=re.distr)
-        # fit <- meta.glmm(y,params,model.str,n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))        
-        # LR <- fit$profile.LR(mu.null)$LR
-        loglik <- make.loglik(model0$cond.pmf,params,y,quad)
-        logtau2.mle.null <- optimize(function(logtau2)loglik(mu.null,exp(logtau2)),interval=c(-20,3),maximum=TRUE)$max
-        tau2.mle.null <- exp(logtau2.mle.null)
-        par.start0 <- c(mu=mu.null+rnorm(1)/sqrt(n),tau2=tau2.mle.null)
-        mle0 <- mle(loglik,par.start0,method='BFGS')$mle
-        profile.LR <- make.profile.LR(loglik,mle0,par.start0,logtau2.bounds=c(-20,3))
-        LR <- profile.LR(mu.null)$LR
+        fit <- meta.glmm(y,params,model.str,n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))        
+        LR <- fit$profile.LR(mu.null)$LR
+        ## loglik <- make.loglik(model0$cond.pmf,params,y,quad)
+        ## logtau2.mle.null <- optimize(function(logtau2)loglik(mu.null,exp(logtau2)),interval=c(-20,3),maximum=TRUE)$max
+        ## tau2.mle.null <- exp(logtau2.mle.null)
+        ## par.start0 <- c(mu=mu.null+rnorm(1)/sqrt(n),tau2=tau2.mle.null)
+        ## mle0 <- mle(loglik,par.start0,method='BFGS')$mle
+        ## profile.LR <- make.profile.LR(loglik,mle0,par.start0,logtau2.bounds=c(-20,3))
+        ## LR <- profile.LR(mu.null)$LR
         LR.bartlett <- LR / (1+bartlett.C0)
         c(LR=LR,LR.bartlett=LR.bartlett)
     })

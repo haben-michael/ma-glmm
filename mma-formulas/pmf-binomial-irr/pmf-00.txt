@@ -1,2 +1,2 @@
 pmf[x, params, LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-   Log[params["T.t"]/params["T.c"]]]]
+   Log[params["T.T"]/params["T.C"]]]]

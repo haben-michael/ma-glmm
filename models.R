@@ -259,9 +259,9 @@ moment.map.bn.prop <- function(zi, paramsi, mu, tau2) {
 cond.pmf.bn.irr <- cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params,log=FALSE) {
     ## browser()
     if(is.null(dim(params))) {
-        T.t <- params['T.t']; T.c <- params['T.c'];   s <- params['s']
+        T.t <- params['T.T']; T.c <- params['T.C'];   s <- params['s']
     } else {
-        T.t <- params[,'T.t']; T.c <- params[,'T.c'];   s <- params[,'s']
+        T.t <- params[,'T.T']; T.c <- params[,'T.C'];   s <- params[,'s']
     }
     ## T.t <- params[,'T.t']
     ## T.c <- params[,'T.c']
@@ -270,8 +270,8 @@ cond.pmf.bn.irr <- cond.pmf.binomial.irr <- function(x,theta,mu,tau2,params,log=
     dbinom(x,size=s,prob=pr(theta),log=log)
 }
 dgp.bn.irr <- dgp.binomial.irr <- function(n,mu,tau2,params,re.distr=rnorm) {
-    T.t <- params[,'T.t']
-    T.c <- params[,'T.c']
+    T.t <- params[,'T.T']
+    T.c <- params[,'T.C']
     s <- params[,'s']
     theta <- re.distr(n)
     pr <- function(theta)plogis(log(T.t/T.c) + mu+sqrt(tau2)*theta)

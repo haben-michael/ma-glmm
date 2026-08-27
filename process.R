@@ -196,8 +196,8 @@ lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
 ## save.path <- './sim/robustness/binomial-irr-tau2/'
 ## save.path <- './sim/robustness/hyperg/'
 ## save.path <- './sim/260819/'
-## save.path <- './sim/bn-prop/'
-save.path <- './sim/bn-irr/'
+save.path <- './sim/bn-prop/'
+## save.path <- './sim/bn-irr/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -232,7 +232,7 @@ col <- gray.colors(length(tau2.nulls))
 ## plot(NA,type='n',xlim=range(df$skew),ylim=c(-2,max(df$rate)))
 for(i in seq_along(tau2.nulls))
     lines(rate ~ skew, data=subset(df,tau2.null==tau2.nulls[i]),col=col[i],lty=2)
-legend('bottomright',col=col,lty=1,legend=paste0('tau2=',tau2.nulls))
+legend('bottomright',col=col,lty=1,legend=paste0('tau2=',rev(tau2.nulls)))
 ## dev.off()
 
 

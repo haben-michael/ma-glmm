@@ -1,0 +1,145 @@
+ \newcommand{\noop}[1]{}
+\begin{thebibliography}{}
+
+\bibitem[\protect\citeauthoryear{Andrews and Stafford}{Andrews and
+  Stafford}{2000}]{andrews:00}
+Andrews, D.~F. and J.~E. Stafford (2000).
+\newblock {\em Symbolic computation for statistical inference}, Volume~21.
+\newblock Oxford University Press.
+
+\bibitem[\protect\citeauthoryear{Bakbergenuly and Kulinskaya}{Bakbergenuly and
+  Kulinskaya}{2018}]{bakbergenuly:18}
+Bakbergenuly, I. and E.~Kulinskaya (2018).
+\newblock Meta-analysis of binary outcomes via generalized linear mixed models:
+  a simulation study.
+\newblock {\em BMC Medical Research Methodology\/}~{\em 18\/}(1), 70.
+
+\bibitem[\protect\citeauthoryear{Barndorff-Nielsen and Hall}{Barndorff-Nielsen
+  and Hall}{1988}]{barndorff:88}
+Barndorff-Nielsen, O. and P.~Hall (1988).
+\newblock On the level-error after bartlett adjustment of the likelihood ratio
+  statistic.
+\newblock {\em Biometrika\/}~{\em 75\/}(2), 374--378.
+
+\bibitem[\protect\citeauthoryear{Bartlett}{Bartlett}{1937}]{bartlett:37}
+Bartlett, M.~S. (1937).
+\newblock Properties of sufficiency and statistical tests.
+\newblock {\em Proceedings of the Royal Society of London. Series A\/}~{\em
+  160\/}(901), 268--282.
+
+\bibitem[\protect\citeauthoryear{Cordeiro}{Cordeiro}{1983}]{cordeiro:83}
+Cordeiro, G.~M. (1983).
+\newblock Improved likelihood ratio statistics for generalized linear models.
+\newblock {\em Journal of the Royal Statistical Society: Series B
+  (Methodological)\/}~{\em 45\/}(3), 404--413.
+
+\bibitem[\protect\citeauthoryear{Cordeiro}{Cordeiro}{1993}]{cordeiro:93}
+Cordeiro, G.~M. (1993).
+\newblock General matrix formulae for computing bartlett corrections.
+\newblock {\em Statistics \& probability letters\/}~{\em 16\/}(1), 11--18.
+
+\bibitem[\protect\citeauthoryear{Frydenberg and Jensen}{Frydenberg and
+  Jensen}{1989}]{frydenberg:89}
+Frydenberg, M. and J.~L. Jensen (1989).
+\newblock Is the ‘improved likelihood ratio statistic’ really improved in
+  the discrete case?
+\newblock {\em Biometrika\/}~{\em 76\/}(4), 655--661.
+
+\bibitem[\protect\citeauthoryear{G{\"o}tze and van Zwet}{G{\"o}tze and van
+  Zwet}{2006}]{gotze:06}
+G{\"o}tze, F. and W.~R. van Zwet (2006).
+\newblock An expansion for a discrete non-lattice distribution.
+\newblock In {\em Frontiers in statistics}, pp.\  257--274. World Scientific.
+
+\bibitem[\protect\citeauthoryear{Hanada and Sugimoto}{Hanada and
+  Sugimoto}{2026}]{hanada:26}
+Hanada, K. and T.~Sugimoto (2026).
+\newblock Random-effects meta-analysis via generalized linear mixed models: A
+  bartlett-corrected approach for few studies.
+\newblock {\em Biometrics\/}~{\em 82\/}(3), ujag148.
+
+\bibitem[\protect\citeauthoryear{Jackson, Law, Stijnen, Viechtbauer, and
+  White}{Jackson et~al.}{2018}]{jackson:18}
+Jackson, D., M.~Law, T.~Stijnen, W.~Viechtbauer, and I.~R. White (2018).
+\newblock A comparison of seven random-effects models for meta-analyses that
+  estimate the summary odds ratio.
+\newblock {\em Statistics in medicine\/}~{\em 37\/}(7), 1059--1085.
+
+\bibitem[\protect\citeauthoryear{Jensen}{Jensen}{1993}]{jensen:93}
+Jensen, J.~L. (1993).
+\newblock A historical sketch and some new results on the improved log
+  likelihood ratio statistic.
+\newblock {\em Scandinavian Journal of Statistics\/}, 1--15.
+
+\bibitem[\protect\citeauthoryear{Johnson, Kemp, and Kotz}{Johnson
+  et~al.}{2005}]{johnson:05}
+Johnson, N.~L., A.~W. Kemp, and S.~Kotz (2005).
+\newblock {\em Univariate Discrete Distributions\/} (3rd ed.).
+\newblock John Wiley \& Sons.
+
+\bibitem[\protect\citeauthoryear{Jones and Pewsey}{Jones and
+  Pewsey}{2009}]{jones:09}
+Jones, M.~C. and A.~Pewsey (2009).
+\newblock Sinh-arcsinh distributions.
+\newblock {\em Biometrika\/}~{\em 96\/}(4), 761--780.
+
+\bibitem[\protect\citeauthoryear{Lawley}{Lawley}{1956}]{lawley:56}
+Lawley, D.~N. (1956).
+\newblock A general method for approximating to the distribution of likelihood
+  ratio criteria.
+\newblock {\em Biometrika\/}~{\em 43\/}(3/4), 295--303.
+
+\bibitem[\protect\citeauthoryear{Liu and Pierce}{Liu and Pierce}{1994}]{liu:94}
+Liu, Q. and D.~A. Pierce (1994).
+\newblock A note on gauss—hermite quadrature.
+\newblock {\em Biometrika\/}~{\em 81\/}(3), 624--629.
+
+\bibitem[\protect\citeauthoryear{McCullagh}{McCullagh}{1987}]{mccullagh:87}
+McCullagh, P. (1987).
+\newblock {\em Tensor methods in statistics: Monographs on statistics and
+  applied probability}.
+\newblock Chapman and Hall/CRC.
+
+\bibitem[\protect\citeauthoryear{Michael}{Michael}{2026}]{michael:ma-bartlett}
+Michael, H. (2026).
+\newblock Improved efficiency for likelihood-based random effects
+  meta-analysis.
+\newblock Available at
+  https://github.com/haben-michael/ma-bartlett/blob/main/manuscript.pdf.
+
+\bibitem[\protect\citeauthoryear{Niel-Weise, Stijnen, and Van~den
+  Broek}{Niel-Weise et~al.}{2007}]{niel:07}
+Niel-Weise, B., T.~Stijnen, and P.~Van~den Broek (2007).
+\newblock Anti-infective-treated central venous catheters: a systematic review
+  of randomized controlled trials.
+\newblock {\em Intensive care medicine\/}~{\em 33\/}(12), 2058--2068.
+
+\bibitem[\protect\citeauthoryear{Niel-Weise, Stijnen, and Van~den
+  Broek}{Niel-Weise et~al.}{2008}]{niel:08}
+Niel-Weise, B., T.~Stijnen, and P.~Van~den Broek (2008).
+\newblock Anti-infective-treated central venous catheters for total parenteral
+  nutrition or chemotherapy: a systematic review.
+\newblock {\em Journal of Hospital Infection\/}~{\em 69\/}(2), 114--123.
+
+\bibitem[\protect\citeauthoryear{Noma}{Noma}{2011}]{noma:11}
+Noma, H. (2011).
+\newblock Confidence intervals for a random-effects meta-analysis based on
+  bartlett-type corrections.
+\newblock {\em Statistics in medicine\/}~{\em 30\/}(28), 3304--3312.
+
+\bibitem[\protect\citeauthoryear{Self and Liang}{Self and
+  Liang}{1987}]{self:87}
+Self, S.~G. and K.-Y. Liang (1987).
+\newblock Asymptotic properties of maximum likelihood estimators and likelihood
+  ratio tests under nonstandard conditions.
+\newblock {\em Journal of the American Statistical Association\/}~{\em
+  82\/}(398), 605--610.
+
+\bibitem[\protect\citeauthoryear{Stijnen, Hamza, and {\"O}zdemir}{Stijnen
+  et~al.}{2010}]{stijnen:10}
+Stijnen, T., T.~H. Hamza, and P.~{\"O}zdemir (2010).
+\newblock Random effects meta-analysis of event outcome in the framework of the
+  generalized linear mixed model with applications in sparse data.
+\newblock {\em Statistics in medicine\/}~{\em 29\/}(29), 3046--3067.
+
+\end{thebibliography}

@@ -3,16 +3,16 @@
      x*(6 - 9*theta*Sqrt[beta[1]] + 4*theta^2*beta[1]) + 
      x^2*(-9*theta*Sqrt[beta[1]] + 6*theta^2*beta[1]))*
     LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-      Log[params["T.t"]/params["T.c"]]]*params["s"] + 
+      Log[params["T.T"]/params["T.C"]]]*params["s"] + 
    (3 - 9*theta*(1 + x)*Sqrt[beta[1]] + theta^2*(7 + 12*x + 6*x^2)*beta[1])*
     LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-       Log[params["T.t"]/params["T.c"]]]^2*params["s"]*(1 + params["s"]) - 
+       Log[params["T.T"]/params["T.C"]]]^2*params["s"]*(1 + params["s"]) - 
    theta*(-3 + 2*theta*(3 + 2*x)*Sqrt[beta[1]])*Sqrt[beta[1]]*
     LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-       Log[params["T.t"]/params["T.c"]]]^3*params["s"]*
+       Log[params["T.T"]/params["T.C"]]]^3*params["s"]*
     (2 + 3*params["s"] + params["s"]^2) + theta^2*beta[1]*
     LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-       Log[params["T.t"]/params["T.c"]]]^4*params["s"]*
+       Log[params["T.T"]/params["T.C"]]]^4*params["s"]*
     (6 + 11*params["s"] + 6*params["s"]^2 + params["s"]^3))*
   pmf[x, params, LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-     Log[params["T.t"]/params["T.c"]]]])/(8*beta[1]^(5/2))
+     Log[params["T.T"]/params["T.C"]]]])/(8*beta[1]^(5/2))

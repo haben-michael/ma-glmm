@@ -63,7 +63,7 @@ ks.study <- function(paramsi,mu,tau2,quad,pmf.derivs.fun,debug=FALSE)  {
         ## k.val <- sum( k.unit )
     })
     k.vals <- colSums(ks.unit,na.rm=TRUE)#!!!!!!!!!!!!!!1 
-    k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
     ## out <- list(ks.df=ks.df, ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit)
     out <- list(ks.df=ks.df)

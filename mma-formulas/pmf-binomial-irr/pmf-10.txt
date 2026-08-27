@@ -1,4 +1,4 @@
 (theta*(x - LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-      Log[params["T.t"]/params["T.c"]]]*params["s"])*
+      Log[params["T.T"]/params["T.C"]]]*params["s"])*
   pmf[x, params, LogisticSigmoid[theta*Sqrt[beta[1]] + beta[2] + 
-     Log[params["T.t"]/params["T.c"]]]])/(2*Sqrt[beta[1]])
+     Log[params["T.T"]/params["T.C"]]]])/(2*Sqrt[beta[1]])
