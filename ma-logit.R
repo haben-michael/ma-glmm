@@ -3094,7 +3094,7 @@ CI <- confint.meta.glmm(meta.glmm.fit,grid=list(offset=3,size=10),mc.cores=5,bar
 
 
 
-## second re-factoring
+## 12, second re-factoring
 
 source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
@@ -3125,7 +3125,7 @@ profiled <- rbind(LR=profiled$LR,LR.bartlett=profiled$LR.bartlett)
 confint(mu.grid=mu.grid,profile=profiled)
 using constructor/convenience functions:
 
-## binomial-prop:
+## 12a binomial-prop:
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
 pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
@@ -3190,7 +3190,7 @@ dd
 ## [1,] -4.089781 -2.980016
 
 
-## hyperg
+## 12b hyperg
 source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
 stijnen.1 <- read.table('stijnen-table-I.txt')
@@ -3207,16 +3207,16 @@ CIs <- confint.meta.glmm(fit,mc.cores=5,bartlett=TRUE,mu.grid=list(offset=1.5,si
 
 
 
-##  binomial-IRR
+## 12c binomial-IRR
 source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
 stijnen.6 <- read.table('stijnen-table-VI.txt')
 y <- x.T <- stijnen.6$Y1
 x.C <- stijnen.6$Y0
-T.t <- stijnen.6$T1/1000
-T.c <- stijnen.6$T0/1000
+T.T <- stijnen.6$T1/1000
+T.C <- stijnen.6$T0/1000
 s <- x.C+x.T
-params <- cbind(T.t=T.t,T.c=T.c,s=s,y.min=0,y.max=s)
+params <- cbind(T.T=T.T,T.C=T.C,s=s,y.min=0,y.max=s)
 n.GH <- 15
 fit <- meta.glmm(y,params,'bn-irr',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))#,control=list(trace=4,ndeps = c(1e-7, 1e-7)))
 CIs <- confint.meta.glmm(fit,mc.cores=5,bartlett=TRUE,mu.grid=list(offset=2,size=20))
@@ -3225,25 +3225,22 @@ print(CIs)
 
 
 
-## poisson
+## 12d poisson
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
 source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
 stijnen.vi <- read.table('stijnen-table-VI.txt')
-n.GH <- 3e2
-y <- stijnen.vi$Y0
-T <- stijnen.vi$T0/1000
-params <- cbind(T=T,y.min=0,y.max=1e2)
+n.GH <- 1e2
+y <- stijnen.vi$Y1
+T <- stijnen.vi$T1/1000
+params <- cbind(T=T,y.min=0,y.max=1e4)
 fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))
-confint.meta.glmm(fit,mc.cores=5,mu.grid=list(offset=1.5,size=10))
+confint.meta.glmm(fit,mc.cores=5,mu.grid=list(offset=2.5,size=10))
 
 ## varyng n.GH and y.max
-## n.GH <- seq(100,400,by=100)
-## y.max <- seq(5.5e2,8e2,by=50)
-## pars <- expand.grid(n.GH=n.GH,y.max=y.max)
-n.GH <- c(5:10,100)
-y.max <- c(seq(1e2,4e2,by=1e2),1e3)#seq(1e2,3e2,by=50)
+n.GH <- c(seq(10,20,by=5),1e2)
+y.max <- c(seq(5e2,1.5e3,by=5e2),5e3)#seq(1e2,3e2,by=50)
 pars <- expand.grid(n.GH=n.GH,y.max=y.max)
 CIs <- apply(pars, 1, function(par) {
     print(par)
@@ -3251,25 +3248,31 @@ CIs <- apply(pars, 1, function(par) {
     params <- cbind(T=T,y.min=0,y.max=y.max)
     fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))
     CI <- tryCatch({
-        fit <- confint.meta.glmm(fit,mc.cores=4,mu.grid=list(offset=1.5,size=10),plot=FALSE)
+        fit <- confint.meta.glmm(fit,mc.cores=parallel::detectCores()-1,mu.grid=list(offset=1.5,size=10),plot=FALSE)
         print(fit)
         fit
     },    error=function(e)NA)
     return(CI)
 })
 
+## save.image('pn diagnostic--adaptive--trt 4.RData')
+## save.image('pn diagnostic--adaptive--trt 3.RData')
+## save.image('pn diagnostic--adaptive--trt 2.RData')
+## save.image('pn diagnostic--adaptive--trt.RData')
+## save.image('pn diagnostic--adaptive.RData').
 
-## save.image('pn diagnostic--adaptive.RData'). culprit seems to be
-## using IV/D-L estimates. was preivously using
-## (mu.null,tau2.mle.redu), which does a lot better.
 
+lapply(CIs[!is.na(CIs)],`[[`,'CIs') |> sapply(`[[`,'LR.bartlett')  |> t() |> round(4) |> apply(1,paste,collapse=',') |> matrix(nrow=length(unique(pars$n.GH)))
 
 lapply(CIs[!is.na(CIs)],`[[`,'CIs') |> sapply(`[[`,'LR.bartlett')  |> sapply(function(elt)elt[1,]) |> t() |> round(4) |> apply(1,paste,collapse=',') |> matrix(nrow=length(unique(pars$n.GH)))
 
 
 
 
-## investigate why par.start with iV/DL doing worse than reduced mle
+
+## ---investigate why par.start with iV/DL doing worse than reduced
+## mle. culprit seems to be using IV/D-L estimates. was preivously
+## using (mu.null,tau2.mle.redu), which does a lot better.
 source('utils.R')
 try.mle <- function(x,params,mu.null,cond.pmf,logtau2.bounds=c(-20,3),n.GH=1e2,...) {
     ## browser()
@@ -3365,8 +3368,9 @@ par(op)
 
 
 
+## 13 custom mle using newton-raphson instead of optim
 
-## gradient and hessian of loglik
+## 13a gradient and hessian of loglik
 
 
 n.GH <- 1e2
@@ -3418,11 +3422,7 @@ d2l.mu.tau2 <- function(mu,tau2) (I(function(z)d2f.eta(eta(z,mu,tau2))*deta.tau2
 ## d2l.mu.tau2(mu0,tau20)
 
 
-
-
-
-
-## reparametrize eta -> mu,tau2 to be compatible with current model
+## 13b reparametrize eta -> mu,tau2 to be compatible with current model
 ## routines
 
 n.GH <- 1e2
@@ -3472,7 +3472,7 @@ d2l.mu.tau2(mu0,tau20)
 
 
 
-## encapsulate
+## 13c encapsulate
 source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
 n.GH <- 1e2
@@ -3594,7 +3594,7 @@ print(mle_estimates)
 
 
 
-## speeding up
+## 13d speed up code, apply to bn-prop rate sim. update: newton keeps overshooting. cant get through a sim. moving to nloptr.
 
 source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
@@ -3702,10 +3702,6 @@ try.mle <- function(y,params,par.start, tol=1e-7){
 }
 
 
-
-
-
-
 ## stijnen.1 <- read.table('stijnen-table-I.txt')
 ## y <- stijnen.1$Y1
 ## ms <- stijnen.1$n1
@@ -3790,3 +3786,9 @@ plot(ns,by.n['ks.LR',],type='l',ylim=range(by.n[1:2,]))
 lines(ns,by.n['ks.LR.bartlett',],col=2)
 apply(by.n[1:2,],1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
 
+
+
+## y <- c(0L, 0L, 3L, 1L, 0L)
+## params <- structure(c(174, 345, 113, 345, 44, 177, 362, 122, 362, 35, 4, 
+## 4, 3, 4, 4, 0, 0, 0, 0, 0, 4, 4, 3, 4, 4), dim = c(5L, 5L), dimnames = list(
+##     NULL, c("m.T", "m.C", "s", "y.min", "y.max")))

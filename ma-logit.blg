@@ -7,45 +7,45 @@ Warning--no number and no volume in jensen:93
 Warning--no journal in michael:ma-bartlett
 Warning--no number and no volume in michael:ma-bartlett
 Warning--page numbers missing in michael:ma-bartlett
-You've used 22 entries,
+You've used 23 entries,
             2861 wiz_defined-function locations,
-            756 strings with 8389 characters,
-and the built_in function-call counts, 14991 in all, are:
-= -- 1287
-> -- 1015
+            762 strings with 8576 characters,
+and the built_in function-call counts, 15729 in all, are:
+= -- 1355
+> -- 1067
 < -- 2
-+ -- 304
-- -- 362
-* -- 1331
-:= -- 2722
-add.period$ -- 67
-call.type$ -- 22
-change.case$ -- 150
-chr.to.int$ -- 22
-cite$ -- 26
-duplicate$ -- 404
-empty$ -- 945
-format.name$ -- 418
-if$ -- 2759
++ -- 318
+- -- 382
+* -- 1398
+:= -- 2854
+add.period$ -- 70
+call.type$ -- 23
+change.case$ -- 157
+chr.to.int$ -- 23
+cite$ -- 27
+duplicate$ -- 422
+empty$ -- 989
+format.name$ -- 442
+if$ -- 2896
 int.to.chr$ -- 1
 int.to.str$ -- 0
-missing$ -- 25
-newline$ -- 114
-num.names$ -- 220
-pop$ -- 102
+missing$ -- 26
+newline$ -- 119
+num.names$ -- 230
+pop$ -- 106
 preamble$ -- 2
-purify$ -- 285
+purify$ -- 298
 quote$ -- 0
-skip$ -- 436
+skip$ -- 458
 stack$ -- 0
-substring$ -- 893
-swap$ -- 134
+substring$ -- 936
+swap$ -- 140
 text.length$ -- 2
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 410
+type$ -- 430
 warning$ -- 4
-while$ -- 235
+while$ -- 247
 width$ -- 0
-write$ -- 292
+write$ -- 305
 (There were 4 warnings)

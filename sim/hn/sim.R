@@ -22,7 +22,7 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 
 ns <- 5:15
 mu.null <- -1.353
-tau2.null <- 3#.83^2
+##tau2.null <- .83^2
 model.str <- 'hn'
 n.GH <- 2e1
 stijnen.1 <- read.table('../../stijnen-table-I.txt')
@@ -44,8 +44,15 @@ by.n <- sapply(seq_along(ns), function(i) {
     bartlett.C0 <- bartlett.C(mu.null,tau2.null)$bartlett.C
     stats <- replicate(round(n^4), {        
         y <- model0$dgp(n,mu.null,tau2.null,params,re.distr=re.distr)
-        fit <- meta.glmm(y,params,model.str,n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))
+        fit <- meta.glmm(y,params,model.str,n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))        
         LR <- fit$profile.LR(mu.null)$LR
+        ## loglik <- make.loglik(model0$cond.pmf,params,y,quad)
+        ## logtau2.mle.null <- optimize(function(logtau2)loglik(mu.null,exp(logtau2)),interval=c(-20,3),maximum=TRUE)$max
+        ## tau2.mle.null <- exp(logtau2.mle.null)
+        ## par.start0 <- c(mu=mu.null,tau2=tau2.mle.null)
+        ## mle0 <- mle(loglik,par.start0,method='BFGS')$mle
+        ## profile.LR <- make.profile.LR(loglik,mle0,par.start0,logtau2.bounds=c(-20,3))
+        ## LR <- profile.LR(mu.null)$LR
         LR.bartlett <- LR / (1+bartlett.C0)
         c(LR=LR,LR.bartlett=LR.bartlett)
     })

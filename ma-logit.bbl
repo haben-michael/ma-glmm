@@ -21,6 +21,14 @@ Barndorff-Nielsen, O. and P.~Hall (1988).
   statistic.
 \newblock {\em Biometrika\/}~{\em 75\/}(2), 374--378.
 
+\bibitem[\protect\citeauthoryear{Barndorff-Nielsen and Cox}{Barndorff-Nielsen
+  and Cox}{1984}]{barndorff:84}
+Barndorff-Nielsen, O.~E. and D.~R. Cox (1984).
+\newblock Bartlett adjustments to the likelihood ratio statistic and the
+  distribution of the maximum likelihood estimator.
+\newblock {\em Journal of the Royal Statistical Society: Series B
+  (Methodological)\/}~{\em 46\/}(3), 483--495.
+
 \bibitem[\protect\citeauthoryear{Bartlett}{Bartlett}{1937}]{bartlett:37}
 Bartlett, M.~S. (1937).
 \newblock Properties of sufficiency and statistical tests.
@@ -54,8 +62,8 @@ G{\"o}tze, F. and W.~R. van Zwet (2006).
 \bibitem[\protect\citeauthoryear{Hanada and Sugimoto}{Hanada and
   Sugimoto}{2026}]{hanada:26}
 Hanada, K. and T.~Sugimoto (2026).
-\newblock Random-effects meta-analysis via generalized linear mixed models: A
-  bartlett-corrected approach for few studies.
+\newblock {Random-effects meta-analysis via generalized linear mixed models: A
+  Bartlett-corrected approach for few studies}.
 \newblock {\em Biometrics\/}~{\em 82\/}(3), ujag148.
 
 \bibitem[\protect\citeauthoryear{Jackson, Law, Stijnen, Viechtbauer, and
@@ -91,7 +99,7 @@ Lawley, D.~N. (1956).
 
 \bibitem[\protect\citeauthoryear{Liu and Pierce}{Liu and Pierce}{1994}]{liu:94}
 Liu, Q. and D.~A. Pierce (1994).
-\newblock A note on gauss—hermite quadrature.
+\newblock {A note on Gauss—Hermite quadrature}.
 \newblock {\em Biometrika\/}~{\em 81\/}(3), 624--629.
 
 \bibitem[\protect\citeauthoryear{McCullagh}{McCullagh}{1987}]{mccullagh:87}

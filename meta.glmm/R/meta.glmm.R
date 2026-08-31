@@ -159,6 +159,7 @@ make.quad <- function(moment.map,cond.pmf,n.GH,adaptive=TRUE,adaptive.tol=NULL) 
                 ## print(c(zi.new,zi))
                 step <- newton.step(zi, yi, paramsi, mu, tau2)
                 zi.new <- zi + step
+                ## if(!is.finite(cond.pmf(yi,zi.new,mu,tau2,paramsi,log=TRUE)))browser()
                 while(cond.pmf(yi,zi.new,mu,tau2,paramsi,log=TRUE) < cond.pmf(yi,zi,mu,tau2,paramsi,log=TRUE)) {
                     step <- step / 2
                     zi.new <- zi + step
@@ -251,10 +252,9 @@ make.profile.LR <- function(loglik,mle,par.start,logtau2.bounds) {
 ##     }
 ## curve(cond.pmf.hyperg(yi,x,mu,tau2,paramsi)*dnorm(x),-5,5)
 mle <- function(loglik,par.start,logtau2.bounds=c(-20,3),...) {
-    ## browser()
-    ## print(par.start)
     ## fit <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2])),...)
-        ## mle0 <- mle(loglik,par.start0,method='BFGS')$mle
+    ## mu.mle <- unname(fit$par[1]); tau2.mle <- unname(exp(fit$par[2]))
+    ## out <- list(mle=c(mu=mu.mle,tau2=tau2.mle), status=fit$convergence)
     obj <- function(par)-loglik(par[1],par[2])
     fit <- nloptr::nloptr(
                        x0     = par.start,
@@ -269,8 +269,6 @@ mle <- function(loglik,par.start,logtau2.bounds=c(-20,3),...) {
                        )
                    )
     out <-  list(mle=c(mu=fit$solution[1],tau2=fit$solution[2]), status=fit$status)
-    ## mu.mle <- unname(fit$par[1]); tau2.mle <- unname(exp(fit$par[2]))
-    ## out <- list(mle=c(mu=mu.mle,tau2=tau2.mle), status=fit$convergence)
 }
 profile <- function(mu.grid,profile.LR,mle,bartlett.C=NULL,mc.cores=1) {
     ## browser()

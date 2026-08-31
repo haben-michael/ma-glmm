@@ -20,9 +20,9 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 ## tau2.null <- 1/2
 
 
-ns <- 5:15
+ns <- 10:20
 mu.null <- -.476
-## tau2.null <- .35^2
+tau2.null <- .35^2
 model.str <- 'bn-irr'
 n.GH <- 2e1
 stijnen.6 <- read.table('../../stijnen-table-VI.txt')

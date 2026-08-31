@@ -324,5 +324,6 @@ model <- function(model.str) {
                       pmf.derivs.fun = pmf.derivs.fun.bn.irr
                   ),
                   )
+    out <- c(out, model.str=model.str)
     return(out)
 }

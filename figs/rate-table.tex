@@ -2,16 +2,16 @@
 \centering
 \begin{tabular}{l lccccc}
 \toprule
-\textbf{Study} & \textbf{Statistic} & 0 & 0.05 & 0.1 & 0.15 & 0.2 \\
+\textbf{Model} & \textbf{Statistic} & 0 & 0.05 & 0.1 & 0.15 & 0.2 \\
 \midrule
-\multirow{2}{*}{bn.prop} & LR (standard) & -1.14 (0.12) & -1.14 (0.08) & -0.99 (0.08) & -0.64 (0.18) & -0.34 (0.14) \\
- & LR (Bartlett) & -1.87 (0.35) & -1.25 (0.31) & -1.13 (0.35) & -0.29 (0.26) & 0.00 (0.26) \\
+\multirow{2}{*}{\eqref{mod:bn-prop}} & LR (standard) & -1.16 (0.11) & -1.14 (0.11) & -0.96 (0.09) & -0.62 (0.16) & -0.34 (0.13) \\
+ & LR (Bartlett) & -1.82 (0.32) & -1.48 (0.37) & -1.13 (0.33) & -0.37 (0.22) & 0.03 (0.24) \\
 \cmidrule(lr){1-7}
-\multirow{2}{*}{pn} & LR (standard) & -1.16 (0.19) & -1.21 (0.17) & -0.69 (0.32) & -0.59 (0.03) & -0.52 (0.21) \\
+\multirow{2}{*}{\eqref{mod:pn}} & LR (standard) & -1.16 (0.19) & -1.21 (0.17) & -0.69 (0.32) & -0.59 (0.03) & -0.52 (0.21) \\
  & LR (Bartlett) & -1.89 (0.44) & -1.87 (0.34) & -0.96 (0.36) & -0.41 (0.02) & -0.29 (0.45) \\
 \cmidrule(lr){1-7}
-\multirow{2}{*}{bn.irr} & LR (standard) & -0.83 (0.20) & -0.91 (0.20) & -0.79 (0.19) & -0.72 (0.24) & -0.38 (0.17) \\
- & LR (Bartlett) & -1.01 (0.21) & -1.10 (0.17) & -1.13 (0.24) & -1.15 (0.23) & -1.20 (0.36) \\
+\multirow{2}{*}{\eqref{mod:bn-irr}} & LR (standard) & -0.86 (0.31) & -0.71 (0.23) & -0.47 (0.30) & -0.12 (0.10) & 0.02 (0.20) \\
+ & LR (Bartlett) & -1.57 (0.34) & -1.61 (0.36) & -1.83 (0.29) & -1.13 (0.93) & 0.03 (0.60) \\
 \bottomrule
 \end{tabular}
 \caption{Simulation results. The cells contain the medians and SDs of the log of the rate of the empirical Kolmogorov-Smirnov distance to a chi-squared distribution.}

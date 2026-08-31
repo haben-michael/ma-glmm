@@ -198,6 +198,7 @@ lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
 ## save.path <- './sim/260819/'
 save.path <- './sim/bn-prop/'
 ## save.path <- './sim/bn-irr/'
+save.path <- './sim/hn/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -223,16 +224,16 @@ df <- subset(long.agg,stat=='ks.LR.bartlett')
 tau2.nulls <- unique(df$tau2.null)
 col <- gray.colors(length(tau2.nulls)) |> rev()
 ## png('./figs/sim-tau2.png')
-plot(NA,type='n',xlim=range(df$skew),ylim=c(-2,max(long.agg$rate)))
+plot(NA,type='n',xlim=range(df$skew),ylim=c(-2.1,max(long.agg$rate)),xlab='skew',ylab='log rate')
 for(i in seq_along(tau2.nulls))
     lines(rate ~ skew, data=subset(df,tau2.null==tau2.nulls[i]),col=col[i])
-df <- subset(long.agg,stat=='ks.LR')
+df <- subset(long.agg,stat=='ks.LR') |> rev()
 tau2.nulls <- unique(df$tau2.null)
 col <- gray.colors(length(tau2.nulls))
 ## plot(NA,type='n',xlim=range(df$skew),ylim=c(-2,max(df$rate)))
 for(i in seq_along(tau2.nulls))
     lines(rate ~ skew, data=subset(df,tau2.null==tau2.nulls[i]),col=col[i],lty=2)
-legend('bottomright',col=col,lty=1,legend=paste0('tau2=',rev(tau2.nulls)))
+legend('bottomright',col=col,lty=1,legend=sapply(tau2.nulls,\(tau2.null)bquote(tau^2==.(tau2.null))))
 ## dev.off()
 
 
@@ -366,3 +367,45 @@ sink('./figs/rate-table.tex')
 generate.stacked.latex(rate.sims)
 sink()
 
+
+
+
+## varying tau2, with loess
+
+
+save.path <- './sim/bn-irr/'
+## save.path <- './sim/hn/'
+filelist <- dir(save.path)
+filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+print(length(filelist))
+by.sim <- lapply(filelist, function(file) {
+    ## print(file)   
+    load(paste0(save.path,file))
+    rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
+    data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt,tau2.null=tau2.null) 
+    ## data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
+})
+
+long <- do.call(rbind,by.sim)
+long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
+rownames(long) <- NULL
+long.agg <- aggregate(rate ~ ., median,data=long)
+long.agg <- subset(long.agg,subset=stat=='ks.LR' | stat=='ks.LR.bartlett')
+## long.agg <- subset(long.agg,tau2.null%in%c(.1,.2,.3))
+df <- subset(long.agg,stat=='ks.LR.bartlett')
+tau2.nulls <- unique(df$tau2.null)
+col <- gray.colors(length(tau2.nulls)) |> rev()
+## png('./figs/sim-tau2.png')
+plot(NA,type='n',xlim=range(df$skew),ylim=c(-2.1,max(long.agg$rate)),xlab='skew of random effect',ylab='log rate')
+for(i in seq_along(tau2.nulls))
+    ## lines(rate ~ skew, data=subset(df,tau2.null==tau2.nulls[i]),col=col[i])
+    with(subset(df,tau2.null==tau2.nulls[i]), lines(skew, predict(loess(rate ~ skew)), col=col[i]))
+df <- subset(long.agg,stat=='ks.LR')
+tau2.nulls <- unique(df$tau2.null)
+col <- gray.colors(length(tau2.nulls)) |> rev()
+## plot(NA,type='n',xlim=range(df$skew),ylim=c(-2,max(df$rate)))
+for(i in seq_along(tau2.nulls))
+    ## lines(rate ~ skew, data=subset(df,tau2.null==tau2.nulls[i]),col=col[i],lty=2)
+    with(subset(df,tau2.null==tau2.nulls[i]), lines(skew, predict(loess(rate ~ skew)), col=col[i],lty=2))
+legend('bottomright',col=col,lty=1,legend=sapply(tau2.nulls,\(tau2.null)bquote(tau^2==.(tau2.null))))
+## dev.off()
