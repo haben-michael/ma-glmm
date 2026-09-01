@@ -44,30 +44,48 @@ sas.invert.params <- function(target.skew, target.kurt) {
 
 
 ks.study <- function(paramsi,mu,tau2,quad,pmf.derivs.fun,debug=FALSE)  {
+    ## browser()    
     beta <- c(tau2,mu)
-    ## browser()
-    pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
-        supp.y <-  paramsi['y.min']:paramsi['y.max']
-        ## units.mat <- sapply(quad.rule$z,function(zi)pmf.deriv.fun(beta=beta,params=params,theta=zi,x=supp.y))
-        ## colSums(quad.rule$wt * t(units.mat))
-        quad.rules <- lapply(supp.y, function(yi)quad(yi,paramsi,mu,tau2))
-        nodes.mat <- sapply(quad.rules,`[[`,'wt')
+    ## pmf.derivs.unit <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
+    ##     supp.y <-  paramsi['y.min']:paramsi['y.max']
+    ##     ## units.mat <- sapply(quad.rule$z,function(zi)pmf.deriv.fun(beta=beta,params=params,theta=zi,x=supp.y))
+    ##     ## colSums(quad.rule$wt * t(units.mat))
+    ##     quad.rules <- lapply(supp.y, function(yi)quad(yi,paramsi,mu,tau2))
+    ##     weight.mat <- sapply(quad.rules,`[[`,'wt')
+    ##     ## browser()
+    ##     units.mat <- sapply(seq_along(supp.y), function(i)pmf.deriv.fun(beta=beta,params=paramsi,theta=quad.rules[[i]]$z,x=supp.y[i]))
+    ##     colSums(weight.mat*units.mat)
+    ## })
+    ## ks.unit <- sapply(seq_along(ks.fun), function(i) {
+    ##     k.fun <- ks.fun[[i]]
+    ##     args <- attr(k.fun,'args')
+    ##     k.unit <- do.call(k.fun, pmf.derivs.unit[args])
+    ##     ## k.val <- sum( k.unit )
+    ## })
+    supp.y <-  paramsi['y.min']:paramsi['y.max']
+    ## units.mat <- sapply(quad.rule$z,function(zi)pmf.deriv.fun(beta=beta,params=params,theta=zi,x=supp.y))
+    ## colSums(quad.rule$wt * t(units.mat))
+    quad.rules <- lapply(supp.y, function(yi)quad(yi,paramsi,mu,tau2))
+    weight.mat <- sapply(quad.rules,`[[`,'wt')
+    units.mats <- lapply(pmf.derivs.fun, function(pmf.deriv.fun) {
         ## browser()
         units.mat <- sapply(seq_along(supp.y), function(i)pmf.deriv.fun(beta=beta,params=paramsi,theta=quad.rules[[i]]$z,x=supp.y[i]))
-        colSums(nodes.mat*units.mat)
+        weight.mat*units.mat
     })
+    units.mats <- simplify2array(units.mats)
+    pmf.derivs.unit <- apply(units.mats,2:3,sum)
     ks.unit <- sapply(seq_along(ks.fun), function(i) {
         k.fun <- ks.fun[[i]]
         args <- attr(k.fun,'args')
-        k.unit <- do.call(k.fun, pmf.derivs.unit[args])
+        k.unit <- do.call(k.fun, as.data.frame(pmf.derivs.unit[,args]))
         ## k.val <- sum( k.unit )
     })
-    k.vals <- colSums(ks.unit,na.rm=TRUE)#!!!!!!!!!!!!!!1 
-k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
+    k.vals <- colSums(ks.unit)#,na.rm=TRUE)#!!!!!!!!!!!!!!1 
+    k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
     ## out <- list(ks.df=ks.df, ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit)
     out <- list(ks.df=ks.df)
-    if(debug) out <- c(out,debug=list(list(ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit)))
+    if(debug) out <- c(out,debug=list(list(ks.unit=ks.unit, units.mats=units.mats, nodes=sapply(quad.rules,`[[`,'z'))))
     return(out)
 }
 ## ks.study(params[1,],mu.null,tau2.null,quad,pmf.derivs.fun)
@@ -80,7 +98,7 @@ ks.ma <- function(params,mu,tau2,quad,pmf.derivs.fun,debug=FALSE) {
     k.vals.ma <- sapply(ks.study.fits,function(fit)fit$ks.df$k.val) |> rowSums()
     ks.df.ma <- data.frame(inner=ks.study.fits[[1]]$ks.df$inner, outer=ks.study.fits[[1]]$ks.df$outer,k.val=k.vals.ma)
     ks.study.fits <- sapply(ks.study.fits,`[[<-`,'ks.df',NULL)
-    out <- list(ks.df.ma=ks.df.ma)
+    out <- list(ks.df=ks.df.ma)
     if(debug) out <- c(out,debug=list(ks.study.fits))
     return(out)
     ## return(list(ks.df.ma=ks.df.ma,ks.study.fits=ks.study.fits))
@@ -105,11 +123,15 @@ lawley <- function(k.df,p) {
 }
 make.bartlett.C <- function(params,quad,pmf.derivs.fun,debug=FALSE){
     bartlett.C <- function(mu,tau2) {
+        ## browser()
         ## cat('.')
         ks.ma.fit <- ks.ma(params=params,mu=mu,tau2=tau2,quad=quad,pmf.derivs.fun=pmf.derivs.fun,debug=debug)
         ks.df <- ks.ma.fit$ks.df
         bartlett.C <- lawley(ks.df,2) - lawley(ks.df,1)
-        return(list(bartlett.C=bartlett.C))
+        ## return(list(bartlett.C=bartlett.C))
+        out <- list(bartlett.C=bartlett.C)
+        if(debug) out <- c(out,debug=list(ks.ma.fit$debug))
+        return(out)
     }
 }
 ## make.quad <- function(integrand.mode,var.map,n.GH,adaptive=TRUE) {
@@ -329,7 +351,7 @@ par.start <- function(y,params,nn.transform) {
         c(mu=mu.fe,tau2=tau2.start)
     })
 }
-meta.glmm <- function(y,params,model.str,n.GH,adaptive,logtau2.bounds,...) {
+meta.glmm <- function(y,params,model.str,n.GH,adaptive,logtau2.bounds,debug=FALSE,...) {
     model <- model(model.str)
     ## integrand.mode <- make.integrand.mode(model$newton.step)
     quad <- make.quad(model$moment.map,model$cond.pmf,n.GH=n.GH,adaptive=adaptive,adaptive.tol=1e-4)#!!!!!!
@@ -339,7 +361,7 @@ meta.glmm <- function(y,params,model.str,n.GH,adaptive,logtau2.bounds,...) {
     ## browser()
     mle0 <- mle(loglik,par.start0,logtau2.bounds,...)$mle
     profile.LR <- make.profile.LR(loglik,mle0,par.start0,logtau2.bounds=logtau2.bounds)
-    bartlett.C <- make.bartlett.C(params,quad,model$pmf.derivs.fun)
+    bartlett.C <- make.bartlett.C(params,quad,model$pmf.derivs.fun,debug=debug)
     out <- list(model.str=model.str, quad=quad, loglik=loglik, mle=mle0, profile.LR=profile.LR, bartlett.C=bartlett.C, par.start=par.start0)
     return(out)
 }
@@ -353,3 +375,17 @@ confint.meta.glmm <- function(meta.glmm.fit,alpha=.05,plot=TRUE,debug=FALSE,bart
 }
 
 
+diagnostic.pmf <- function(bartlett.fit, study.no,...) {
+    op <- par(mfrow=c(3,5))
+    for(i in 1:15){
+        deriv <- attr(bartlett.fit$debug[[study.no]]$units.mat,'dimnames')[[3]][i]
+        label <- paste0('(',paste(strsplit(gsub('[^0-9]','',deriv),'')[[1]],collapse=','),')')
+        matplot(bartlett.fit$debug[[study.no]]$units.mats[,,i],pch=1,type='l',lty=1,col=1,ylab='',xlab=label,...)
+    }
+    par(op)
+}
+
+## 1. currently uses indices on x axis, can pass support of y as ... . may need to reorganize so bartlett.fit gets the params.
+## 2. maybe add asinh transformation option
+diagnostic.k <- function(bartlett.fit,study.no,...)
+    matplot(bartlett.fit$debug[[study.no]]$ks.unit[,],type='l',pch=1,col=1,xlab='y',ylab='k',lty=1,...)

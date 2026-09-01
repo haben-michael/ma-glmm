@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2019/dev/Debian) (preloaded format=pdflatex 2026.5.28)  31 AUG 2026 11:10
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2019/dev/Debian) (preloaded format=pdflatex 2026.5.28)  1 SEP 2026 14:34
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1014,35 +1014,60 @@ LaTeX Font Info:    Try loading font information for U+bbm on input line 246.
  (/usr/share/texlive/texmf-dist/tex/latex/bbm-macros/ubbm.fd
 File: ubbm.fd 1999/03/15 V 1.2 Font definition for bbm font - TH
 ) [4]
-[5] [6] [7] [8] (./figs/rate-table.tex
-Overfull \hbox (19.48296pt too wide) in paragraph at lines 3--17
- [][] 
+[5] [6] [7] [8] (./figs/rate-table.tex)
+Overfull \hbox (26.01067pt too wide) in paragraph at lines 633--635
+ []\OT1/cmr/m/n/12 n[] 
  []
 
-)
 <./figs/sim-tau2.png, id=45, 481.8pt x 481.8pt>
 File: ./figs/sim-tau2.png Graphic file (type png)
 <use ./figs/sim-tau2.png>
-Package pdftex.def Info: ./figs/sim-tau2.png  used on input line 606.
+Package pdftex.def Info: ./figs/sim-tau2.png  used on input line 643.
 (pdftex.def)             Requested size: 240.8994pt x 240.8994pt.
- [9] [10 <./figs/sim-tau2.png>] (./figs/pn-table.tex) [11] (./ma-logit.bbl
-[12])
-Underfull \hbox (badness 2111) in paragraph at lines 818--818
+[9] [10 <./figs/sim-tau2.png>] [11] (./figs/pn-table.tex)
+<./figs/diagnostic-pmf.png, id=56, 505.89pt x 361.35pt>
+File: ./figs/diagnostic-pmf.png Graphic file (type png)
+<use ./figs/diagnostic-pmf.png>
+Package pdftex.def Info: ./figs/diagnostic-pmf.png  used on input line 791.
+(pdftex.def)             Requested size: 505.88875pt x 361.34912pt.
+
+Overfull \hbox (36.13373pt too wide) in paragraph at lines 791--792
+[][] 
+ []
+
+<./figs/diagnostic-k-nonadaptive.png, id=57, 650.43pt x 505.89pt>
+File: ./figs/diagnostic-k-nonadaptive.png Graphic file (type png)
+<use ./figs/diagnostic-k-nonadaptive.png>
+Package pdftex.def Info: ./figs/diagnostic-k-nonadaptive.png  used on input lin
+e 812.
+(pdftex.def)             Requested size: 325.2142pt x 252.94437pt.
+<./figs/diagnostic-k-adaptive.png, id=58, 650.43pt x 505.89pt>
+File: ./figs/diagnostic-k-adaptive.png Graphic file (type png)
+<use ./figs/diagnostic-k-adaptive.png>
+Package pdftex.def Info: ./figs/diagnostic-k-adaptive.png  used on input line 8
+19.
+(pdftex.def)             Requested size: 325.2142pt x 252.94437pt.
+
+LaTeX Warning: Float too large for page by 18.98166pt on input line 825.
+
+[12] [13 <./figs/diagnostic-pmf.png>] [14 <./figs/diagnostic-k-nonadaptive.png>
+ <./figs/diagnostic-k-adaptive.png>] (./ma-logit.bbl [15])
+Underfull \hbox (badness 2111) in paragraph at lines 912--912
 []\OT1/cmr/m/n/12 Table 4: |Data from Niel-Weise et al.
  []
 
 
-Underfull \hbox (badness 1087) in paragraph at lines 818--818
+Underfull \hbox (badness 1087) in paragraph at lines 912--912
 \OT1/cmr/m/n/12 (2007) an-a-lyzed in Sec-tion 5[] un-der the
  []
 
-[13] [14] (./ma-logit.aux) ) 
+[16] [17] (./ma-logit.aux) ) 
 Here is how much of TeX's memory you used:
- 27982 strings out of 494485
- 556679 string characters out of 6175792
- 569317 words of memory out of 5000000
- 31259 multiletter control sequences out of 15000+600000
- 554647 words of font info for 111 fonts, out of 8000000 for 9000
+ 28021 strings out of 494485
+ 557746 string characters out of 6175792
+ 569373 words of memory out of 5000000
+ 31295 multiletter control sequences out of 15000+600000
+ 557721 words of font info for 123 fonts, out of 8000000 for 9000
  59 hyphenation exceptions out of 8191
  55i,17n,63p,794b,602s stack positions out of 5000i,500n,10000p,200000b,80000s
  </home/haben/.texlive2018/texmf-var/fonts/pk/ljfou
@@ -1061,10 +1086,10 @@ c/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfon
 ts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/
 cmsy8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmti12.
 pfb>
-Output written on ma-logit.pdf (14 pages, 229090 bytes).
+Output written on ma-logit.pdf (17 pages, 534656 bytes).
 PDF statistics:
- 120 PDF objects out of 1000 (max. 8388607)
- 85 compressed objects within 1 object stream
+ 135 PDF objects out of 1000 (max. 8388607)
+ 91 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 18 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 33 words of extra memory for PDF output out of 10000 (max. 10000000)
 

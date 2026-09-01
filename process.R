@@ -26,144 +26,144 @@ stats <- split(long,long$stat)
 sapply(stats,function(df)coef(lm(log(abs(df$val))~log(df$n)))[2])
 
 
-## robustness sims
+## ## robustness sims
 
-## compute rates, then take median rate
-save.path <- './sim/robustness/'
-filelist <- dir(save.path)
-filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
-print(length(filelist))
-by.sim <- lapply(filelist, function(file) {
-    load(paste0(save.path,file))
-    df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
-    df <- do.call(rbind,df.lst)
-    df <- cbind(df,skew=skew,kurt=kurt)
-    ## apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
-    rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
-    data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
-})
-long <- do.call(rbind,by.sim)
-long <- aggregate(rate ~ ., median,data=long)
-long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
-df <- long
-subset(long,stat=='ks.LR'|stat=='ks.LR.bartlett')
-subset(long,stat=='ks.LR')
-
-## compute median stats, then take rates. looks much smoother this
-## way. but doesnt make sense a priori--k-s rates across different
-## designs are being averaged/median'd.
-save.path <- './sim/robustness/'
-filelist <- dir(save.path)
-filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
-print(length(filelist))
-by.sim <- lapply(filelist, function(file) {
-    load(paste0(save.path,file))
-    df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
-    df <- do.call(rbind,df.lst)
-    df <- cbind(df,skew=skew,kurt=kurt)
-    ## apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
-    ## rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
-    ## data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
-})
-
-long <- do.call(rbind,by.sim)
-long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
-long <- aggregate(val ~ ., median,data=long)
-by.stats <- split(long,long$stat)
-## sapply(stats,function(df)coef(lm(log(abs(df$val))~log(df$n)))[2])
-by.stats <- lapply(by.stats, function(df)
-    rates <- sapply(split(df,list(df$skew,df$kurt)), function(smalldf) {
-    if(nrow(smalldf)==0)return(c(NA,NA,NA))
-    ## rate <- if(nrow(smalldf)!=0) {
-    rate <- with(smalldf, coef(lm(log(abs(val))~log(n)))[[2]])
-    ## } else {
-        ## NA
-    ## }
-    c(skew=smalldf$skew[1],kurt=smalldf$kurt[1],rate=rate)
-}) |> t()
-)
-df <- rbind(data.frame(stat='ks.LR',by.stats[['ks.LR']]), data.frame(stat='ks.LR.bartlett',by.stats[['ks.LR.bartlett']]))
-rownames(df) <- NULL
-df <- na.omit(df)
-
-library(lattice)
-levelplot(rate ~ skew * kurt | stat, data = df,
-          contour = TRUE,      
-          labels = TRUE,       
-          pretty = TRUE,       
-          region = TRUE,       
-          col.regions = gray.colors(100, start = 0.9, end = 0.1),
-          layout = c(2, 1),    
-          xlab = "Skewness", 
-          ylab = "Excess Kurtosis",
-          panel = function(...) {
-              panel.levelplot(...)
-              panel.points(0, 0, pch = 4, col = "red", cex = 1.5) 
-          })
-
-subdf <- subset(df,stat=='ks.LR.bartlett' & abs(skew)<=.4 & abs(kurt)<=.4)
-matrix(subdf$rate,nrow=length(unique(subdf$skew)))
-
-
-
-
-
-
-## skew and kurt separately instead of cartesian product
-
-## process  rate sim (IID data, using R with gauss-hermite)
+## ## compute rates, then take median rate
 ## save.path <- './sim/robustness/'
-save.path <- './sim/robustness/poisson/'
-save.path <- './sim/robustness/binomial-irr/'
-filelist <- dir(save.path)
-filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
-print(length(filelist))
-by.sim <- lapply(filelist, function(file) {
-    load(paste0(save.path,file))
-    df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
-    df <- do.call(rbind,df.lst)
-    df <- cbind(df,skew=skew,kurt=kurt)
-    ## apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
-    ## rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
-    ## data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
-})
-long <- do.call(rbind,by.sim)
-long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
-long <- aggregate(val ~ ., median,data=long)
-by.stats <- split(long,long$stat)
-## sapply(stats,function(df)coef(lm(log(abs(df$val))~log(df$n)))[2])
-by.stats <- lapply(by.stats, function(df) 
-    ## rates <- sapply(split(df,list(df$skew,df$kurt)), function(smalldf)
-    rates <- sapply(split(df,paste0(df$skew,df$kurt)), function(smalldf) {
-        if(nrow(smalldf)==0)return(c(NA,NA,NA))
-        ## rate <- if(nrow(smalldf)!=0) {
-        rate <- with(smalldf, coef(lm(log(abs(val))~log(n)))[[2]])
-        ## } else {
-        ## NA
-        ## }
-        c(skew=smalldf$skew[1],kurt=smalldf$kurt[1],rate=rate)
-    }) |> t()    
-    )
-df <- rbind(data.frame(stat='ks.LR',by.stats[['ks.LR']]), data.frame(stat='ks.LR.bartlett',by.stats[['ks.LR.bartlett']]))
-rownames(df) <- NULL
+## filelist <- dir(save.path)
+## filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+## print(length(filelist))
+## by.sim <- lapply(filelist, function(file) {
+##     load(paste0(save.path,file))
+##     df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
+##     df <- do.call(rbind,df.lst)
+##     df <- cbind(df,skew=skew,kurt=kurt)
+##     ## apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
+##     rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
+##     data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
+## })
+## long <- do.call(rbind,by.sim)
+## long <- aggregate(rate ~ ., median,data=long)
+## long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
+## df <- long
+## subset(long,stat=='ks.LR'|stat=='ks.LR.bartlett')
+## subset(long,stat=='ks.LR')
+
+## ## compute median stats, then take rates. looks much smoother this
+## ## way. but doesnt make sense a priori--k-s rates across different
+## ## designs are being averaged/median'd.
+## save.path <- './sim/robustness/'
+## filelist <- dir(save.path)
+## filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+## print(length(filelist))
+## by.sim <- lapply(filelist, function(file) {
+##     load(paste0(save.path,file))
+##     df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
+##     df <- do.call(rbind,df.lst)
+##     df <- cbind(df,skew=skew,kurt=kurt)
+##     ## apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
+##     ## rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
+##     ## data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
+## })
+
+## long <- do.call(rbind,by.sim)
+## long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
+## long <- aggregate(val ~ ., median,data=long)
+## by.stats <- split(long,long$stat)
+## ## sapply(stats,function(df)coef(lm(log(abs(df$val))~log(df$n)))[2])
+## by.stats <- lapply(by.stats, function(df)
+##     rates <- sapply(split(df,list(df$skew,df$kurt)), function(smalldf) {
+##     if(nrow(smalldf)==0)return(c(NA,NA,NA))
+##     ## rate <- if(nrow(smalldf)!=0) {
+##     rate <- with(smalldf, coef(lm(log(abs(val))~log(n)))[[2]])
+##     ## } else {
+##         ## NA
+##     ## }
+##     c(skew=smalldf$skew[1],kurt=smalldf$kurt[1],rate=rate)
+## }) |> t()
+## )
+## df <- rbind(data.frame(stat='ks.LR',by.stats[['ks.LR']]), data.frame(stat='ks.LR.bartlett',by.stats[['ks.LR.bartlett']]))
+## rownames(df) <- NULL
 ## df <- na.omit(df)
 
-df <- df[order(df$skew,df$kurt),]
-with(subset(df,kurt==0 & stat=='ks.LR'),  plot(rate ~ skew,type='l',ylim=range(df$rate)))
-with(subset(df,kurt==0 & stat=='ks.LR.bartlett'),  lines(rate ~ skew,col=2))
+## library(lattice)
+## levelplot(rate ~ skew * kurt | stat, data = df,
+##           contour = TRUE,      
+##           labels = TRUE,       
+##           pretty = TRUE,       
+##           region = TRUE,       
+##           col.regions = gray.colors(100, start = 0.9, end = 0.1),
+##           layout = c(2, 1),    
+##           xlab = "Skewness", 
+##           ylab = "Excess Kurtosis",
+##           panel = function(...) {
+##               panel.levelplot(...)
+##               panel.points(0, 0, pch = 4, col = "red", cex = 1.5) 
+##           })
 
-df <- df[order(df$skew,df$kurt),]
-with(subset(df,skew==0 & stat=='ks.LR'),  plot(rate ~ kurt,type='l',ylim=range(df$rate)))
-with(subset(df,skew==0 & stat=='ks.LR.bartlett'),  lines(rate ~ kurt,col=2))
+## subdf <- subset(df,stat=='ks.LR.bartlett' & abs(skew)<=.4 & abs(kurt)<=.4)
+## matrix(subdf$rate,nrow=length(unique(subdf$skew)))
+
+
+
+
+
+
+## ## skew and kurt separately instead of cartesian product
+
+## ## process  rate sim (IID data, using R with gauss-hermite)
+## ## save.path <- './sim/robustness/'
+## save.path <- './sim/robustness/poisson/'
+## save.path <- './sim/robustness/binomial-irr/'
+## filelist <- dir(save.path)
+## filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+## print(length(filelist))
+## by.sim <- lapply(filelist, function(file) {
+##     load(paste0(save.path,file))
+##     df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
+##     df <- do.call(rbind,df.lst)
+##     df <- cbind(df,skew=skew,kurt=kurt)
+##     ## apply(by.n,1,function(ks)coef(lm(log(ks)~log(ns)))[2])
+##     ## rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
+##     ## data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
+## })
+## long <- do.call(rbind,by.sim)
+## long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
+## long <- aggregate(val ~ ., median,data=long)
+## by.stats <- split(long,long$stat)
+## ## sapply(stats,function(df)coef(lm(log(abs(df$val))~log(df$n)))[2])
+## by.stats <- lapply(by.stats, function(df) 
+##     ## rates <- sapply(split(df,list(df$skew,df$kurt)), function(smalldf)
+##     rates <- sapply(split(df,paste0(df$skew,df$kurt)), function(smalldf) {
+##         if(nrow(smalldf)==0)return(c(NA,NA,NA))
+##         ## rate <- if(nrow(smalldf)!=0) {
+##         rate <- with(smalldf, coef(lm(log(abs(val))~log(n)))[[2]])
+##         ## } else {
+##         ## NA
+##         ## }
+##         c(skew=smalldf$skew[1],kurt=smalldf$kurt[1],rate=rate)
+##     }) |> t()    
+##     )
+## df <- rbind(data.frame(stat='ks.LR',by.stats[['ks.LR']]), data.frame(stat='ks.LR.bartlett',by.stats[['ks.LR.bartlett']]))
+## rownames(df) <- NULL
+## ## df <- na.omit(df)
+
+## df <- df[order(df$skew,df$kurt),]
+## with(subset(df,kurt==0 & stat=='ks.LR'),  plot(rate ~ skew,type='l',ylim=range(df$rate)))
+## with(subset(df,kurt==0 & stat=='ks.LR.bartlett'),  lines(rate ~ skew,col=2))
+
+## df <- df[order(df$skew,df$kurt),]
+## with(subset(df,skew==0 & stat=='ks.LR'),  plot(rate ~ kurt,type='l',ylim=range(df$rate)))
+## with(subset(df,skew==0 & stat=='ks.LR.bartlett'),  lines(rate ~ kurt,col=2))
 
 
 
 
 ## compute rates, then aggregate
 ## process  rate sim (IID data, using R with gauss-hermite)
-## save.path <- './sim/robustness/binomial-prop/'
-save.path <- './sim/robustness/poisson/'
-save.path <- './sim/robustness/binomial-irr/'
+save.path <- './sim/robustness/binomial-prop2/'
+## save.path <- './sim/robustness/poisson/'
+## save.path <- './sim/robustness/binomial-irr/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -180,7 +180,6 @@ long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
 rownames(long) <- NULL
 long.agg <- aggregate(rate ~ ., median,data=long)
 long.agg <- subset(long.agg,subset=stat=='ks.LR' | stat=='ks.LR.bartlett')
-
 plot(rate~skew, data=subset(long.agg,stat=='ks.LR'&kurt==0),type='l',ylim=range(long.agg$rate))
 lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
 
@@ -196,9 +195,9 @@ lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
 ## save.path <- './sim/robustness/binomial-irr-tau2/'
 ## save.path <- './sim/robustness/hyperg/'
 ## save.path <- './sim/260819/'
-save.path <- './sim/bn-prop/'
-## save.path <- './sim/bn-irr/'
-save.path <- './sim/hn/'
+## save.path <- './sim/bn-prop/'
+save.path <- './sim/bn-irr/'
+## save.path <- './sim/hn/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -217,7 +216,7 @@ by.sim <- lapply(filelist, function(file) {
 long <- do.call(rbind,by.sim)
 long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
 rownames(long) <- NULL
-long.agg <- aggregate(rate ~ ., median,data=long)
+long.agg <- aggregate(rate ~ ., mean,data=long)
 long.agg <- subset(long.agg,subset=stat=='ks.LR' | stat=='ks.LR.bartlett')
 ## long.agg <- subset(long.agg,tau2.null%in%c(.1,.2,.3))
 df <- subset(long.agg,stat=='ks.LR.bartlett')
@@ -227,9 +226,9 @@ col <- gray.colors(length(tau2.nulls)) |> rev()
 plot(NA,type='n',xlim=range(df$skew),ylim=c(-2.1,max(long.agg$rate)),xlab='skew',ylab='log rate')
 for(i in seq_along(tau2.nulls))
     lines(rate ~ skew, data=subset(df,tau2.null==tau2.nulls[i]),col=col[i])
-df <- subset(long.agg,stat=='ks.LR') |> rev()
+df <- subset(long.agg,stat=='ks.LR') 
 tau2.nulls <- unique(df$tau2.null)
-col <- gray.colors(length(tau2.nulls))
+col <- gray.colors(length(tau2.nulls)) |> rev()
 ## plot(NA,type='n',xlim=range(df$skew),ylim=c(-2,max(df$rate)))
 for(i in seq_along(tau2.nulls))
     lines(rate ~ skew, data=subset(df,tau2.null==tau2.nulls[i]),col=col[i],lty=2)
@@ -241,8 +240,9 @@ legend('bottomright',col=col,lty=1,legend=sapply(tau2.nulls,\(tau2.null)bquote(t
 ## generate table
 
 rate.sims<- lapply( c(bn.prop='./sim/bn-prop/',
-             pn='./sim/robustness/poisson/',
-             bn.irr='./sim/robustness/binomial-irr/'),
+                      hn='./sim/robustness/binomial-prop2/',## !!!placeholder
+                      pn='./sim/robustness/poisson/',
+                      bn.irr='./sim/bn-irr/'), 
           function(save.path) {
               filelist <- dir(save.path)
               filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
@@ -317,6 +317,12 @@ generate.stacked.latex <- function(study.dfs) {
         ## Format statistic names
         wide$stat <- ifelse(wide$stat == "ks.LR", "LR (standard)", "LR (Bartlett)")
         ## Add study name column
+        study.name <- switch(study.name,
+            bn.prop = '\\eqref{mod:bn-prop}',
+            hn = '\\eqref{mod:hn}',
+            pn = '\\eqref{mod:pn}',
+            bn.irr = '\\eqref{mod:bn-irr}',
+            )
         wide$study <- study.name
         return(wide)
     }
@@ -333,9 +339,11 @@ generate.stacked.latex <- function(study.dfs) {
     ## Total number of columns = Study + Statistic + length(skews)
     total.cols <- 2 + length(skews)
     ## Print LaTeX Table Output
-    cat("\\begin{table}[htbp]\n\\centering\n")
+    ## cat("\\begin{table}[htbp]\n\\centering\n")
     cat("\\begin{tabular}{l l", rep("c", length(skews)), "}\n\\toprule\n", sep = "")
-    cat("\\textbf{Study} & \\textbf{Statistic} & ", paste(skews, collapse = " & "), " \\\\\n\\midrule\n", sep = "")
+    cat("& & \\multicolumn{5}{c}{\\textbf{Skew of random effect}} \\\\")
+    cat("\\cmidrule(lr){3-7}")
+    cat("\\textbf{Model} & \\textbf{Statistic} & ", paste(skews, collapse = " & "), " \\\\\n\\midrule\n", sep = "")
     ## Loop over studies to format rows
     study.names <- unique(stacked.df$study)
     for (i in seq_along(study.names)) {
@@ -359,9 +367,9 @@ generate.stacked.latex <- function(study.dfs) {
         }
     }
     cat("\\bottomrule\n\\end{tabular}\n")
-    cat("\\caption{Simulation results. The cells contain the medians and SDs of the log of the rate of the empirical Kolmogorov-Smirnov distance to a chi-squared distribution.}\n")
-    cat("\\label{tab:simulation}\n")
-    cat("\\end{table}\n")
+    ## cat("\\caption{Simulation results. The cells contain the medians and SDs of the log of the rate of the empirical Kolmogorov-Smirnov distance to a chi-squared distribution.}\n")
+    ## cat("\\label{tab:simulation}\n")
+    ## cat("\\end{table}\n")
 }
 sink('./figs/rate-table.tex')
 generate.stacked.latex(rate.sims)

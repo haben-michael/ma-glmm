@@ -3794,3 +3794,73 @@ apply(by.n[1:2,],1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
 ## params <- structure(c(174, 345, 113, 345, 44, 177, 362, 122, 362, 35, 4, 
 ## 4, 3, 4, 4, 0, 0, 0, 0, 0, 4, 4, 3, 4, 4), dim = c(5L, 5L), dimnames = list(
 ##     NULL, c("m.T", "m.C", "s", "y.min", "y.max")))
+
+
+
+
+
+## 14. diagnostics
+
+
+## nonadaptive quadrature
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
+source('models.R')
+source('./meta.glmm/R/meta.glmm2.R')
+stijnen.vi <- read.table('stijnen-table-VI.txt')
+n.GH <- 1e2
+y <- stijnen.vi$Y1
+T <- stijnen.vi$T1/1000
+params <- cbind(T=T,y.min=0,y.max=1e4)
+n.GH <- seq(100,500,by=200)
+y.max <- seq(1e3,1.3e4,by=3e3)
+pars <- expand.grid(n.GH=n.GH,y.max=y.max)
+## CIs <- apply(pars, 1, function(par) {
+par <- unlist(pars[13,])
+print(par)
+n.GH <- par['n.GH']; y.max <- par['y.max']
+n.GH <- 20;y.max <- 1e3
+params <- cbind(T=T,y.min=0,y.max=y.max)
+
+
+## bn-prop
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+source('models.R')
+source('./meta.glmm/R/meta.glmm2.R')
+stijnen.1 <- read.table('stijnen-table-I.txt')
+y <- stijnen.1$Y1
+ms <- stijnen.1$n1
+params <- cbind(m=ms,y.min=0,y.max=ms)
+fit <- meta.glmm(y,params,'bn-prop',n.GH=n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3),debug=TRUE)
+CI <- confint.meta.glmm(fit,mc.cores=parallel::detectCores()-1,mu.grid=list(offset=2.5,size=10),plot=TRUE)
+mle.null <- fit$profile.LR( -6)$mle.null
+bartlett.fit <- fit$bartlett.C(mle.null['mu'],mle.null['tau2'])
+
+## mle.null <- fit$profile.LR( -1.1726610)$mle.null
+## fit <- fit$bartlett.C(mle.null['mu'],mle.null['tau2'])
+
+
+
+## pn CIs--adaptive
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
+source('models.R')
+source('./meta.glmm/R/meta.glmm.R')
+stijnen.vi <- read.table('stijnen-table-VI.txt')
+n.GH <- 1e2
+y <- stijnen.vi$Y1
+T <- stijnen.vi$T1/1000
+params <- cbind(T=T,y.min=0,y.max=1e4)
+## n.GH <- c(seq(10,20,by=5),1e2)
+## y.max <- c(seq(5e2,1.5e3,by=5e2),5e3)#seq(1e2,3e2,by=50)
+n.GH <- 20
+y.max <- 1e2
+params <- cbind(T=T,y.min=0,y.max=y.max)
+fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3),debug=TRUE)
+CI <- confint.meta.glmm(fit,mc.cores=parallel::detectCores()-1,mu.grid=list(offset=1.5,size=10),plot=TRUE)
+mle.null <- fit$profile.LR( -1.1726610)$mle.null
+bartlett.fit <- fit$bartlett.C(mle.null['mu'],mle.null['tau2'])
+
+diagnostic.pmf(bartlett.fit,3)
+diagnostic.k(bartlett.fit,3)

@@ -455,7 +455,24 @@ the support.
 
 
 \item The main tuning parameter of the proposed method is $\nGH$, the
-  number of nodes in the quadrature aproximation. We propose tuning this parameter heuristically, by examining the stability of the CI under a range of choices. Typical choices used in the datasets below, leading to apparent convergence up to $.001$ absolute error in the endpoints, are 100--200 nodes for fixed rule quadrature and 10--30 for adaptive rule quadrature.\comment{ref fig if available}
+  number of nodes in the quadrature aproximation. we propose examining
+  this parameter heuristically. in the proposed method there are 15
+  integrands to which quadrature is applied, ie the summands in
+  $\F_{kl}(\y)=\sum_{j} \w_j \frac{d^k}{d\mu^k}\frac{d^l}{d(\tau^2)^l}
+  f(y|\z_j)$, $0\le j+k \le 4$. we therefore examine plots the 15
+  integrands, weighted by the quadrature weights in place of the
+  normal density, versus quarature nodes. see ... for an
+  example. Typical choices encountered in the datasets below, leading
+  to apparent convergence up to $.001$ absolute error in the CI
+  endpoints, are 100--200 nodes for fixed rule quadrature and 10--30
+  for adaptive rule quadrature.
+
+% We propose tuning
+%   this parameter heuristically, by examining the stability of the CI
+%   under a range of choices. Typical choices used in the datasets
+%   below, leading to apparent convergence up to $.001$ absolute error
+%   in the endpoints, are 100--200 nodes for fixed rule quadrature and
+%   10--30 for adaptive rule quadrature.\comment{ref fig if available}
 
 \item Two broad variants of GH quadrature are fixed and
   adaptive. Fixed GH uses the same $\nGH$  nodes centered at $0$,
@@ -496,14 +513,29 @@ the support.
 
 \item Since the Poisson-normal model has infinite support,
   implementation of the proposed method requires a truncation
-  point. Once a GH rule has been chosen, one can choose the truncation
-  point large enough that the weighted tails are as small as
-  desired. However, it may be difficult to know in general what is
-  to be deemed negligible for a given data set, and moreover the truncation point
-  often influences the choice of $\nGH$.  \comment{maybe given example of higher oscillation obsreved in pn data analysis} For the Poisson-normal model
-  we therefore suggest examining a matrix of CIs varying both
+  point. We also propose the use of visual heuristics to determine
+  this tuning parameter. the relevance of the support of y under the
+  proposed method is that each of the 35 k terms is approximated by a
+  sum over the support of y. these 35 summands, indicated in ..., give
+  rise to 35 functions of y which may be plotted versus the support of
+  y, truncated beyond a proposed value. a satisfactory truncation
+  point is a value beyond which the function values are
+  negligible. see fig. ... . as the example there shows, it may be
+  difficult to know in general what is to be deemed negligible for a
+  given data set, and moreover the truncation point often influences
+  the choice of $\nGH$.  \comment{maybe given example of higher
+    oscillation obsreved in pn data analysis} For the Poisson-normal
+  model we therefore suggest examining a matrix of CIs varying both
   parameters to identify the limiting CI. See Section
   \ref{sec:data-analysis} for an example.
+  % Once a GH rule has been chosen, one can choose the truncation
+  % point large enough that the weighted tails are as small as
+  % desired. However, it may be difficult to know in general what is
+  % to be deemed negligible for a given data set, and moreover the truncation point
+  % often influences the choice of $\nGH$.  \comment{maybe given example of higher oscillation obsreved in pn data analysis} For the Poisson-normal model
+  % we therefore suggest examining a matrix of CIs varying both
+  % parameters to identify the limiting CI. See Section
+  % \ref{sec:data-analysis} for an example.
 
   % follow usual approach with profile based LR, where examination of the profile curve guides.
 % \item mu grid. for the computation of a CI based on the profile
@@ -546,7 +578,7 @@ $\n$ effects $\Y$ under the binomial likelihood \eqref{mod:bn-prop}
 using the sampled trial sizes $m_i$ and success probabilities given by
 the parameters $(\munull,\tausqnull)=(-3.50,.81)$ taken from the MLE
 calculations of \citet{stijnen:10}. Meta-analyses of sizes
-$5,\ldots,15,$ are sampled in this manner, and the rate of convergence
+$5,\ldots,15,$\comment{finalize} are sampled in this manner, and the rate of convergence
 of the empirical Kolmogorov-Smirnov distance to a chi-squared
 distribution is estimated using $\n^4$ monte carlo repetitions at each
 sample size $\n$. See \citet{michael:ma-bartlett} for details on the
@@ -585,7 +617,7 @@ models and under correct specification of the random effect, the quadrature appr
 % statistics.  
 
 The binomial-normal model for incidence rate ratios model
-\eqref{mod:bn-irr} is the exception, showing a rate closer to $1/\n$
+\eqref{mod:bn-irr} is the exception, showing a rate closer to $1/\n^{3/2}$
 than $1/\n^2$ under Bartlett correction even in the idealized
 skew-free setting. This failure appears to be due to low
 heterogeneity. Rather than sampling using the MLE $\hat\tau^2=0.096$
@@ -598,13 +630,18 @@ affected, consistent with previously reported simulations
 \citep{jackson:18,bakbergenuly:18}. We therefore conclude that the advantage of Bartlett
 correction can be impaired by low heterogeneity.
 
-
+\begin{table}[htbp]\n\centering
 \input{./figs/rate-table.tex}
+\caption{Simulation results. The cells contain the medians and SDs of the log of the rate of the empirical Kolmogorov-Smirnov distance to a chi-squared distribution.}
+\label{tab:simulation}
+\end{table}
+
+
 
 \begin{figure}
   \centering
   \includegraphics[scale=.5]{./figs/sim-tau2.png}
-  \caption{As the  heterogeneity parameter $\tau^2$ drop to $0$, the rate of the correctly specified Bartlett-corrected LR statistic (solid lines) drops from $1/\n^2$ to $1/\n$. The rate of the standard LR statistic (dashed lines) does not appear to be affected by varying $\tau^2$ in this range. The data is simulated based on \citet{niel:08} and the binomial-normal model for incidence rate ratios.}
+  \caption{Further analysis of the simulation using the binomial model for IRR \eqref{mod:bn-irr}. The rate of the Bartlett-corrected LR statistic (solid line) drops from the target $1/\n^2$ rate as the  heterogeneity parameter $\tau^2$ drop to $0$ or as the skew of the random effect increases. The rate of the standard LR statistic (dashed lines) is also affected adversely by skew but does not appear to be affected by varying $\tau^2$ in this range. The data is simulated based on \citet{niel:08} and the binomial-normal model for incidence rate ratios.}
   \label{fig:simulation:tau2}
 \end{figure}
 
@@ -668,8 +705,26 @@ meta-analysis the difference between the corrected and uncorrected CIs
 is more substantial, the corrected CIs being about $10\%$ larger. These differences include a loss of significance at
 the nominal level $\alpha=.05$ for the log-IR ratio study.
 
-For the Poisson-normal model analysis of the treatment arm of \citet{niel:08} the two tuning parameters were selected using the matrix presented in  Table \ref{tab:data-analysis:pn-matrix}. % as an example of determining the bartlett ci, Table \ref{tab:data-analysis:pn-matrix} presents a matrix of ci's for the pn model as its two tuning parameters are varied.
-Taking $\nGH=20$ adaptive nodes and $\y_{max}=1,500$ support points is sufficient for a CI with endpoints within $3/10000$ of the converged value, where $\nGH=100$ adaptive nodes and $\y_{max}=1000$ are assumed to produce the converged value. The treatment arm is evidently more challenging than the control arm, with relatively few rare events. In the latter case only
+The number of quadrature nodes used to approximate the Bartlett
+correction was selected by examining plots of the summands in
+$\F_{kl}(\y)=\sum_{j} \w_j \frac{d^k}{d\mu^k}\frac{d^l}{d(\tau^2)^l}
+f(y|\z_j)$, $0\le j+k \le 4$, as discussed in ... . Since these
+integrands, as functions of z, appear to be supported within the range
+of the quadrature nodes, this choice of ngh appears satisfactory. such
+a matrix of plots is generated for each of the studies in ...
+
+To obtain the truncation point for the support of the poisson-normal
+model, the summands in ((ref)) making up the 35 k terms were plotted
+against a proposed support, as discussed in ... .  for the trt group
+of nw08 with fixed quarature suppy = ..., fig. ... shows that the
+summands are not convincingly be contained in the proposed support
+support of y. on the other hand, when adaptive quadrature is used, the
+k terms do appear to vanish beyond the proposed truncation point. this
+example shows that, in the case of the poisson-normal model, which has
+two tunin gparameters, they may need to be chosen in coordination. a
+matrix such as ... may be of assistance.
+% For the Poisson-normal model analysis of the treatment arm of \citet{niel:08} the two tuning parameters were selected using the matrix presented in  Table \ref{tab:data-analysis:pn-matrix}. % as an example of determining the bartlett ci, Table \ref{tab:data-analysis:pn-matrix} presents a matrix of ci's for the pn model as its two tuning parameters are varied.
+Taking $\nGH=20$ adaptive nodes and $\y_{max}=1,500$ support points is sufficient for a CI with endpoints within $3/10000$ \comment{finalize}of the converged value, where $\nGH=100$ adaptive nodes and $\y_{max}=1000$ are assumed to produce the converged value. The treatment arm is evidently more challenging than the control arm, with relatively few rare events. In the latter case only
  $\nGH=10$ adaptive nodes and $\y_{max}=400$ are needed to achieve a similar proximity to the converged value \comment{put in appendix or supplementary information}.
 
 % [[give sample plot. maybe give poisson model with adaptive and non-adaptive GH. cite latter in method/tuning parameter section.]]
@@ -691,7 +746,7 @@ Taking $\nGH=20$ adaptive nodes and $\y_{max}=1,500$ support points is sufficien
 \midrule
 
 \citetalias{niel:08}, control arm & \multirow{2}{*}{log IR} & [0.90, 1.90] & [0.85, 1.95] & $+10.6\%$ \\
-\citetalias{niel:08}, treatment arm & & [0.10, 1.55] & [0.03, 1.62] & $+9.8\%$ \\
+\citetalias{niel:08}, treatment arm & & [0.10, 1.55] & [0.02, 1.61] & $+9.7\%$ \\
 \cmidrule(lr){1-5}
 
 \citetalias{niel:08} & log-IR ratio & [-1.05, -0.01] & [-1.12, 0.05] & $+11.3\%$ \\
@@ -726,9 +781,48 @@ Taking $\nGH=20$ adaptive nodes and $\y_{max}=1,500$ support points is sufficien
 % 100 & [0.8495, 1.9503] & [0.8516, 1.9482] & [0.8499, 1.9470] & [0.8491, 1.9465] & \textbf{[0.8485, 1.9477]} \\
 % \bottomrule
 % \end{tabular}
-\caption{Convergence of the Bartlett-corrected CI as the two tuning parameters of the Poisson-normal mode are increased. The endpoints of the CI in the lower right cell, given by $\nGH=20, \y_{max}=\num{1.5e3}$, are each within $\num{3e-4}$ of the CI $(.0182745,1.611421)$ obtained for $\nGH=\num{1e2}, \y_{max}=\num{1e5}$.}
+\caption{Convergence of the Bartlett-corrected CI as the two tuning parameters of the Poisson-normal model are increased. The endpoints of the CI in the lower right cell, given by $\nGH=20, \y_{max}=\num{1.5e3}$, are each within $\num{3e-4}$ of the CI $(.0182745,1.611421)$ obtained for $\nGH=\num{1e2}, \y_{max}=\num{1e5}$.}
 \label{tab:data-analysis:pn-matrix}
 \end{table}
+
+
+
+\begin{figure}
+  \includegraphics{./figs/diagnostic-pmf.png}
+  \caption{[[Diagnostic plot for determining the number of quadrature nodes $\nGH$. for eac hof the 15 terms ..., paths along the domain of integratio z are plotted, one path for each support point y. the data is for study 3 of the treatment arm of the niel weise 08 data.]]}
+  \label{fig:data-analysis:diagnostic-pmf}
+\end{figure}
+
+% \begin{figure}
+%   \caption{}
+%   \label{fig:data-analysis:diagnostic-k-nonadaptive}
+% \end{figure}
+
+% \begin{figure}
+%   \caption{[[Diagnostic plot for determining the truncation point for y in the poisson-normal model. for each of the 35 kterms the summands making up the k term ((ref)) are each plotted. the data is for study 3 of the treatment arm of the niel weise 08 data.]]}
+%   \label{fig:data-analysis:diagnostic-k-adaptive}
+% \end{figure}
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+  \includegraphics[scale=.5]{./figs/diagnostic-k-nonadaptive.png}
+        \caption{Non-adaptive quadrature ($\sinh^{-1}$ scale).}
+        \label{fig:data-analysis-diagnostic-k-nonadaptive}
+    \end{subfigure}    
+    \vspace{1em} % Adds vertical space between the stacked figures   
+    \begin{subfigure}{\textwidth}
+        \centering
+  \includegraphics[scale=.5]{./figs/diagnostic-k-adaptive.png}
+        \caption{Adaptive quadrature.}
+        \label{fig:data-analysis-diagnostic-k-adaptive}
+    \end{subfigure}    
+    \caption{[[Diagnostic plot for determining the truncation point for y in the poisson-normal model. for each of the 35 kterms the summands making up the k term ((ref)) are each plotted. the data is for study 3 of the treatment arm of the niel weise 08 data. in the non-adaptive case ((ref)) numerical artifacts appear up to support points 3k, and perhaps beyond, whereas for adaptive quadrature ((ref)) the summands appear negligible beyond y=... a further concern in the case of non-adaptive quadrature is the magnitude of the terms.]]}
+    \label{fig:data-analysis-diagnostic-k}
+\end{figure}
 
 
 \section{Conclusion}

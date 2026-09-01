@@ -12,7 +12,7 @@ TODO
 10. DONE newton step doesnt need to compute var map anew? esp for hyperg
 
 longer term:
-           1. implement my own optim/optimize using newtons algo.
+   DONE        1. implement my own optim/optimize using newtons algo.
 2. implement a profile function returning s3 compatible with confint
 3. implement intelligent root-finder in that profile
 
