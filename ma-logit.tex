@@ -20,17 +20,18 @@
 \newtheorem{proposition}[theorem]{Proposition}
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{conjecture}{Conjecture}
-\DeclareMathOperator{\expit}{expit}
+\DeclareMathOperator{\expit}{logit^{-1}}
 \renewcommand{\P}{\mathbbm{P}}
 \newcommand{\E}{\mathbbm{E}}
 \newcommand{\var}{\text{Var}}
 \newcommand{\corr}{\text{corr}}
-\newcommand{\F}{F}
+\newcommand{\F}{I}
 \newcommand{\Z}{Z}
 \newcommand{\z}{z}
 \newcommand{\Y}{Y}
 \newcommand{\y}{y}
 \newcommand{\T}[1]{{#1}^{(T)}}
+% \newcommand{\C}[1]{{#1}^{(C)}}
 \newcommand{\C}[1]{{#1}^{(C)}}
 \renewcommand{\k}{k}
 \newcommand{\kterm}{\k_r^{(s)}}
@@ -70,7 +71,7 @@
 \begin{document}
 \maketitle
 
-\textsc{Abstract.} \citet{stijnen:10} describes 4 random effects models for
+\textsc{Abstract.} \citet{stijnen:10} describes four random effects models for
 meta-analyses of event outcomes. Inference for these models is based
 on an asymptotic chi-squared approximation. We describe a procedure
 for Bartlett correction of the confidence interval, improving the
@@ -96,7 +97,7 @@ traditional alternative, inverse-variance weighting after a normalizing transfor
 However, inferences under GLMMs are still based on an asymptotic
 chi-squared approximation. Therefore, as in the case of
 inverse-variance weighted estimation, the conclusions of smaller
-meta-analyses are suspect, though smaller  meta-analyses are where the use
+meta-analyses are less trustworthy, though smaller  meta-analyses are where the use
 of GLMMs is often recommended. A classical remedy is Bartlett
 correction, which leverages modeling assumptions to improve the
 efficiency of the testing procedure. When the modeling assumptions
@@ -130,8 +131,8 @@ models described in Section \ref{sec:background}. In Section
 \ref{sec:simulation} we examine by simulation the effectiveness and robustness of
 the corrected test, finding that the proposed approximations are suitable for achieving the desired rate boost and identifying common model violations that may neutralize the advantage. In Section \ref{sec:data-analysis} we
 re-visit the data analyses of \citet{stijnen:10}. We find that, though the
-advantage of Bartlett correction may be  negligible for moderate or large
-meta-analyses, it may be clinically relevant in smaller meta-analyses.
+advantage of Bartlett correction may be  negligible for 
+meta-analyses of moderate or large size, it may be clinically relevant in smaller meta-analyses.
 
 
 \section{Background}
@@ -157,7 +158,7 @@ In this model, a Gaussian random variable models the effects $\re_1,\ldots,\re_n
   \re_i = \munull + \taunull\Z_i,\qquad \Z_i \sim N(0,1)
 \end{align}
 The target of inference in the meta-analysis is $\munull$, with
-$\tausqnull$ a nuisance parameter. The distribution of the
+$\tausqnull$ a nuisance parameter. The model for the conditional distribution of the
 data given the random effect depends on the type of
 analysis being conducted. Following \citet{stijnen:10} we consider four types of analyses, determined by whether the studies included are single-arm or two-arm trials, and whether the estimand is based on proportions or incidence.
 \begin{enumerate}
@@ -171,7 +172,7 @@ analysis being conducted. Following \citet{stijnen:10} we consider four types of
 \end{equation}
 The target of inference $\munull$ represents the log-odds  of an event. The number of trials $\m_i$ is treated as a parameter of the conditional PMF $f_{m_i}$, which therefore typically varies across the studies in the meta-analysis.
 
-\item Two arms, proportions. Each study reports, for treatment and control arm, the number of events $\T{\Y}_i$ and $\C{\Y}_i$ and the total number of trials $\T{\m}_i$ and $\C{\m}_i$. The statistical model is conditional on the total number of events $S_i=\T{\Y}_i+\C{\Y}_i$, under which $\T{\Y}_i$ follows Fisher's non-central hypergeometric distribution
+\item Two arms, proportions. Each study reports, for treatment and control arm, the number of events $\T{\Y}_i$ and $\C{\Y}_i$ and the total number of trials $\T{\m}_i$ and $\C{\m}_i$. The model is conditional on the total number of events $S_i=\T{\Y}_i+\C{\Y}_i$, implying $\T{\Y}_i$ follows Fisher's non-central hypergeometric distribution
   \begin{equation}
     \begin{split}
       f_{\T{\m}_i,\C{\m}_i,S_i}(\T{\y}_i \mid \Z_i) &= \frac{{\T{\m}_i\choose \T{\y}_i}{\C{\m}_i\choose S_i-\T{\y}_i}\omega^{\T{\y}_i}}
@@ -181,7 +182,7 @@ The target of inference $\munull$ represents the log-odds  of an event. The numb
 \end{split}
 \label{mod:hn}
 \end{equation}
-The target of inference $\munull$ represents the ratio of the treatment to control log-odds. The parameters of the conditional PMF are $\T{\m}_i, \C{\m}_i,$ and $S_i$.
+The target of inference $\munull$ represents the ratio of the treatment to control log-odds. The parameters of the conditional PMF for study $i$ are $\T{\m}_i, \C{\m}_i,$ and $S_i$.
 
 \item Single arm, incidence rate. Each study reports the number
 of events $\Y_i$ and the duration of observation $T_i$.  The model is
@@ -196,7 +197,7 @@ Poisson,
 The target of
 inference $\munull$ represents the log of the incidence rate. The follow-up time $T_i$ is treated as a parameter of the conditional PMF.
 
-\item Two arms, incidence rates. Each study reports, for treatment and control arm, the number of events $\T{\Y}_i$ and $\C{\Y}_i$ and the duration of observation $\T{T}_i$ and $\C{T}_i$. Conditionally on $S_i=\T{\Y}_i+\C{\Y}_i$, $\T{\Y}_i$ is binomial
+\item Two arms, incidence rates. Each study reports, for treatment and control arm, the number of events $\T{\Y}_i$ and $\C{\Y}_i$ and the duration of observation $\T{T}_i$ and $\C{T}_i$. Conditionally on $S_i=\T{\Y}_i+\C{\Y}_i$, $\T{\Y}_i$ is binomial,
   \begin{equation}
     \begin{split}
   f_{\T{T}_i,\C{T}_i,S_i   }(\T{\y}_i \mid \Z_i) &= {S_i \choose \T{\y}_i}p^{\T{\y}_i}(1-p)^{S_i - \T{\y}_i}\\
@@ -214,10 +215,10 @@ In all cases the likelihood for  study $i$ has the form
   L_i(\effect,\tau^2 | \Y_i) = \int_{-\infty}^\infty f_i(\Y_i|\z)\phi(\z)d\z, \qquad i=1,\ldots n
   \label{defn:L-unit}
 \end{align}
-where $f_i(y|\z)$ is study $i$'s  PMF conditional on a Gaussian random effect, given above. Furthermore, the model parameters $(\effect,\tau^2)$ only enter the likelihood \eqref{defn:L-unit} through a parameter of the conditional PMF, the mean $\lambda$ in the case of the Poisson, the success probability $p$ in the cases of the binomial, or the odds ratio $\omega$ in the case of the non-central hypergeometric.
+where $f_i(y|\z)$ is study $i$'s  PMF conditional on a Gaussian random effect. Furthermore, the meta-analysis  parameters $(\effect,\tau^2)$ only enter the likelihood \eqref{defn:L-unit} through a parameter of the conditional PMF, namely, the mean $\lambda$ in the case of the Poisson, the success probability $p$ in the cases of the binomial, or the odds ratio $\omega$ in the case of the non-central hypergeometric.
 % int condpmf * phi. condpmf = , parameters= (used loosely--need to distinguish from mu/tau2).
 
-The likelihood ratio test of the null $\effect=\munull$ is based on the test statistic
+The likelihood ratio (``LR'') test of the null $\effect=\munull$ is based on the test statistic
 \begin{align}
   % \W = 2\sum_{i=1}^n(\log L_i(\hat\effect,\hat\tau^2 | \Y_i) - \log L_i(\munull,\hat{\tau}^2_0 | \Y_i) )\\
   \W &= 2( l(\hat\effect,\hat\tau^2) - l(\munull,\hat{\tau}^2_0) )
@@ -231,11 +232,11 @@ where
 is the total log-likelihood, $(\hat\effect,\hat\tau^2)$ maximizes
 % $(\effect,\tau^2)\mapsto\sum_{i=1}^n\log L_i(\effect,\tau^2 | \Y_i)$
 $(\effect,\tau^2)\mapsto l(\effect,\tau^2)$,
-and $\hat{\tau}^2_0=\hat{\tau}^2_0(\effect)$ maximizes
+and $\hat{\tau}^2_0=\hat{\tau}^2_0(\munull)$ maximizes
 % $\tau^2 \mapsto\sum_{i=1}^n\log L_i(\munull,\tau^2 | \Y_i)$
 $\tau^2 \mapsto l(\munull,\tau^2)$.  In routine applications  $\W$ converges to a chi-squared
 distribution  under the null hypothesis, by Wilks' Theorem. Relying on this asymptotic approximation a confidence interval
-for $\munull$ can be formed by inverting the test statistic.
+for $\munull$ can be formed by inverting the test statistic; see Figure \ref{fig:data-analysis:profile-LR} for an example.
 
 
 \subsection{Bartlett correction}
@@ -256,7 +257,7 @@ has a mean agreeing with that of a chi-squared random variable up to order $O(1/
 % \begin{align}
 % E(...) =.
 % \end{align}
-The results of \citet{bartlett:37,lawley:56} shows further that, under
+The results of \citet{bartlett:37,lawley:56} show further that, under
 appropriate conditions, all other moments, and so also the entire
 distribution, also agree with a chi-squared up to order
 $O(1/\n^2)$. This rate improvement holds even when  MLEs are plugged in for any unknown parameters appearing in the  bias term $b$ of the expansion \citep{barndorff:88}.
@@ -267,7 +268,7 @@ $O(1/\n^2)$. This rate improvement holds even when  MLEs are plugged in for any 
 % random variable is $O(1/\n^2)$.
 As with the LR statistic, the
 adjusted statistic may be inverted to obtain CIs and
-p-values; see \comment{ref} for an illustration. % [mention b depends on parameters, or maybe make explicit in
+p-values; see Figure \ref{fig:data-analysis:profile-LR} for an example. % [mention b depends on parameters, or maybe make explicit in
 % the notation, and that 1/n2 rate can be achieved when these are estimated by root-n consistent estiamtros such as the mle's.]]
 
 \citet{lawley:56} provides a formula for the correction $b$ appearing
@@ -276,7 +277,7 @@ inverse Fisher information for \eqref{defn:l} and certain tensors $\kterm$. Bein
 of sums and products this formula does not introduce numerical or
 computational difficulties that aren't already present in the basic
 tensor components input into the formula, so we focus here on the
-latter. To this end, let $D_r$ denote partial differentiation with
+tensor components. To this end, let $D_r$ denote partial differentiation with
 respect to a sequence of the parameters $\effect$ and $\tau^2$ given
 by $r$. For example,
 $D_{\mu,\tau^2}\sum_{i=1}^n\log L_i(\effect,\tau^2\mid \Y_i)$ denotes
@@ -292,7 +293,7 @@ $r$ is of length $2$ and $s$ of length $1$ or $2$. Taking into account the commu
 % permutation symmetry of the order of differentiation
  there are $35$
 such terms in a model with one parameter of interest and one nuisance
-paramter.
+parameter.
 
 By linearity of expectation and differentiation, it suffices to
 compute the terms $\k_r^{(s)}$ for the unit log-likelihoods
@@ -314,24 +315,26 @@ prominent ones. The first two stem from assumptions of the  basic LR tests descr
 \begin{enumerate}
 \item The Bartlett correction requires correct specification of the
   likelihood. We refer to \citet{stijnen:10} for other modeling
-  assumptions implicit in models \eqref{mod:bn-prop},\eqref{mod:hn},\eqref{mod:pn},\eqref{mod:bn-irr} % , such
+  assumptions implicit in models \eqref{mod:bn-prop}--\eqref{mod:bn-irr} % \eqref{mod:bn-prop},\eqref{mod:hn},\eqref{mod:pn},\eqref{mod:bn-irr} 
+  % , such
   % as constancy of hazards in the Poisson-normal model,
   and focus here
-  on gaussianity of the unobserved random effect.  While the LR test
-  itself depends on gaussianity for valid inference, the Bartlett correction may be
+  on Gaussianity of the unobserved random effect.  While the LR test
+  itself depends on Gaussianity for valid inference, the Bartlett correction may be
   less robust to deviations.
 
 \item Wilks' theorem, underlying the chi-squared approximation to the
   LR statistic, applies to points in the interior of the
-  parameter space, excluding the fixed effects model
+  parameter space and thus excludes the fixed effects model
   $\tausqnull=0$. % [[Some simulations ((cite)) have suggested the LR
   % test maintains Type I error control when $\tausqnull=0$, but we are
   % concerned here with the more delicate question of rates.]]
   It is
-  possible the coverage rate at a given meta-analysis sample size $\n$
+  possible the coverage rate of the LR test at a given sample size $\n$
 appear unaffected by low heterogeneity, as has been suggested \citep{jackson:18,bakbergenuly:18}, while the more
   delicate rate analysis carried out here betrays an
-  impact. After all, the LR test for $\tau^2$ is  known to be inconsistent at the boundary $\tau^2=0$ \citep{self:87} while the parameters $(\mu,\tau^2)$ are dependent \comment{non-orthogonal} in the models \eqref{mod:bn-prop}--\eqref{mod:bn-irr}.% It is difficult to imagine there would not
+  impact. After all, the LR test for $\tau^2$ is  known to be inconsistent at the boundary $\tau^2=0$ \citep{self:87} and the parameters $(\mu,\tau^2)$ are not orthogonal % dependent \comment{non-orthogonal}
+  in the models \eqref{mod:bn-prop}--\eqref{mod:bn-irr}.% It is difficult to imagine there would not
   % be an impact on the rate, since inference for $\tau^2$ is known to
   % be off at the boundary ((self,liang)) and $\effect$ and $\tau^2$ are
   % not orthogonal in models
@@ -349,10 +352,10 @@ appear unaffected by low heterogeneity, as has been suggested \citep{jackson:18,
 delivers a $1/\n^2$ rate are usually justified by Cram\'er's condition
 for the underlying random variables, e.g., \citep{jensen:93}. This condition excludes lattice
 variables, such as appear in models \eqref{mod:bn-prop}--\eqref{mod:bn-irr}. Consequently, while Bartlett corrections have been derived for statistics based on lattice random variables since  the 1980s \citep{cordeiro:83}, their
-effectiveness does not rest on a firm theoretical foundation and in fact does not appear to be understood even in basic cases \citet{frydenberg:89,jensen:93,gotze:06}.
+effectiveness does not rest on a firm theoretical foundation and in fact does not appear to be understood even in basic cases \citep{frydenberg:89,jensen:93,gotze:06}.
 \end{enumerate}
 
-We have no theoretical contibutions to make here and will examine
+We have no theoretical contributions to make here and will examine
 model robustness and the effect of discreteness by
 simulation. % \comment{[[of bartlett correction does not open question
   % since the 80s, when lattice RVs can be bartlett codnitions. cramers
@@ -368,10 +371,11 @@ simulation. % \comment{[[of bartlett correction does not open question
 
 
 \subsection{Overview}
+\label{sec:method-overview}
 
 To compute the tensor component \eqref{defn:k-term-exact}, we approximate the integrals
 by a quadrature rule. Since all the likelihoods \eqref{mod:bn-prop}--\eqref{mod:bn-irr} involve
-integrating against a Gaussian, Gauss-Hermite quadrature is a natural
+integrating against a Gaussian, Gauss-Hermite (``GH'') quadrature is a natural
 choice. This and similar methods \citep{liu:94} provide
 weights $\w_1,\ldots,\w_{\nGH}$ and nodes $\z_1,\ldots,\z_{\nGH}$ in
 the domain of integration allowing the Gaussian integral of smooth
@@ -385,7 +389,7 @@ sum,
 The weights and nodes of the quadrature may in general depend on the
 unknown parameters $\effect$ and $\tau^2$. To simplify the above
 derivatives we assume the weights and nodes are constant with respect to the
-parameters, as discussed further below. The number of nodes $\nGH$
+parameters, as discussed further in Section \ref{sec:method:tuning-parameters}. The number of nodes $\nGH$
 controls the quality of the approximation and introduces a tuning
 parameter into the proposed method.  As in \eqref{defn:k-term-exact},
 the outer sum is taken over the support of $\Y$, which is a finite set
@@ -407,7 +411,7 @@ and $\k_{\mu,\tau^2}^{(\tau^2)}=\sum_\y(\F_{01}(\y)^2\F_{10}(\y)/\F_{00}(\y)^2 -
 
 The derivatives $\F_{jk}(\y)$ of the model-specific conditional PMFs
 that appear in the 35 tensor components $\kterm$ number 15: $\F_{jk}(\y)$ for
-$0\le j+k \le 4$. The form of these derivatives may be derived
+$0\le k+l \le 4$. The form of these derivatives may be derived
 independently of data but their specific values in general depend on
 parameters of the conditional PMF, e.g., the trial sizes $m_i$ in the binomial-normal model \eqref{mod:bn-prop}, and must typically be
 computed for each study of a meta-analysis. % The latter computations
@@ -416,7 +420,7 @@ computed for each study of a meta-analysis. % The latter computations
 % here.
 However, since the conditional PMFs only depend on the model
 parameters $(\effect,\tau^2)$ through the PMF's distributional
-parameters, the derivatives $\F_{jk}(\y), 0\le j+k \le 4$, may be
+parameters, the derivatives $\F_{jk}(\y), 0\le k+l \le 4$, may be
 re-written as linear combinations  of $\F_{00}(\y)=\sum_{j} \w_j f(y|\theta_j)$ using standard
 recurrences \citep{johnson:05}. The advantage of this form is that the terms
 $\F_{00}(\y)$ involve only the PMF itself, for which optimized and
@@ -444,6 +448,7 @@ across the $\n$ studies, as well.
 
 
 \subsection{Tuning parameters}
+\label{sec:method:tuning-parameters}
 
 We discuss the main choices made in applying the proposed method to a
 given dataset: the number of nodes to be used in the quadrature rule,
@@ -455,13 +460,14 @@ the support.
 
 
 \item The main tuning parameter of the proposed method is $\nGH$, the
-  number of nodes in the quadrature aproximation. we propose examining
-  this parameter heuristically. in the proposed method there are 15
-  integrands to which quadrature is applied, ie the summands in
+  number of nodes in the quadrature approximation. We propose selecting
+  this parameter heuristically. In the proposed method there are 15
+  integrands to which quadrature is applied, i.e., the functions $z\mapsto \frac{d^k}{d\mu^k}\frac{d^l}{d(\tau^2)^l}
+  f(y|\z)\phi(z)$, $0\le k+l \le 4$, which show up as the summands in
   $\F_{kl}(\y)=\sum_{j} \w_j \frac{d^k}{d\mu^k}\frac{d^l}{d(\tau^2)^l}
-  f(y|\z_j)$, $0\le j+k \le 4$. we therefore examine plots the 15
+  f(y|\z_j)$. We therefore examine plots of the 15
   integrands, weighted by the quadrature weights in place of the
-  normal density, versus quarature nodes. see ... for an
+  normal density, versus quadrature nodes. For a safe choice of $\nGH$ the plotted values should be negligible outside the range of $z_1,\ldots,z_{\nGH}$. See Figure \ref{fig:data-analysis:diagnostic-pmf} for an
   example. Typical choices encountered in the datasets below, leading
   to apparent convergence up to $.001$ absolute error in the CI
   endpoints, are 100--200 nodes for fixed rule quadrature and 10--30
@@ -475,8 +481,8 @@ the support.
 %   10--30 for adaptive rule quadrature.\comment{ref fig if available}
 
 \item Two broad variants of GH quadrature are fixed and
-  adaptive. Fixed GH uses the same $\nGH$  nodes centered at $0$,
-  irrespective of the integrand. On the other hand, adaptive GH
+  adaptive. Fixed GH uses the same $\nGH$  nodes centered at $0$
+  irrespective of the integrand, whereas adaptive GH
   transforms the nodes to take into account the mode and scale of the
   integrand. The drawback of adaptive quadrature is the cost of
   repeated numerical estimation of the mode and scale of the
@@ -485,13 +491,12 @@ the support.
   integrals in \eqref{defn:l} at a sequence of values $(\effect,\tau^2)$, and
   under adaptive quadrature each such evaluation requires estimating
   the mode and scale of a new integrand, leading to nested
-  optimizations. This cost is mitigated by the fewer nodes
-  generally required by adaptive quadrature \comment{ref table or fig for
-  bn-prop}.
+  optimizations. This cost is partially mitigated by the fewer nodes
+  generally required by adaptive quadrature.
 
   A further difficulty with adaptive quadrature is conceptual. Since
-  the adaptive nodes and weights depend on the parametes
-  $(\effect,\tau^2)$ through the mode and scale, they are subject to
+  the adaptive nodes and weights depend on the parameters
+  $(\effect,\tau^2)$ through the mode and scale of the integrand, they are subject to
   the differentiation operators in \eqref{defn:k-term-approximate}, which is incompatible with the
   assumptions of the proposed method. Ignoring this dependence
   involves a tacit assumption that the mode and scale of the derivatives of the integrand are similar to the integrand's.  However, this
@@ -503,31 +508,34 @@ the support.
   quickly using Newton-Raphson.
 
   In most of the data analysis examples in Section
-  \ref{sec:data-analysis}, there is little difference in performance
-  between CIs returned by fixed and adaptive quadrature. In general
-  one expects adaptive quadrature to be valuable when the integrand
-  charges  support points of $\Y$ far from $0$, which is where fixed rule
-  nodes are centered.\comment{fix this claim} Consistent with this heuristic, the
-  Poisson-normal model benefits heavily from adaptive quadrature \comment{ref
-  picture or table}.
+  \ref{sec:data-analysis}, there is in fact little difference in performance
+  between CIs returned by fixed and adaptive quadrature, the exception being the Poisson-normal analysis; see Figure \ref{fig:data-analysis-diagnostic-k}.
+
+  % In most of the data analysis examples in Section
+  % \ref{sec:data-analysis}, there is little difference in performance
+  % between CIs returned by fixed and adaptive quadrature. In general
+  % one expects adaptive quadrature to be valuable when the integrand
+  % charges  support points of $\Y$ far from $0$, which is where fixed rule
+  % nodes are centered.\comment{fix this claim} Consistent with this heuristic, the
+  % Poisson-normal model benefits heavily from adaptive quadrature \comment{ref
+  % picture or table}.
 
 \item Since the Poisson-normal model has infinite support,
   implementation of the proposed method requires a truncation
-  point. We also propose the use of visual heuristics to determine
-  this tuning parameter. the relevance of the support of y under the
-  proposed method is that each of the 35 k terms is approximated by a
-  sum over the support of y. these 35 summands, indicated in ..., give
-  rise to 35 functions of y which may be plotted versus the support of
-  y, truncated beyond a proposed value. a satisfactory truncation
+  point. We propose the use of visual heuristics to determine this
+  tuning parameter, as well. The support of $\Y$ enters the
+  calculations of the proposed method in the expression \eqref{defn:k-term-approximate}, where
+  each of the 35 terms $\kterm$ is approximated by a sum over
+  $\y$. These 35 summands give rise to 35 functions of $\y$ that may be
+  plotted for a proposed truncation point. A satisfactory truncation
   point is a value beyond which the function values are
-  negligible. see fig. ... . as the example there shows, it may be
-  difficult to know in general what is to be deemed negligible for a
-  given data set, and moreover the truncation point often influences
-  the choice of $\nGH$.  \comment{maybe given example of higher
-    oscillation obsreved in pn data analysis} For the Poisson-normal
-  model we therefore suggest examining a matrix of CIs varying both
-  parameters to identify the limiting CI. See Section
-  \ref{sec:data-analysis} for an example.
+  negligible. See Figure \ref{fig:data-analysis-diagnostic-k}. As the
+  example there shows, it may be difficult to know in general what is
+  to be deemed negligible for a given data set, and moreover the
+  truncation point often influences the choice of $\nGH$.
+  For the Poisson-normal model we therefore suggest
+  examining a matrix of CIs varying both parameters to identify the
+  limiting CI. See Table \ref{tab:data-analysis:pn-matrix} for an example.
   % Once a GH rule has been chosen, one can choose the truncation
   % point large enough that the weighted tails are as small as
   % desired. However, it may be difficult to know in general what is
@@ -570,21 +578,20 @@ are constructed to resemble the meta-analysis datasets of \citet{niel:07} and \c
 to be the MLEs for the data obtained by \citet{stijnen:10}, and the
 distributional parameters are obtained by sampling with replacement
 from the datasets. For example, to simulate a meta-analysis of a
-proportion using the [[...]]arm of \citet{niel:07}, we first sample
-with replacement $\n$ trial sizes $m_1,\ldots,m_{\n},$ from the $18$
-[[control or treatment]]\comment{finalize} arm study sizes given by
-the corresponding column of \citet{niel:07}'s data; and second, sample
-$\n$ effects $\Y$ under the binomial likelihood \eqref{mod:bn-prop}
-using the sampled trial sizes $m_i$ and success probabilities given by
-the parameters $(\munull,\tausqnull)=(-3.50,.81)$ taken from the MLE
-calculations of \citet{stijnen:10}. Meta-analyses of sizes
-$5,\ldots,15,$\comment{finalize} are sampled in this manner, and the rate of convergence
-of the empirical Kolmogorov-Smirnov distance to a chi-squared
-distribution is estimated using $\n^4$ monte carlo repetitions at each
-sample size $\n$. See \citet{michael:ma-bartlett} for details on the
-rate estimation.
+single proportion of size $\n$ resembling the treatment arm data of \citet{niel:07},
+we first sample with replacement $\n$ trial sizes $m_1,\ldots,m_{\n},$
+from the $18$ treatment arm study sizes given by the corresponding
+column of Table \ref{tab:niel-weise-07}; and second, sample $\n$
+effects $\Y$ under the binomial likelihood \eqref{mod:bn-prop} using
+the sampled trial sizes $m_i$ and random success probabilities sampled using the parameters $(\munull,\tausqnull)=(-3.50,.81)$ taken from the
+MLE calculations of \citet{stijnen:10}. Meta-analyses of sizes
+$10,\ldots,20,$  are sampled in this manner, reflecting the sizes $\n=9$ and $\n=18$ of \citet{niel:07} and \citet{niel:08}. The
+rate of convergence of the empirical Kolmogorov-Smirnov distance to a
+chi-squared distribution is then estimated using $\n^4$ monte carlo
+repetitions at each sample size $\n$. See \citet{michael:ma-bartlett}
+for details on the rate estimation.
 
-Robustness of the gaussianity assumption is examined by perturbing a
+Robustness of the Gaussianity assumption is examined by perturbing a
 normal to a skewed distribution \citep{jones:09}. The skew
 was chosen to test robustness since it drives the first-order error in
 CLT-type approximations. Robustness against non-degeneracy of the
@@ -593,9 +600,9 @@ below.% the sinh-asinch model was used to obtain the
 % perturbned gaussian distributions.
 
 In all simulations, we have used the true parameters
-$(\munull,\tausqnull)$ to calculate the Bartlett correction
-$b=b(\munull,\tausqnull)$ \comment{perturbed by a Gaussian with SD
-$1/\sqrt\n$??}. In practice the MLE would be used. The practical
+$(\munull,\tausqnull)$, perturbed by a Gaussian with standard deviation
+$1/\sqrt\n$, to calculate the Bartlett correction
+$b=b(\munull,\tausqnull)$. In practice the MLE would be used. The practical
 reason is to avoid the prohibitive computational cost of
 re-calculating the Bartlett calculation for each of the $\n^4$ monte
 carlo replicates. The justification is the result of \citet{lawley:56,barndorff:88} and others that the $O(1/\n^2)$ Bartlett rate survives substitution of $\sqrt\n-$consistent estimators into the Bartlett correction $b(\mu,\tau^2)$.
@@ -610,25 +617,25 @@ carlo replicates. The justification is the result of \citet{lawley:56,barndorff:
 Table \ref{tab:simulation} shows that when the model assumptions are
 met, the standard LR rate of $1/\n$ and the Bartlett-corrected rate of
 $1/\n^2$ are approximated by three of the four models \eqref{mod:bn-prop}--\eqref{mod:bn-irr}. As
-skew increases, the rate deterioriates for both
+skew increases, the rate deteriorates for both
 statistics. It appears also that skew affects the Bartlett-corrected statistic more severely than the standard statistic, with the corrected statistic in some instances showing a slower rate when skew is high. We therefore conclude that, at least in these three
 models and under correct specification of the random effect, the quadrature approximations may be sufficient.%  and that skew
 % may affect the convergence of both corrected and uncorrected LR
 % statistics.  
 
 The binomial-normal model for incidence rate ratios model
-\eqref{mod:bn-irr} is the exception, showing a rate closer to $1/\n^{3/2}$
-than $1/\n^2$ under Bartlett correction even in the idealized
-skew-free setting. This failure appears to be due to low
-heterogeneity. Rather than sampling using the MLE $\hat\tau^2=0.096$
-of the original data set \citep{niel:08} as in Table
-\ref{tab:simulation}, we consider $\tau^2\in\{.1,.2,.3\}$, maintaining
-other aspects of the simulation design. The results, presented in
-Fig. \ref{fig:simulation:tau2}, show the $1/\n^2$ rate being achieved
-as $\tau^2$ grows to .3. The standard LR statistic does not appear
-affected, consistent with previously reported simulations
-\citep{jackson:18,bakbergenuly:18}. We therefore conclude that the advantage of Bartlett
-correction can be impaired by low heterogeneity.
+\eqref{mod:bn-irr} is the exception, showing a rate closer to
+$1/\n^{3/2}$ than $1/\n^2$ under Bartlett correction even in the
+idealized skew-free setting. This failure appears to be due to low
+heterogeneity. In addition to  the MLE
+$\hat\tau^2=0.096$ of the original data set \citep{niel:08}, we consider a smaller and larger choice of
+$\tau^2$, maintaining other aspects of the simulation design. The
+results, presented in Fig. \ref{fig:simulation:tau2}, show the rate
+deteriorating as $\tau^2 $ is decreased and improving to the target $1/\n^2$ rate as
+$\tau^2$ grows. The standard LR statistic does not appear much affected,
+consistent with previously reported simulations
+\citep{jackson:18,bakbergenuly:18}. We therefore conclude that the
+advantage of Bartlett correction can be impaired by low heterogeneity.
 
 \begin{table}[htbp]\n\centering
 \input{./figs/rate-table.tex}
@@ -641,7 +648,7 @@ correction can be impaired by low heterogeneity.
 \begin{figure}
   \centering
   \includegraphics[scale=.5]{./figs/sim-tau2.png}
-  \caption{Further analysis of the simulation using the binomial model for IRR \eqref{mod:bn-irr}. The rate of the Bartlett-corrected LR statistic (solid line) drops from the target $1/\n^2$ rate as the  heterogeneity parameter $\tau^2$ drop to $0$ or as the skew of the random effect increases. The rate of the standard LR statistic (dashed lines) is also affected adversely by skew but does not appear to be affected by varying $\tau^2$ in this range. The data is simulated based on \citet{niel:08} and the binomial-normal model for incidence rate ratios.}
+  \caption{Further analysis of the simulation using the binomial model for IRR \eqref{mod:bn-irr}. The rate of the Bartlett-corrected LR statistic (solid line) drops from the target $1/\n^2$ rate as the  heterogeneity parameter $\tau^2$ drop to $0$ or as the skew of the random effect increases. The rate of the standard LR statistic (dashed lines) is also affected adversely by skew but does not appear to be affected by varying $\tau^2$ in this range. The data is simulated based on \citet{niel:08}.}
   \label{fig:simulation:tau2}
 \end{figure}
 
@@ -698,34 +705,43 @@ infections observed in a population as well as the total
 ``catheter-days,'' the sum over the study population of the number of days
 each subject used a catheter.
 
-We apply the Poisson-normal model \eqref{mod:pn} to obtain CIs for the log
-incidence rate in each arm, and the binomial-normal model for incidence rate ratios \eqref{mod:bn-irr} to
-obtain a CI for the log-incidence-rate ratio. For this smaller
-meta-analysis the difference between the corrected and uncorrected CIs
-is more substantial, the corrected CIs being about $10\%$ larger. These differences include a loss of significance at
-the nominal level $\alpha=.05$ for the log-IR ratio study.
+We apply the Poisson-normal model \eqref{mod:pn} to obtain CIs for the
+log incidence rate in each arm, and the binomial-normal model for
+incidence rate ratios \eqref{mod:bn-irr} to obtain a CI for the
+log-incidence-rate ratio. For this smaller meta-analysis the
+difference between the corrected and uncorrected CIs is more
+substantial, the corrected CIs being about $10\%$ larger. These
+differences include a loss of significance at the nominal level
+$\alpha=.05$ for the log-IR ratio study. See Figure
+\ref{fig:data-analysis:profile-LR} for a plot of the profile LR used
+to obtain the CI for incidence under treatment.
 
 The number of quadrature nodes used to approximate the Bartlett
 correction was selected by examining plots of the summands in
 $\F_{kl}(\y)=\sum_{j} \w_j \frac{d^k}{d\mu^k}\frac{d^l}{d(\tau^2)^l}
-f(y|\z_j)$, $0\le j+k \le 4$, as discussed in ... . Since these
-integrands, as functions of z, appear to be supported within the range
-of the quadrature nodes, this choice of ngh appears satisfactory. such
-a matrix of plots is generated for each of the studies in ...
+f(y|\z_j)$, $0\le k+l \le 4$, as discussed in Section
+\ref{sec:method:tuning-parameters}. Since these integrands, as functions of $z$,
+appear to be supported within the range of $\nGH=20$ quadrature nodes,
+this choice of the tuning parameter appears satisfactory. See Figure
+\ref{fig:data-analysis:diagnostic-pmf}; such a matrix of plots is
+inspected for each of the studies in the dataset.
 
-To obtain the truncation point for the support of the poisson-normal
-model, the summands in ((ref)) making up the 35 k terms were plotted
-against a proposed support, as discussed in ... .  for the trt group
-of nw08 with fixed quarature suppy = ..., fig. ... shows that the
-summands are not convincingly be contained in the proposed support
-support of y. on the other hand, when adaptive quadrature is used, the
-k terms do appear to vanish beyond the proposed truncation point. this
-example shows that, in the case of the poisson-normal model, which has
-two tunin gparameters, they may need to be chosen in coordination. a
-matrix such as ... may be of assistance.
+To obtain the truncation point for the support of the Poisson-normal
+model, the 35 summands in \eqref{defn:k-term-approximate},
+corresponding to each of the 35 terms $\kterm$, viewed as functions of
+$\y$, were plotted against a proposed support, as discussed in
+\ref{sec:method:tuning-parameters}.  For the treatment group of \citet{niel:08}
+with fixed quadrature Figure
+\ref{fig:data-analysis-diagnostic-k-nonadaptive} shows that the
+summands are not convincingly contained in even a relatively large proposed support
+$0\le\y\le 3000$. On the other hand, when adaptive quadrature is used,
+\ref{fig:data-analysis-diagnostic-k-adaptive} suggests the terms
+$\kterm$ are negligible beyond the proposed truncation point of $350$. This
+example shows that the two tuning parameters of the Poisson-normal model may need to be chosen in coordination. A
+matrix such as Table \ref{tab:data-analysis:pn-matrix} may be of assistance.
 % For the Poisson-normal model analysis of the treatment arm of \citet{niel:08} the two tuning parameters were selected using the matrix presented in  Table \ref{tab:data-analysis:pn-matrix}. % as an example of determining the bartlett ci, Table \ref{tab:data-analysis:pn-matrix} presents a matrix of ci's for the pn model as its two tuning parameters are varied.
-Taking $\nGH=20$ adaptive nodes and $\y_{max}=1,500$ support points is sufficient for a CI with endpoints within $3/10000$ \comment{finalize}of the converged value, where $\nGH=100$ adaptive nodes and $\y_{max}=1000$ are assumed to produce the converged value. The treatment arm is evidently more challenging than the control arm, with relatively few rare events. In the latter case only
- $\nGH=10$ adaptive nodes and $\y_{max}=400$ are needed to achieve a similar proximity to the converged value \comment{put in appendix or supplementary information}.
+Taking $\nGH=20$ adaptive nodes and $\y_{max}=1,500$ support points is sufficient for a CI with endpoints within $3/10000$ of the converged value, where $\nGH=100$ adaptive nodes and $\y_{max}=5000$ are assumed to produce the converged value. \comment[green]{The treatment arm is evidently more challenging than the control arm, with relatively few rare events. In the latter case only
+ $\nGH=10$ adaptive nodes and $\y_{max}=400$ are needed to achieve a similar proximity to the converged value}
 
 % [[give sample plot. maybe give poisson model with adaptive and non-adaptive GH. cite latter in method/tuning parameter section.]]
 %
@@ -762,6 +778,70 @@ Taking $\nGH=20$ adaptive nodes and $\y_{max}=1,500$ support points is sufficien
 
 
 
+\begin{figure}
+  \centering
+  \includegraphics[scale=.7]{./figs/profile-LR.png}
+  \caption{Profile curve for the standard (dashed line) and
+    Bartlett-corrected (solid line) LR statistic. The data consists of the
+    treatment arms of \citet{niel:08}.}
+  \label{fig:data-analysis:profile-LR}
+\end{figure}
+
+\begin{figure}
+  \includegraphics{./figs/diagnostic-pmf.png}
+  \caption{Diagnostic plot for determining the number of quadrature
+    nodes $\nGH$. Corresponding to each of the 15 terms
+    $\F_{kl}(\y), 0\le k+l \le 4$, the integrand, viewed as a function
+    of $\z$, is plotted along proposed quadrature nodes, one path for
+    each support point $\y$. The depicted data is for study 3 of the treatment arm data
+    of \citet{niel:08}.}
+  \label{fig:data-analysis:diagnostic-pmf}
+\end{figure}
+
+% \begin{figure}
+%   \caption{}
+%   \label{fig:data-analysis:diagnostic-k-nonadaptive}
+% \end{figure}
+
+% \begin{figure}
+%   \caption{[[Diagnostic plot for determining the truncation point for y in the poisson-normal model. for each of the 35 kterms the summands making up the k term ((ref)) are each plotted. the data is for study 3 of the treatment arm of the niel weise 08 data.]]}
+%   \label{fig:data-analysis:diagnostic-k-adaptive}
+% \end{figure}
+
+
+
+\begin{figure}[htbp]
+    \centering
+    \begin{subfigure}{\textwidth}
+        \centering
+  \includegraphics[scale=.5]{./figs/diagnostic-k-nonadaptive.png}
+        \caption{Non-adaptive quadrature (arcsinh-scaled).}
+        \label{fig:data-analysis-diagnostic-k-nonadaptive}
+    \end{subfigure}    
+    \vspace{1em} % Adds vertical space between the stacked figures   
+    \begin{subfigure}{\textwidth}
+        \centering
+  \includegraphics[scale=.5]{./figs/diagnostic-k-adaptive.png}
+        \caption{Adaptive quadrature.}
+        \label{fig:data-analysis-diagnostic-k-adaptive}
+    \end{subfigure}    
+    \caption{Diagnostic plot for determining the truncation point for
+      $\Y$ in the Poisson-normal model. The summands
+      \eqref{defn:k-term-approximate}, viewed as functions of $\y$,
+      are plotted for a proposed support, one path for each of the 35
+      terms $\kterm$. In the non-adaptive case
+      \ref{fig:data-analysis-diagnostic-k-nonadaptive} numerical
+      artifacts appear up to support points as large as $\num{3e3}$,
+      and perhaps beyond, whereas for adaptive quadrature
+      \ref{fig:data-analysis-diagnostic-k-adaptive} the summands
+      appear negligible beyond $\y=350$. A further concern in the case
+      of non-adaptive quadrature is the magnitude of the terms. The
+      depicted data is for study 3 of the treatment arm of the
+      \citet{niel:08}.}
+    \label{fig:data-analysis-diagnostic-k}
+\end{figure}
+
+
 \begin{table}[htbp]
   \centering
   \input{./figs/pn-table.tex}
@@ -787,44 +867,6 @@ Taking $\nGH=20$ adaptive nodes and $\y_{max}=1,500$ support points is sufficien
 
 
 
-\begin{figure}
-  \includegraphics{./figs/diagnostic-pmf.png}
-  \caption{[[Diagnostic plot for determining the number of quadrature nodes $\nGH$. for eac hof the 15 terms ..., paths along the domain of integratio z are plotted, one path for each support point y. the data is for study 3 of the treatment arm of the niel weise 08 data.]]}
-  \label{fig:data-analysis:diagnostic-pmf}
-\end{figure}
-
-% \begin{figure}
-%   \caption{}
-%   \label{fig:data-analysis:diagnostic-k-nonadaptive}
-% \end{figure}
-
-% \begin{figure}
-%   \caption{[[Diagnostic plot for determining the truncation point for y in the poisson-normal model. for each of the 35 kterms the summands making up the k term ((ref)) are each plotted. the data is for study 3 of the treatment arm of the niel weise 08 data.]]}
-%   \label{fig:data-analysis:diagnostic-k-adaptive}
-% \end{figure}
-
-
-
-\begin{figure}[htbp]
-    \centering
-    \begin{subfigure}{\textwidth}
-        \centering
-  \includegraphics[scale=.5]{./figs/diagnostic-k-nonadaptive.png}
-        \caption{Non-adaptive quadrature ($\sinh^{-1}$ scale).}
-        \label{fig:data-analysis-diagnostic-k-nonadaptive}
-    \end{subfigure}    
-    \vspace{1em} % Adds vertical space between the stacked figures   
-    \begin{subfigure}{\textwidth}
-        \centering
-  \includegraphics[scale=.5]{./figs/diagnostic-k-adaptive.png}
-        \caption{Adaptive quadrature.}
-        \label{fig:data-analysis-diagnostic-k-adaptive}
-    \end{subfigure}    
-    \caption{[[Diagnostic plot for determining the truncation point for y in the poisson-normal model. for each of the 35 kterms the summands making up the k term ((ref)) are each plotted. the data is for study 3 of the treatment arm of the niel weise 08 data. in the non-adaptive case ((ref)) numerical artifacts appear up to support points 3k, and perhaps beyond, whereas for adaptive quadrature ((ref)) the summands appear negligible beyond y=... a further concern in the case of non-adaptive quadrature is the magnitude of the terms.]]}
-    \label{fig:data-analysis-diagnostic-k}
-\end{figure}
-
-
 \section{Conclusion}
 \label{sec:conclusion}
 
@@ -833,12 +875,12 @@ intervals for meta-analyses of event outcomes. Discreteness of the data does not
 proposed method deteriorates as the model assumption of a
 non-degenerate Gaussian random effect is progressively relaxed.
 
-Ideally application of the bartlett correction would be a ``free
-lunch,'' yielding an improved rate if the random effect is in fact Gaussian and otherwise being neutral, beyond perhaps the added computational cost. %  if the assumptions like gaussianity of the random effect are
+Ideally application of the Bartlett correction would be a ``free
+lunch,'' offering an improved rate if the random effect is in fact Gaussian and otherwise being neutral, beyond perhaps the added computational cost. Since a Bartlett correction is only of order $O(1/n)$ whether misspecified or not, such a desire may not be unreasonable. %  if the assumptions like Gaussianity of the random effect are
 % met, then we get the benefit of the rate improvement, and if they're
 % not met, our inferences are the same as using the uncorrected
 % statistic.
-We have seen this is not quite the case. When the skew of the random
+We have seen this is not quite the case, however. When the skew of the random
 effect is sufficiently far from $0$, the rate of the
 Bartlett-corrected statistic can be worse than the uncorrected
 statistic. Presumably a random effect sufficiently far from a Gaussian

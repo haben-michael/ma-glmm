@@ -200,3 +200,22 @@ ticks <- quantile(vals,c(.001,.02,.5,.98,.999)) |> round()
 ## print(ticks)
 axis(2, at = asinh(ticks), labels = ticks)
 dev.off()
+
+
+
+
+## example of a profile LR curve
+
+ks.fun <- readRDS('ks-fun.rds')
+pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
+source('models.R')
+source('./meta.glmm/R/meta.glmm.R')
+stijnen.vi <- read.table('stijnen-table-VI.txt')
+n.GH <- 40
+y <- stijnen.vi$Y1
+T <- stijnen.vi$T1/1000
+params <- cbind(T=T,y.min=0,y.max=850)
+fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))
+png('./figs/profile-LR.png')
+confint.meta.glmm(fit,mc.cores=5,mu.grid=list(offset=2.,size=20))
+dev.off()

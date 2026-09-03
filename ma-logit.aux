@@ -42,8 +42,6 @@
 \citation{liu:94}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Assumptions}{5}\protected@file@percent }
 \MT@newlabel{mod:bn-prop}
-\MT@newlabel{mod:hn}
-\MT@newlabel{mod:pn}
 \MT@newlabel{mod:bn-irr}
 \MT@newlabel{mod:bn-prop}
 \MT@newlabel{mod:bn-irr}
@@ -52,6 +50,7 @@
 \@writefile{toc}{\contentsline {section}{\numberline {3}Computing the tensor components $k_r^{(s)}$}{5}\protected@file@percent }
 \newlabel{sec:method}{{3}{5}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Overview}{5}\protected@file@percent }
+\newlabel{sec:method-overview}{{3.1}{5}}
 \MT@newlabel{defn:k-term-exact}
 \MT@newlabel{mod:bn-prop}
 \MT@newlabel{mod:bn-irr}
@@ -65,19 +64,22 @@
 \MT@newlabel{mod:bn-prop}
 \MT@newlabel{mod:pn}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Tuning parameters}{6}\protected@file@percent }
+\newlabel{sec:method:tuning-parameters}{{3.2}{6}}
 \MT@newlabel{defn:L-unit}
 \MT@newlabel{mod:bn-prop}
 \MT@newlabel{mod:bn-irr}
 \MT@newlabel{defn:l}
 \MT@newlabel{defn:k-term-approximate}
 \MT@newlabel{defn:L-unit}
+\MT@newlabel{defn:k-term-approximate}
 \citation{niel:07}
 \citation{niel:08}
 \citation{stijnen:10}
 \citation{stijnen:10}
 \citation{niel:07}
-\citation{niel:07}
 \citation{stijnen:10}
+\citation{niel:07}
+\citation{niel:08}
 \citation{michael:ma-bartlett}
 \citation{jones:09}
 \citation{lawley:56,barndorff:88}
@@ -92,6 +94,7 @@
 \citation{niel:08}
 \citation{niel:08}
 \citation{stijnen:10}
+\citation{niel:07}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Results}{9}\protected@file@percent }
 \MT@newlabel{mod:bn-prop}
 \MT@newlabel{mod:bn-irr}
@@ -107,9 +110,21 @@
 \newlabel{sec:data-analysis}{{5}{9}}
 \MT@newlabel{mod:bn-prop}
 \MT@newlabel{mod:bn-irr}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Further analysis of the simulation using the binomial model for IRR \MT_extended_eqref:n  {mod:bn-irr}. The rate of the Bartlett-corrected LR statistic (solid line) drops from the target $1/n^2$ rate as the heterogeneity parameter $\tau ^2$ drop to $0$ or as the skew of the random effect increases. The rate of the standard LR statistic (dashed lines) is also affected adversely by skew but does not appear to be affected by varying $\tau ^2$ in this range. The data is simulated based on \citet  {niel:08} and the binomial-normal model for incidence rate ratios.\relax }}{10}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Further analysis of the simulation using the binomial model for IRR \MT_extended_eqref:n  {mod:bn-irr}. The rate of the Bartlett-corrected LR statistic (solid line) drops from the target $1/n^2$ rate as the heterogeneity parameter $\tau ^2$ drop to $0$ or as the skew of the random effect increases. The rate of the standard LR statistic (dashed lines) is also affected adversely by skew but does not appear to be affected by varying $\tau ^2$ in this range. The data is simulated based on \citet  {niel:08}.\relax }}{10}\protected@file@percent }
 \MT@newlabel{mod:bn-irr}
 \newlabel{fig:simulation:tau2}{{1}{10}}
+\citation{niel:08}
+\citation{niel:08}
+\citation{niel:07}
+\citation{niel:07}
+\citation{niel:07}
+\citation{niel:08}
+\citation{niel:08}
+\citation{niel:08}
+\citation{stijnen:10}
+\citation{niel:07}
+\citation{niel:08}
+\citation{stijnen:10}
 \citation{niel:07}
 \citation{niel:08}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Proportions}{11}\protected@file@percent }
@@ -118,17 +133,12 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Incidence}{11}\protected@file@percent }
 \MT@newlabel{mod:pn}
 \MT@newlabel{mod:bn-irr}
-\citation{niel:07}
-\citation{niel:07}
-\citation{niel:07}
+\MT@newlabel{defn:k-term-approximate}
 \citation{niel:08}
 \citation{niel:08}
 \citation{niel:08}
-\citation{stijnen:10}
-\citation{niel:07}
 \citation{niel:08}
-\citation{stijnen:10}
-\citation{niel:07}
+\citation{niel:08}
 \citation{niel:08}
 \@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Standard and Bartlett-corrected confidence intervals for the example meta-analysis datasets considered by \citet  {stijnen:10}. There appears to be little advantage in Bartlett correction for the meta-analyses based on \citet  {niel:07}, which consists of 18 studies. There is a greater difference for the meta-analyses based on \citet  {niel:08}, which has half as many studies.\relax }}{12}\protected@file@percent }
 \newlabel{tab:data-analysis}{{2}{12}}
@@ -136,14 +146,17 @@
 \newlabel{tab:data-analysis:pn-matrix}{{3}{12}}
 \@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion}{12}\protected@file@percent }
 \newlabel{sec:conclusion}{{6}{12}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces [[Diagnostic plot for determining the number of quadrature nodes $n_{GH}$. for eac hof the 15 terms ..., paths along the domain of integratio z are plotted, one path for each support point y. the data is for study 3 of the treatment arm of the niel weise 08 data.]]\relax }}{13}\protected@file@percent }
-\newlabel{fig:data-analysis:diagnostic-pmf}{{2}{13}}
-\newlabel{fig:data-analysis-diagnostic-k-nonadaptive}{{3a}{14}}
-\newlabel{sub@fig:data-analysis-diagnostic-k-nonadaptive}{{a}{14}}
-\newlabel{fig:data-analysis-diagnostic-k-adaptive}{{3b}{14}}
-\newlabel{sub@fig:data-analysis-diagnostic-k-adaptive}{{b}{14}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces [[Diagnostic plot for determining the truncation point for y in the poisson-normal model. for each of the 35 kterms the summands making up the k term ((ref)) are each plotted. the data is for study 3 of the treatment arm of the niel weise 08 data. in the non-adaptive case ((ref)) numerical artifacts appear up to support points 3k, and perhaps beyond, whereas for adaptive quadrature ((ref)) the summands appear negligible beyond y=... a further concern in the case of non-adaptive quadrature is the magnitude of the terms.]]\relax }}{14}\protected@file@percent }
-\newlabel{fig:data-analysis-diagnostic-k}{{3}{14}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Profile curve for the standard (dashed line) and Bartlett-corrected (solid line) LR statistic. The data consists of the treatment arms of \citet  {niel:08}.\relax }}{13}\protected@file@percent }
+\newlabel{fig:data-analysis:profile-LR}{{2}{13}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Diagnostic plot for determining the number of quadrature nodes $n_{GH}$. Corresponding to each of the 15 terms $\F _{kl}(y), 0\le k+l \le 4$, the integrand, viewed as a function of $z$, is plotted along proposed quadrature nodes, one path for each support point $y$. The depicted data is for study 3 of the treatment arm data of \citet  {niel:08}.\relax }}{14}\protected@file@percent }
+\newlabel{fig:data-analysis:diagnostic-pmf}{{3}{14}}
+\newlabel{fig:data-analysis-diagnostic-k-nonadaptive}{{4a}{15}}
+\newlabel{sub@fig:data-analysis-diagnostic-k-nonadaptive}{{a}{15}}
+\newlabel{fig:data-analysis-diagnostic-k-adaptive}{{4b}{15}}
+\newlabel{sub@fig:data-analysis-diagnostic-k-adaptive}{{b}{15}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Diagnostic plot for determining the truncation point for $Y$ in the Poisson-normal model. The summands \MT_extended_eqref:n  {defn:k-term-approximate}, viewed as functions of $y$, are plotted for a proposed support, one path for each of the 35 terms $k_r^{(s)}$. In the non-adaptive case 4a\hbox {} numerical artifacts appear up to support points as large as $\num {3e3}$, and perhaps beyond, whereas for adaptive quadrature 4b\hbox {} the summands appear negligible beyond $y=350$. A further concern in the case of non-adaptive quadrature is the magnitude of the terms. The depicted data is for study 3 of the treatment arm of the \citet  {niel:08}.\relax }}{15}\protected@file@percent }
+\MT@newlabel{defn:k-term-approximate}
+\newlabel{fig:data-analysis-diagnostic-k}{{4}{15}}
 \bibstyle{chicago}
 \bibdata{../ma-equivalence/ma-equivalence.bib}
 \bibcite{andrews:00}{{1}{2000}{{Andrews and Stafford}}{{Andrews and Stafford}}}
@@ -173,8 +186,8 @@
 \citation{niel:07}
 \citation{niel:08}
 \citation{niel:08}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Data from \citet  {niel:07} analyzed in Section 5\hbox {} under the binomial-normal model for proportions and the hypergeometric-normal model. Study 15 does not contribute to the hypergeometric-normal likelihood \MT_extended_eqref:n  {mod:hn}, reducing the sample size to $17$ for that analysis in Section 5\hbox {}.\relax }}{17}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Data from \citet  {niel:07} analyzed in Section 5\hbox {} under the binomial-normal model for proportions and the hypergeometric-normal model. Study 15 does not contribute to the hypergeometric-normal likelihood \MT_extended_eqref:n  {mod:hn}, reducing the sample size to $17$ for that analysis in Section 5\hbox {}.\relax }}{18}\protected@file@percent }
 \MT@newlabel{mod:hn}
-\newlabel{tab:niel-weise-07}{{4}{17}}
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Data from \citet  {niel:08} analyzed in Section 5\hbox {} under the binomial-normal model for incidence rate ratios and the Poisson-normal model.\relax }}{17}\protected@file@percent }
-\newlabel{tab:niel-weise-08}{{5}{17}}
+\newlabel{tab:niel-weise-07}{{4}{18}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Data from \citet  {niel:08} analyzed in Section 5\hbox {} under the binomial-normal model for incidence rate ratios and the Poisson-normal model.\relax }}{18}\protected@file@percent }
+\newlabel{tab:niel-weise-08}{{5}{18}}

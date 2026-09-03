@@ -134,28 +134,6 @@ make.bartlett.C <- function(params,quad,pmf.derivs.fun,debug=FALSE){
         return(out)
     }
 }
-## make.quad <- function(integrand.mode,var.map,n.GH,adaptive=TRUE) {
-##     GH <- fastGHQuad::gaussHermiteData(n.GH)
-##     if(!adaptive) {
-##         out <- function(...) {
-##             list(z=sqrt(2)*GH$x,wt=GH$w/sqrt(pi))
-##         }
-##     } else {
-##         out <- function(yi,paramsi,mu,tau2) {
-##         ## browser()
-##             mode <- integrand.mode(yi,paramsi,mu,tau2)
-##             scale <- (1 + tau2 * var.map(mode,paramsi, mu, tau2))^(-1 / 2)
-##             z <- mode + sqrt(2) * scale * GH$x
-##             wt <- sqrt(2) * scale *
-##                 GH$w *
-##                 exp(GH$x^2) *
-##                 dnorm(z)
-##             return(list(z=z,wt=wt))
-##         }
-##     }
-##     return(out)
-## }
-## using moment map
 make.quad <- function(moment.map,cond.pmf,n.GH,adaptive=TRUE,adaptive.tol=NULL) {
     GH <- fastGHQuad::gaussHermiteData(n.GH)
     if(!adaptive) {
@@ -273,6 +251,9 @@ make.profile.LR <- function(loglik,mle,par.start,logtau2.bounds) {
 ##     sqrt(tau2)*( yi-paramsi['m']*p )
 ##     }
 ## curve(cond.pmf.hyperg(yi,x,mu,tau2,paramsi)*dnorm(x),-5,5)
+
+
+## 1. logtau2.bounds not currently used--from old optim routine
 mle <- function(loglik,par.start,logtau2.bounds=c(-20,3),...) {
     ## fit <- optim(par=c(par.start['mu'],log(par.start['tau2'])),fn=function(par)-loglik(par[1],exp(par[2])),...)
     ## mu.mle <- unname(fit$par[1]); tau2.mle <- unname(exp(fit$par[2]))
@@ -317,7 +298,7 @@ confint <- function(mu.grid, profile, alpha=.05, plot=TRUE,...) {
     if(plot) {
         ## plot(mu.grid,profile['LR',],ylim=range(profile),type='o')
         ## if(!is.null(LR.bartlett.profile)) lines(mu.grid,profile['LR.bartlett',],lty=2,type='o')
-        matplot(mu.grid,t(profile),type='l',...)
+        matplot(mu.grid,t(profile),type='l',col=1,lty=2:1,xlab=bquote(mu),ylab='profile LR',...)
         abline(h=q)
     }
     ## interpolate CIs
@@ -339,6 +320,8 @@ confint <- function(mu.grid, profile, alpha=.05, plot=TRUE,...) {
     ## if(debug) out <- c(out,profile.fit$debug)
     return(out)
 }
+
+## 1. choice of starting tau2 when tau2.DL==0 is currently var(y)
 par.start <- function(y,params,nn.transform) {
     ## browser()
     ## 1+1
@@ -351,10 +334,12 @@ par.start <- function(y,params,nn.transform) {
         c(mu=mu.fe,tau2=tau2.start)
     })
 }
+## 1. adaptive.tol is hard-coded. change parameters so adaptive.tol is
+## passed, defaults to NULL which is fixed rule .
 meta.glmm <- function(y,params,model.str,n.GH,adaptive,logtau2.bounds,debug=FALSE,...) {
     model <- model(model.str)
     ## integrand.mode <- make.integrand.mode(model$newton.step)
-    quad <- make.quad(model$moment.map,model$cond.pmf,n.GH=n.GH,adaptive=adaptive,adaptive.tol=1e-4)#!!!!!!
+    quad <- make.quad(model$moment.map,model$cond.pmf,n.GH=n.GH,adaptive=adaptive,adaptive.tol=1e-6)#!!!!!!
     loglik <- make.loglik(model$cond.pmf,params,y,quad)
     ## par.start0 <- model$par.start(y,params)
     par.start0 <- par.start(y,params,model$nn.transform)

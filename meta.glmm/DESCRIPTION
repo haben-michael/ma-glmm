@@ -11,3 +11,4 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 8.1.0
 Depends: 
     R (>= 3.5)
+LazyData: true

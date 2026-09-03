@@ -20,7 +20,7 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 ## tau2.null <- 1/2
 
 
-ns <- 5:15
+ns <- 10:20
 mu.null <- -3.5
 tau2.null <- .81
 model.str <- 'bn-prop'
@@ -32,7 +32,7 @@ stijnen.params <- cbind(m=ms,y.min=0,y.max=ms)
 mc.idx <- sample(nrow(stijnen.params),max(ns),replace=TRUE)
 mc.params <- stijnen.params[mc.idx,]
 model0 <- model(model.str)
-quad <- make.quad(model0$moment.map,model0$cond.pmf,n.GH=n.GH,adaptive=FALSE,adaptive.tol=1e-5)
+quad <- make.quad(model0$moment.map,model0$cond.pmf,n.GH=n.GH,adaptive=TRUE,adaptive.tol=1e-6)
 start <- Sys.time()
 ## by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
 by.n <- sapply(seq_along(ns), function(i) {

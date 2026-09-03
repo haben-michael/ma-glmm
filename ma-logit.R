@@ -2556,16 +2556,6 @@ qqnorm(z.stats['mu',]); abline(0,1)
 qqnorm(z.stats['tau2',]); abline(0,1)
 par(op)
 
-usethis::create_package("meta.glmm", open = FALSE)
-usethis::proj_set("meta.glmm")
-ks.fun <- readRDS('ks-fun.rds')
-pmf.derivs.fun.binomial.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
-pmf.derivs.fun.hyperg <- readRDS('pmf-derivs-fun-hyperg.rds')
-pmf.derivs.fun.poisson <- readRDS('pmf-derivs-fun-poisson.rds')
-pmf.derivs.fun.binomial.irr <- readRDS('pmf-derivs-fun-binomial-irr.rds')
-usethis::use_data(ks.fun, pmf.derivs.fun.binomial.prop, pmf.derivs.fun.hyperg, pmf.derivs.fun.poisson, pmf.derivs.fun.binomial.irr, internal=TRUE)
-
-devtools::load_all('./meta.glmm')
 
 ##  9. using saved formulas, run through all models
 
@@ -3123,9 +3113,11 @@ bartlett.C <- make.bartlett.C(params,quad,mod$pmf.derivs.fun)
 profiled <- profile(mu.grid,profile.LR,mle0,bartlett.C,mc.cores=5)
 profiled <- rbind(LR=profiled$LR,LR.bartlett=profiled$LR.bartlett)
 confint(mu.grid=mu.grid,profile=profiled)
-using constructor/convenience functions:
+## using constructor/convenience functions:
 
-## 12a binomial-prop:
+## 12a redoing data analysis
+    
+## 12a-1 binomial-prop:
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
 pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
@@ -3190,7 +3182,7 @@ dd
 ## [1,] -4.089781 -2.980016
 
 
-## 12b hyperg
+## 12a-2 hyperg
 source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
 stijnen.1 <- read.table('stijnen-table-I.txt')
@@ -3207,7 +3199,7 @@ CIs <- confint.meta.glmm(fit,mc.cores=5,bartlett=TRUE,mu.grid=list(offset=1.5,si
 
 
 
-## 12c binomial-IRR
+## 12a-3 binomial-IRR
 source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
 stijnen.6 <- read.table('stijnen-table-VI.txt')
@@ -3225,18 +3217,18 @@ print(CIs)
 
 
 
-## 12d poisson
+## 12a-4 poisson
 ks.fun <- readRDS('ks-fun.rds')
 pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
 source('models.R')
 source('./meta.glmm/R/meta.glmm.R')
 stijnen.vi <- read.table('stijnen-table-VI.txt')
-n.GH <- 1e2
+n.GH <- 40
 y <- stijnen.vi$Y1
 T <- stijnen.vi$T1/1000
-params <- cbind(T=T,y.min=0,y.max=1e4)
-fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))
-confint.meta.glmm(fit,mc.cores=5,mu.grid=list(offset=2.5,size=10))
+params <- cbind(T=T,y.min=0,y.max=850)
+fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3))
+confint.meta.glmm(fit,mc.cores=5,mu.grid=list(offset=2.,size=20))
 
 ## varyng n.GH and y.max
 n.GH <- c(seq(10,20,by=5),1e2)
@@ -3268,6 +3260,109 @@ lapply(CIs[!is.na(CIs)],`[[`,'CIs') |> sapply(`[[`,'LR.bartlett')  |> t() |> rou
 
 lapply(CIs[!is.na(CIs)],`[[`,'CIs') |> sapply(`[[`,'LR.bartlett')  |> sapply(function(elt)elt[1,]) |> t() |> round(4) |> apply(1,paste,collapse=',') |> matrix(nrow=length(unique(pars$n.GH)))
 
+
+
+## 12b R package creation
+
+usethis::create_package("meta.glmm", open = FALSE)
+usethis::proj_set("meta.glmm")
+
+setwd('meta.glmm')
+usethis::proj_set(".")
+ks.fun <- readRDS('../ks-fun.rds')
+## pmf.derivs.fun.binomial.prop <- readRDS('../pmf-derivs-fun-binomial-prop.rds')
+## pmf.derivs.fun.hyperg <- readRDS('../pmf-derivs-fun-hyperg.rds')
+## pmf.derivs.fun.poisson <- readRDS('../pmf-derivs-fun-poisson.rds')
+## pmf.derivs.fun.binomial.irr <- readRDS('../pmf-derivs-fun-binomial-irr.rds')
+pmf.derivs.fun.bn.prop <- readRDS('../pmf-derivs-fun-binomial-prop.rds')
+pmf.derivs.fun.hn <- readRDS('../pmf-derivs-fun-hyperg.rds')
+pmf.derivs.fun.pn <- readRDS('../pmf-derivs-fun-poisson.rds')
+pmf.derivs.fun.bn.irr <- readRDS('../pmf-derivs-fun-binomial-irr.rds')
+## usethis::use_data(ks.fun, pmf.derivs.fun.binomial.prop, pmf.derivs.fun.hyperg, pmf.derivs.fun.poisson, pmf.derivs.fun.binomial.irr, internal=TRUE,base_path=".")
+save(
+  ks.fun, 
+  pmf.derivs.fun.bn.prop, 
+  pmf.derivs.fun.hn, 
+  pmf.derivs.fun.pn, 
+  pmf.derivs.fun.bn.irr, 
+  file = "R/sysdata.rda",
+  compress = "xz"
+)
+
+
+dir.create("meta.glmm/data", showWarnings = FALSE)
+
+nw08 <- stijnen.6 <- read.table('stijnen-table-VI.txt')
+save(nw08, file='meta.glmm/data/nw008.rda', compress='xz')
+nw07 <- stijnen.1 <- read.table('stijnen-table-I.txt')
+save(nw07, file='meta.glmm/data/nw007.rda', compress='xz')
+
+
+devtools::load_all('./meta.glmm')
+
+
+
+
+## 12c sim using R package
+
+devtools::load_all('meta.glmm')
+source('utils.R') ## for sinh-asinh reparameterization
+
+
+sas.params <- sas.invert.params(skew,target.kurt=0)
+re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
+## RNGkind("L'Ecuyer-CMRG")#!!!!!!
+## set.seed(1)#!!!!!!!!!
+## re.distr <- rnorm #!!!!
+## tau2.null <- 1/2
+
+
+ns <- 10:20
+mu.null <- -1.353
+tau2.null <- .83^2
+model.str <- 'hn'
+n.GH <- 2e1
+## stijnen.1 <- read.table('../../stijnen-table-I.txt')
+## stijnen.1 <- stijnen.1[-15,] # get rid of uninformative study
+stijnen.params <- with(nw07, cbind(m.T=n1,m.C=n0,s=Y0+Y1))
+stijnen.params <- with(as.data.frame(stijnen.params), cbind(stijnen.params,y.min=pmax(0,s-m.C),y.max=pmin(s,m.T)) )                  
+mc.idx <- sample(nrow(stijnen.params),max(ns),replace=TRUE)
+mc.params <- stijnen.params[mc.idx,]
+model0 <- model(model.str)
+quad <- make.quad(model0$moment.map,model0$cond.pmf,n.GH=n.GH,adaptive=TRUE,adaptive.tol=1e-5)
+start <- Sys.time()
+## by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
+by.n <- sapply(seq_along(ns), function(i) {
+    ## repeat{
+    cat('.')
+    n <- ns[i]
+    params <- mc.params[1:n,]
+    bartlett.C <- make.bartlett.C(params,quad,model0$pmf.derivs.fun)
+    bartlett.C0 <- bartlett.C(mu.null,tau2.null)$bartlett.C
+    stats <- replicate(round(n^4), {        
+        y <- model0$dgp(n,mu.null,tau2.null,params,re.distr=re.distr)
+        fit <- meta.glmm(y,params,model.str,n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))        
+        LR <- fit$profile.LR(mu.null)$LR
+        ## loglik <- make.loglik(model0$cond.pmf,params,y,quad)
+        ## logtau2.mle.null <- optimize(function(logtau2)loglik(mu.null,exp(logtau2)),interval=c(-20,3),maximum=TRUE)$max
+        ## tau2.mle.null <- exp(logtau2.mle.null)
+        ## par.start0 <- c(mu=mu.null,tau2=tau2.mle.null)
+        ## mle0 <- mle(loglik,par.start0,method='BFGS')$mle
+        ## profile.LR <- make.profile.LR(loglik,mle0,par.start0,logtau2.bounds=c(-20,3))
+        ## LR <- profile.LR(mu.null)$LR
+        LR.bartlett <- LR / (1+bartlett.C0)
+        c(LR=LR,LR.bartlett=LR.bartlett)
+    })
+    ecdfs <- apply(stats,1,function(x)ecdf(pchisq(x,df=1,lower=FALSE)))
+    ks <- sapply(ecdfs,function(ecdf)max(abs(ecdf(knots(ecdf)) - knots(ecdf))))
+    means <- rowMeans(stats-1)
+    c(ks=ks,means=means)
+})
+by.n <- simplify2array(by.n)
+print(Sys.time() - start)
+## plot(ns,by.n['ks.LR',],type='l',ylim=range(by.n[1:2,]))
+## lines(ns,by.n['ks.LR.bartlett',],col=2)
+## apply(by.n[1:2,],1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
 
 
 
@@ -3799,68 +3894,69 @@ apply(by.n[1:2,],1,function(ks)coef(lm(log(ks) ~ log(ns)))[2]) |> print()
 
 
 
-## 14. diagnostics
+## ## 14. diagnostics
 
 
-## nonadaptive quadrature
-ks.fun <- readRDS('ks-fun.rds')
-pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
-source('models.R')
-source('./meta.glmm/R/meta.glmm2.R')
-stijnen.vi <- read.table('stijnen-table-VI.txt')
-n.GH <- 1e2
-y <- stijnen.vi$Y1
-T <- stijnen.vi$T1/1000
-params <- cbind(T=T,y.min=0,y.max=1e4)
-n.GH <- seq(100,500,by=200)
-y.max <- seq(1e3,1.3e4,by=3e3)
-pars <- expand.grid(n.GH=n.GH,y.max=y.max)
-## CIs <- apply(pars, 1, function(par) {
-par <- unlist(pars[13,])
-print(par)
-n.GH <- par['n.GH']; y.max <- par['y.max']
-n.GH <- 20;y.max <- 1e3
-params <- cbind(T=T,y.min=0,y.max=y.max)
+## ## nonadaptive quadrature
+## ks.fun <- readRDS('ks-fun.rds')
+## pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
+## source('models.R')
+## source('./meta.glmm/R/meta.glmm2.R')
+## stijnen.vi <- read.table('stijnen-table-VI.txt')
+## n.GH <- 1e2
+## y <- stijnen.vi$Y1
+## T <- stijnen.vi$T1/1000
+## params <- cbind(T=T,y.min=0,y.max=1e4)
+## n.GH <- seq(100,500,by=200)
+## y.max <- seq(1e3,1.3e4,by=3e3)
+## pars <- expand.grid(n.GH=n.GH,y.max=y.max)
+## ## CIs <- apply(pars, 1, function(par) {
+## par <- unlist(pars[13,])
+## print(par)
+## n.GH <- par['n.GH']; y.max <- par['y.max']
+## n.GH <- 20;y.max <- 1e3
+## params <- cbind(T=T,y.min=0,y.max=y.max)
 
 
-## bn-prop
-ks.fun <- readRDS('ks-fun.rds')
-pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
-source('models.R')
-source('./meta.glmm/R/meta.glmm2.R')
-stijnen.1 <- read.table('stijnen-table-I.txt')
-y <- stijnen.1$Y1
-ms <- stijnen.1$n1
-params <- cbind(m=ms,y.min=0,y.max=ms)
-fit <- meta.glmm(y,params,'bn-prop',n.GH=n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3),debug=TRUE)
-CI <- confint.meta.glmm(fit,mc.cores=parallel::detectCores()-1,mu.grid=list(offset=2.5,size=10),plot=TRUE)
-mle.null <- fit$profile.LR( -6)$mle.null
-bartlett.fit <- fit$bartlett.C(mle.null['mu'],mle.null['tau2'])
+## ## bn-prop
+## ks.fun <- readRDS('ks-fun.rds')
+## pmf.derivs.fun.bn.prop <- readRDS('pmf-derivs-fun-binomial-prop.rds')
+## source('models.R')
+## source('./meta.glmm/R/meta.glmm2.R')
+## stijnen.1 <- read.table('stijnen-table-I.txt')
+## y <- stijnen.1$Y1
+## ms <- stijnen.1$n1
+## params <- cbind(m=ms,y.min=0,y.max=ms)
+## fit <- meta.glmm(y,params,'bn-prop',n.GH=n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3),debug=TRUE)
+## CI <- confint.meta.glmm(fit,mc.cores=parallel::detectCores()-1,mu.grid=list(offset=2.5,size=10),plot=TRUE)
+## mle.null <- fit$profile.LR( -6)$mle.null
+## bartlett.fit <- fit$bartlett.C(mle.null['mu'],mle.null['tau2'])
 
+## ## mle.null <- fit$profile.LR( -1.1726610)$mle.null
+## ## fit <- fit$bartlett.C(mle.null['mu'],mle.null['tau2'])
+
+
+
+## ## pn CIs--adaptive
+## ## ks.fun <- readRDS('ks-fun.rds')
+## ## pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
+## ## source('models.R')
+## ## source('./meta.glmm/R/meta.glmm.R')
+## devtools::load_all('meta.glmm')
+## stijnen.vi <- read.table('stijnen-table-VI.txt')
+## n.GH <- 1e2
+## y <- stijnen.vi$Y1
+## T <- stijnen.vi$T1/1000
+## params <- cbind(T=T,y.min=0,y.max=1e4)
+## ## n.GH <- c(seq(10,20,by=5),1e2)
+## ## y.max <- c(seq(5e2,1.5e3,by=5e2),5e3)#seq(1e2,3e2,by=50)
+## n.GH <- 20
+## y.max <- 1e2
+## params <- cbind(T=T,y.min=0,y.max=y.max)
+## fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3),debug=TRUE)
+## CI <- confint.meta.glmm(fit,mc.cores=parallel::detectCores()-1,mu.grid=list(offset=1.5,size=10),plot=TRUE)
 ## mle.null <- fit$profile.LR( -1.1726610)$mle.null
-## fit <- fit$bartlett.C(mle.null['mu'],mle.null['tau2'])
+## bartlett.fit <- fit$bartlett.C(mle.null['mu'],mle.null['tau2'])
 
-
-
-## pn CIs--adaptive
-ks.fun <- readRDS('ks-fun.rds')
-pmf.derivs.fun.pn <- readRDS('pmf-derivs-fun-poisson.rds')
-source('models.R')
-source('./meta.glmm/R/meta.glmm2.R')
-stijnen.vi <- read.table('stijnen-table-VI.txt')
-n.GH <- 1e2
-y <- stijnen.vi$Y1
-T <- stijnen.vi$T1/1000
-params <- cbind(T=T,y.min=0,y.max=1e4)
-## n.GH <- c(seq(10,20,by=5),1e2)
-## y.max <- c(seq(5e2,1.5e3,by=5e2),5e3)#seq(1e2,3e2,by=50)
-n.GH <- 20
-y.max <- 1e2
-params <- cbind(T=T,y.min=0,y.max=y.max)
-fit <- meta.glmm(y,params,'pn',n.GH=n.GH,adaptive=TRUE,logtau2.bounds=c(-20,3),debug=TRUE)
-CI <- confint.meta.glmm(fit,mc.cores=parallel::detectCores()-1,mu.grid=list(offset=1.5,size=10),plot=TRUE)
-mle.null <- fit$profile.LR( -1.1726610)$mle.null
-bartlett.fit <- fit$bartlett.C(mle.null['mu'],mle.null['tau2'])
-
-diagnostic.pmf(bartlett.fit,3)
-diagnostic.k(bartlett.fit,3)
+## diagnostic.pmf(bartlett.fit,3)
+## diagnostic.k(bartlett.fit,3)
