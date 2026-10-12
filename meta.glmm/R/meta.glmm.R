@@ -77,10 +77,11 @@ ks.study <- function(paramsi,mu,tau2,quad,pmf.derivs.fun,debug=FALSE)  {
     ks.unit <- sapply(seq_along(ks.fun), function(i) {
         k.fun <- ks.fun[[i]]
         args <- attr(k.fun,'args')
-        k.unit <- do.call(k.fun, as.data.frame(pmf.derivs.unit[,args]))
+        k.unit <- do.call(k.fun, as.data.frame(pmf.derivs.unit[,args])) # just conver pmf.derivs.unit to a df outside loop
         ## k.val <- sum( k.unit )
     })
     k.vals <- colSums(ks.unit)#,na.rm=TRUE)#!!!!!!!!!!!!!!1 
+    ## k.vals <- colSums(ks.unit,na.rm=TRUE)#!!!!!!!!!!!!!!1 
     k.orders <- sapply(ks.fun,function(k.fun)attr(k.fun,'order'))
     ks.df <- data.frame(inner=k.orders[1,],outer=k.orders[2,],k.val=k.vals)
     ## out <- list(ks.df=ks.df, ks.unit=ks.unit, pmf.derivs.unit=pmf.derivs.unit)
@@ -160,10 +161,10 @@ make.quad <- function(moment.map,cond.pmf,n.GH,adaptive=TRUE,adaptive.tol=NULL) 
                 step <- newton.step(zi, yi, paramsi, mu, tau2)
                 zi.new <- zi + step
                 ## if(!is.finite(cond.pmf(yi,zi.new,mu,tau2,paramsi,log=TRUE)))browser()
-                while(cond.pmf(yi,zi.new,mu,tau2,paramsi,log=TRUE) < cond.pmf(yi,zi,mu,tau2,paramsi,log=TRUE)) {
-                    step <- step / 2
-                    zi.new <- zi + step
-                }
+                ## while(cond.pmf(yi,zi.new,mu,tau2,paramsi,log=TRUE) < cond.pmf(yi,zi,mu,tau2,paramsi,log=TRUE)) {
+                ##     step <- step / 2
+                ##     zi.new <- zi + step
+                ## }
                 if (abs(zi.new - zi) < adaptive.tol) {
                     break
                 }

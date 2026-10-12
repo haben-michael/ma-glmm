@@ -185,6 +185,8 @@ lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
 
 
 
+#########################################################333
+
 
 ## varying tau2 also
 ## compute rates, then aggregate
@@ -195,9 +197,9 @@ lines(rate~skew, data=subset(long.agg,stat=='ks.LR.bartlett'&kurt==0),col=2)
 ## save.path <- './sim/robustness/binomial-irr-tau2/'
 ## save.path <- './sim/robustness/hyperg/'
 ## save.path <- './sim/260819/'
-## save.path <- './sim/bn-prop/'
+save.path <- './sim/bn-prop/'
 ## save.path <- './sim/bn-irr/'
-save.path <- './sim/hn/'
+## save.path <- './sim/hn/'
 filelist <- dir(save.path)
 filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
 print(length(filelist))
@@ -218,7 +220,7 @@ long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
 rownames(long) <- NULL
 long.agg <- aggregate(rate ~ ., mean,data=long)
 long.agg <- subset(long.agg,subset=stat=='ks.LR' | stat=='ks.LR.bartlett')
-## long.agg <- subset(long.agg,tau2.null%in%c(.1,.2,.3))
+## long.agg <- subset(long.agg,tau2.null%in%c(.6889))
 df <- subset(long.agg,stat=='ks.LR.bartlett')
 tau2.nulls <- unique(df$tau2.null)
 col <- gray.colors(length(tau2.nulls)) |> rev()
@@ -240,7 +242,8 @@ legend('bottomright',col=col,lty=1,legend=sapply(tau2.nulls,\(tau2.null)bquote(t
 ## generate table
 
 rate.sims<- lapply( c(bn.prop='./sim/bn-prop/',
-                      hn='./sim/robustness/binomial-prop2/',## !!!placeholder
+                      ## hn='./sim/robustness/binomial-prop2/',## !!!placeholder
+                      hn='./sim/hn/',## !!!placeholder
                       pn='./sim/robustness/poisson/',
                       bn.irr='./sim/bn-irr/'), 
           function(save.path) {
@@ -417,3 +420,111 @@ for(i in seq_along(tau2.nulls))
     with(subset(df,tau2.null==tau2.nulls[i]), lines(skew, predict(loess(rate ~ skew)), col=col[i],lty=2))
 legend('bottomright',col=col,lty=1,legend=sapply(tau2.nulls,\(tau2.null)bquote(tau^2==.(tau2.null))))
 ## dev.off()
+
+
+
+
+
+
+
+
+
+## further anlaysis for hn and bn-irr models
+
+save.path <- './sim/bn-irr/'
+## save.path <- './sim/hn/'
+filelist <- dir(save.path)
+filelist <- filelist[grep('^save[-0-9]+\\.RData',filelist)]
+print(length(filelist))
+by.sim <- lapply(filelist, function(file) {
+    ## print(file)   
+    load(paste0(save.path,file))
+    ## if(is.character(by.n[1]))bad <<- c(bad,file)
+    ## print(by.n)
+    ## df.lst <- lapply(1:nrow(by.n),function(i)data.frame(stat=rownames(by.n)[i],val=by.n[i,],n=ns))
+    ## df <- do.call(rbind,df.lst)
+    ## df <- cbind(df,skew=skew,kurt=kurt)
+    rates <- apply(by.n,1,function(x)coef(lm(log(abs(x))~log(ns)))[2])
+    data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt,tau2.null=tau2.null) 
+    ## data.frame(rate=rates,stat=names(rates),skew=skew,kurt=kurt)
+})
+long <- do.call(rbind,by.sim)
+long$skew <- round(long$skew,2); long$kurt <- round(long$kurt,2)
+rownames(long) <- NULL
+df <- long.agg <- aggregate(rate ~ ., data=long, FUN=function(x)c(median=median(x),sd=sd(x)))
+df <- cbind(df[,names(df)!='rate'],df$rate)
+df <- df[df$skew>=0,]
+
+generate_latex_tabular <- function(df, digits = 2, tau_digits = 1) {
+  # 1. Filter dataframe to include only the required statistics
+  target_stats <- c("ks.LR", "ks.LR.bartlett")
+  df <- df[df$stat %in% target_stats, ]
+  
+  # 2. Map statistic names to LaTeX labels
+  stat_map <- c(
+    "ks.LR"          = "LR (original)",
+    "ks.LR.bartlett" = "LR (Bartlett)"
+  )
+  
+  # 3. Format median and SD into "median (sd)" strings
+  fmt <- paste0("%.", digits, "f (%.", digits, "f)")
+  df$cell_val <- sprintf(fmt, df$median, df$sd)
+  
+  # 4. Extract unique factor levels maintaining grid ordering
+  tau_vals  <- unique(df$tau2.null)
+  stat_vals <- intersect(target_stats, unique(df$stat))
+  skew_vals <- sort(unique(df$skew))
+  
+  num_skew  <- length(skew_vals)
+  skew_cols <- paste(skew_vals, collapse = " & ")
+  
+  # 5. Construct LaTeX tabular environment
+  lines <- c()
+  lines <- c(lines, sprintf("\\begin{tabular}{ll%s}", paste(rep("c", num_skew), collapse = "")))
+  lines <- c(lines, "\\toprule")
+  lines <- c(lines, sprintf(" &  & \\multicolumn{%d}{c}{\\textbf{Skew of random effect}} \\\\", num_skew))
+  lines <- c(lines, sprintf("\\cmidrule(lr){3-%d}", num_skew + 2))
+  lines <- c(lines, sprintf("\\textbf{$\\tau^2$} & \\textbf{Statistic} & %s \\\\", skew_cols))
+  lines <- c(lines, "\\midrule")
+  
+  # Loop through tau2 levels and statistic types
+  for (i in seq_along(tau_vals)) {
+    t_val <- tau_vals[i]
+    
+    # Format tau2 to 1 decimal place
+    formatted_tau <- sprintf(paste0("%.", tau_digits, "f"), t_val)
+    ## tau_label <- sprintf("$\\tau^2 = %s$", formatted_tau)
+    tau_label <- sprintf("$%s$", formatted_tau)
+    
+    for (j in seq_along(stat_vals)) {
+      s_val <- stat_vals[j]
+      s_label <- if (s_val %in% names(stat_map)) stat_map[[s_val]] else s_val
+      
+      # Gather cell values across skew levels
+      row_cells <- sapply(skew_vals, function(sk) {
+        sub <- df[df$tau2.null == t_val & df$stat == s_val & df$skew == sk, ]
+        if (nrow(sub) > 0) sub$cell_val[1] else ""
+      })
+      
+      # Use \multirow on the first row of each tau2 block
+      first_col <- if (j == 1) sprintf("\\multirow{%d}{*}{%s}", length(stat_vals), tau_label) else ""
+      row_str <- paste(c(first_col, s_label, row_cells), collapse = " & ")
+      lines <- c(lines, paste0(row_str, " \\\\"))
+    }
+    
+    if (i < length(tau_vals)) {
+      lines <- c(lines, "\\midrule")
+    }
+  }
+  
+  lines <- c(lines, "\\bottomrule")
+  lines <- c(lines, "\\end{tabular}")
+  
+  return(paste(lines, collapse = "\n"))
+}
+
+latex_code <- generate_latex_tabular(df,tau_digits=2)
+cat(latex_code)
+sink('./figs/rate-table-bn-irr.tex')
+cat(latex_code)
+sink()

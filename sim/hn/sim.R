@@ -19,7 +19,7 @@ ns <- 10:20
 mu.null <- -1.353
 tau2.null <- .83^2
 model.str <- 'hn'
-n.GH <- 2e1
+n.GH <- 3e1
 ## stijnen.1 <- read.table('../../stijnen-table-I.txt')
 nw07 <- nw07[-15,] # get rid of uninformative study
 stijnen.params <- with(nw07, cbind(m.T=n1,m.C=n0,s=Y0+Y1))
@@ -27,7 +27,7 @@ stijnen.params <- with(as.data.frame(stijnen.params), cbind(stijnen.params,y.min
 mc.idx <- sample(nrow(stijnen.params),max(ns),replace=TRUE)
 mc.params <- stijnen.params[mc.idx,]
 model0 <- model(model.str)
-quad <- make.quad(model0$moment.map,model0$cond.pmf,n.GH=n.GH,adaptive=TRUE,adaptive.tol=1e-5)
+quad <- make.quad(model0$moment.map,model0$cond.pmf,n.GH=n.GH,adaptive=TRUE,adaptive.tol=1e-6)
 start <- Sys.time()
 ## by.n <- parallel::mclapply(seq_along(ns),mc.cores=6,FUN= function(i) {
 by.n <- sapply(seq_along(ns), function(i) {
@@ -37,7 +37,7 @@ by.n <- sapply(seq_along(ns), function(i) {
     params <- mc.params[1:n,]
     bartlett.C <- make.bartlett.C(params,quad,model0$pmf.derivs.fun)
     bartlett.C0 <- bartlett.C(mu.null,tau2.null)$bartlett.C
-    stats <- replicate(round(n^3), {        
+    stats <- replicate(round(n^4), {        
         y <- model0$dgp(n,mu.null,tau2.null,params,re.distr=re.distr)
         fit <- meta.glmm(y,params,model.str,n.GH,adaptive=FALSE,logtau2.bounds=c(-20,3))        
         LR <- fit$profile.LR(mu.null)$LR

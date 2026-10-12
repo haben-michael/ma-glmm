@@ -1,7 +1,7 @@
 args <- commandArgs(trailingOnly=TRUE)
 skew <- as.numeric(args[1])
-kurt <- as.numeric(args[2])
-tau2.null <- as.numeric(args[3])
+## kurt <- as.numeric(args[2])
+## tau2.null <- as.numeric(args[2])
 
 ks.fun <- readRDS('../../ks-fun.rds')
 pmf.derivs.fun.pn <- readRDS('../../pmf-derivs-fun-poisson.rds')
@@ -11,7 +11,7 @@ pmf.derivs.fun.hn <- readRDS('../../pmf-derivs-fun-hyperg.rds')
 source('../../models.R')
 source('../../meta.glmm/R/meta.glmm.R')
 
-
+kurt <- 0
 sas.params <- sas.invert.params(skew,kurt)
 re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 ## RNGkind("L'Ecuyer-CMRG")#!!!!!!
@@ -20,7 +20,7 @@ re.distr <- function(n)rsas(n,eps=sas.params['eps'],delta=sas.params['delta'])
 ## tau2.null <- 1/2
 
 
-ns <- 10:20
+ns <- 5:15
 mu.null <- -3.5
 tau2.null <- .81
 model.str <- 'bn-prop'
